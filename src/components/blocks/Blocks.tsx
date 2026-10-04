@@ -362,7 +362,11 @@ const GalleryBlock = ({ context, row }: { context: SiteContext; row: BlockRow })
   if (items.length === 0) return null
   return (
     <BlockShell heading={heading} introText={introText} mark="pair">
-      <Gallery items={items} labels={{ close: t.close, next: t.next, previous: t.previous }} locale={context.locale} />
+      <Gallery
+        items={items}
+        labels={{ close: t.close, next: t.next, previous: t.previous, title: t.gallery }}
+        locale={context.locale}
+      />
     </BlockShell>
   )
 }

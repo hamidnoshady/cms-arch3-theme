@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href, splitLocale } from '@/lib/routing/locale'
 import { articlePath, categoryQuery, projectPath, searchPath } from '@/lib/routing/paths'
-import { resolveThemeRoute } from '@/lib/routing/resolve'
+import { resolveLocaleRoute, resolveThemeRoute } from '@/lib/routing/resolve'
 import type { Locale, SiteDescriptor } from '@/lib/cms/types'
 
 const site = {
@@ -88,6 +88,25 @@ describe('route resolution', () => {
     expect(resolveThemeRoute(['blog'], site, { page: '3' })).toMatchObject({ kind: 'blog', page: 3 })
     expect(resolveThemeRoute(['blog'], site, { page: '-2' })).toMatchObject({ kind: 'blog', page: 1 })
     expect(resolveThemeRoute(['blog'], site, { page: 'abc' })).toMatchObject({ kind: 'blog', page: 1 })
+  })
+})
+
+describe('locale-aware route resolution for views', () => {
+  it('keeps breadcrumb labels and parent links in the page locale', () => {
+    const route = resolveLocaleRoute(['projects', 'casa'], 'en', site)
+    expect(route).toMatchObject({ explicitLocale: true, kind: 'project', locale: 'en' })
+
+    const crumbs = breadcrumbsFor(route, site, 'Casa')
+    expect(crumbs.map((crumb) => crumb.label)).toEqual(['Home', 'Projects', 'Casa'])
+    expect(crumbs[1]?.href).toBe('/en/projects')
+  })
+
+  it('adds no prefix for the default locale', () => {
+    expect(resolveLocaleRoute(['blog'], 'fa', site)).toMatchObject({
+      explicitLocale: false,
+      kind: 'blog',
+      locale: 'fa',
+    })
   })
 })
 

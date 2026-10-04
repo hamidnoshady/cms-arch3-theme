@@ -43,7 +43,7 @@ export const ProjectCard = ({
           />
           <DecorativeMark className="bottom-2 end-2 hidden md:block" variant="dash" />
         </span>
-        <span className="mt-3 flex items-baseline justify-between gap-3">
+        <span className="card__caption mt-3">
           <span className="card__title">{post.title}</span>
           {meta ? <span className="card__meta">{meta}</span> : null}
         </span>

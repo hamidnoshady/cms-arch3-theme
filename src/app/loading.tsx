@@ -1,6 +1,7 @@
 import { ContentContainer, NavbarShell } from '@/components/design/Container'
 import { Rule } from '@/components/design/Rule'
-import { ArticleRowsSkeleton, PageSkeleton } from '@/components/states/States'
+import { PageSkeleton } from '@/components/states/States'
+import { labels as dictionary } from '@/lib/theme/labels'
 
 /**
  * Root loading boundary. It keeps the shell's structural anchors (the full-width
@@ -15,8 +16,7 @@ export default function Loading() {
         <Rule />
       </NavbarShell>
       <ContentContainer>
-        <PageSkeleton />
-        <ArticleRowsSkeleton count={3} />
+        <PageSkeleton label={dictionary('fa').loading} />
       </ContentContainer>
     </div>
   )

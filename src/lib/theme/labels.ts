@@ -28,12 +28,14 @@ type Dictionary = {
   latestNotes: string
   leadStory: string
   loadMore: string
+  loading: string
   menu: string
   menuNoScript: string
   menuTitle: string
   next: string
   notFoundBody: string
   notFoundTitle: string
+  pagination: string
   previous: string
   projects: string
   readMore: string
@@ -79,12 +81,14 @@ const fa: Dictionary = {
   latestNotes: 'تازه‌ترین یادداشت‌ها',
   leadStory: 'یادداشت شاخص',
   loadMore: 'بیشتر',
+  loading: 'در حال بارگذاری…',
   menu: 'فهرست',
   menuNoScript: 'بدون جاوااسکریپت هم می‌توانید از این پیوندها استفاده کنید:',
   menuTitle: 'فهرست سایت',
   next: 'بعدی',
   notFoundBody: 'نشانی درخواستی در این سایت وجود ندارد.',
   notFoundTitle: 'صفحه پیدا نشد',
+  pagination: 'صفحه‌بندی',
   previous: 'پیشین',
   projects: 'پروژه‌ها',
   readMore: 'ادامه',
@@ -130,12 +134,14 @@ const en: Dictionary = {
   latestNotes: 'Latest notes',
   leadStory: 'Lead story',
   loadMore: 'Load more',
+  loading: 'Loading…',
   menu: 'Menu',
   menuNoScript: 'These links work without JavaScript as well:',
   menuTitle: 'Site menu',
   next: 'Next',
   notFoundBody: 'The requested address does not exist on this site.',
   notFoundTitle: 'Page not found',
+  pagination: 'Pagination',
   previous: 'Previous',
   projects: 'Projects',
   readMore: 'Read',

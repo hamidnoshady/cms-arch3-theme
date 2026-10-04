@@ -11,7 +11,7 @@ Evidence for the claims below is in [`docs/QA.md`](./QA.md) and `docs/screenshot
 
 ---
 
-## 1. Fonts — Shazde is not installed
+## 1. Fonts — Shazde is installed locally (licences stay the deployment's)
 
 **The brief asks for Shazde 100–900, used only at weights whose licensed files exist.**
 
@@ -23,9 +23,9 @@ visual defect, not a fallback). So:
   `public/fonts/`, provenance in `public/fonts/PROVENANCE.txt`). It is a variable font, so
   the full 100–900 range is real — no synthesised weights, no oblique faking.
 - **The `@font-face` list is data, not markup.** `src/lib/theme/fonts.ts` declares the nine
-  Shazde weights with their expected filenames and a per-weight licence note. Dropping the
-  licensed `shazde-<weight>.woff2` files into `public/fonts/shazde/` switches the Persian
-  family over with no code change; see `public/fonts/shazde/README.md`.
+  Shazde weights with their documented `Shazde-<Weight>.woff2` filenames and a per-weight
+  licence note. Dropping licensed files with those names into `public/fonts/shazde/`
+  switches the Persian family over with no code change; see `public/fonts/shazde/README.md`.
 - **Missing weights are reported, never guessed.** At boot, `fontReport()` lists which
   weights are absent and the theme logs one line in development. A weight that is not
   licensed falls back to the *nearest licensed* weight rather than a synthesised one.
@@ -33,10 +33,18 @@ visual defect, not a fallback). So:
 - **Persian never gets letter-spacing** (`letter-spacing: normal` is pinned on
   `html[lang='fa']`), and no Persian text is set in a weight above the licensed range.
 
-**Unverified:** the theme has never rendered in Shazde. The typographic *scale* it was
-designed against (size, leading, measure, hierarchy) is verified in the screenshots on
-Vazirmatn, which is metric-different. Re-check the hero and the 1440px display sizes after
-the licensed files are dropped in.
+**Originally unverified (superseded below):** at the time of this build the theme had never
+rendered in Shazde. The typographic *scale* it was designed against (size, leading, measure,
+hierarchy) was verified on Vazirmatn, which is metric-different. The hero and 1440px display
+sizes were re-checked after the licensed files were installed — see the update note below.
+
+> **Update — 2026-10-04 (local dev).** The licensed **Shazde Pro** files are now installed
+> in `public/fonts/shazde/` (weights 300–900) and the theme was re-run against the
+> `eshobe-cms` dev server. All seven installed faces load (`Shazde-*.woff2`, HTTP 200),
+> Persian resolves to Shazde as the first face in `--font-fa`, and the home hero renders on
+> real Shazde metrics. Thin (100) and ExtraLight (200) are not part of the licensed family
+> and are reported missing; the type scale never requests them. Mapping and provenance:
+> `public/fonts/shazde/README.md`.
 
 ## 2. Development-mode hydration cannot be verified in this sandbox
 
@@ -54,6 +62,11 @@ Consequences:
   (`ESHOBE_DEV_FIXTURES=1`) exists for it. What could not be verified here is dev-mode
   hydration specifically — expect it to work (nothing is conditional on the build mode
   except HMR itself), but it was not observed.
+
+> **Update — 2026-10-04.** On a host without the sandbox websocket limit, `next dev` was
+> observed hydrating and behaving: the contact form produced field-level errors on an
+> invalid submit (no native GET), and the interaction audit passed 9/9 against the live dev
+> server at the time (it now runs 21 checks — `docs/QA.md` §2).
 
 ## 3. The fixture layer is development-only, so production QA needs a mock CMS
 
@@ -180,10 +193,10 @@ Kept here because each one looks like an omission until you know it was a decisi
 
 | Claim | Status |
 | --- | --- |
-| Shazde typography | not installed (licensed); Vazirmatn used, switch is drop-in |
-| Real CMS content | not available; mock serves the documented shapes |
-| Dev-mode hydration | not observable (sandbox HMR websocket); production verified |
+| Shazde typography | installed in this working copy (300–900); 100/200 do not exist in the licensed family — see §1 and `docs/TYPOGRAPHY.md` |
+| Real CMS content | **re-verified live on 2026-10-04** (routes, a11y 11/11, interactions 9/9 at the time, manifest parsed) — see `docs/QA.md` §8; the interaction harness now runs 21 checks (§2) |
+| Dev-mode hydration | not observable in the original sandbox; **exercised live on 2026-10-04** (form validation and interaction audit against `next dev`) — see `docs/QA.md` §8 |
 | Real media CDN | not available; same-origin placeholders used |
-| Deployment (Coolify / GHCR) | **not performed** — no deployment was requested |
+| Deployment (Coolify / GHCR) | **not performed** — no deployment was requested; tag-driven GHCR publishing now exists (`.github/workflows/publish-image.yml`), the image was built and smoke-tested locally against the mock CMS, but nothing has been pushed and the manifest still declares no `deployment` block |
 | Real preview token from the CMS | not available; the HMAC path is unit-tested |
 | Legal / accessibility audit by a third party | not performed |

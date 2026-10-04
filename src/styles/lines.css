@@ -40,6 +40,14 @@
     background-color: var(--line-decor-color);
   }
 
+  .rule-h--decor {
+    block-size: var(--line-w-decor);
+  }
+
+  .rule-v--decor {
+    inline-size: var(--line-w-decor);
+  }
+
   /* 1px solid black, reserved for active/interactive meaning. */
   .rule-h--emphasis {
     block-size: 1px;
@@ -154,6 +162,9 @@
   .mark svg {
     display: block;
     overflow: visible;
+    /* Decorative strokes follow the decorative width token (0.5px on 2x displays),
+       independent of structural rules and control boundaries. */
+    stroke-width: var(--line-w-decor);
   }
 
   @media (max-width: 47.999rem) {

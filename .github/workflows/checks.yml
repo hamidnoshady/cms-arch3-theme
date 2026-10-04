@@ -1,0 +1,32 @@
+name: Checks
+
+# The reusable check suite: typecheck → lint → tests → production build.
+#
+# It is its own file so the two consumers stay honest about what gates what:
+# `ci.yml` runs it on every push / pull request, and `publish-image.yml` runs it as a
+# hard dependency of the GHCR build — an image is never published from a red commit.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Typecheck, lint, tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm test
+      - name: Production build
+        run: npm run build

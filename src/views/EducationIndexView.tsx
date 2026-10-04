@@ -11,7 +11,7 @@ import { loadPageContext } from '@/lib/cms/pageContext'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
 import { educationPath, THEME_ROUTES } from '@/lib/routing/paths'
-import { resolveThemeRoute } from '@/lib/routing/resolve'
+import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { lexicalText } from '@/lib/utils/lexical'
@@ -57,8 +57,10 @@ export const EducationIndexView = async ({
   ])
 
   const [featured, ...rest] = archive.docs
-  const route = resolveThemeRoute(['education'], ctx.site)
+  const route = resolveLocaleRoute(['education'], locale, ctx.site)
   const crumbs = breadcrumbsFor(route, ctx.site)
+  // Localized once: filters, reset and pagination share it, so English stays under /en.
+  const basePath = href(THEME_ROUTES.education, locale, ctx.site)
 
   return (
     <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.education} label={t.breadcrumb} locale={locale}>
@@ -67,14 +69,14 @@ export const EducationIndexView = async ({
           section.children.length > 0 ? (
             <div className="filter-group">
               <span className="type-label me-2">{t.filterLabel}</span>
-              <a aria-current={!category ? 'true' : undefined} className="filter-chip" href={THEME_ROUTES.education}>
+              <a aria-current={!category ? 'true' : undefined} className="filter-chip" href={basePath}>
                 {t.education}
               </a>
               {section.children.map((child) => (
                 <a
                   aria-current={category === child.slug ? 'true' : undefined}
                   className="filter-chip"
-                  href={`${THEME_ROUTES.education}?category=${encodeURIComponent(child.slug)}`}
+                  href={`${basePath}?category=${encodeURIComponent(child.slug)}`}
                   key={child.id}
                 >
                   {child.title}
@@ -124,9 +126,11 @@ export const EducationIndexView = async ({
 
       <ContentContainer>
         <Pagination
-          basePath={THEME_ROUTES.education}
+          basePath={basePath}
           currentPage={page}
+          label={t.pagination}
           labels={{ next: t.next, previous: t.previous }}
+          locale={locale}
           query={category ? `?category=${encodeURIComponent(category)}` : ''}
           totalPages={archive.totalPages}
         />

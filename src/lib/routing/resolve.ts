@@ -96,5 +96,20 @@ export const resolveThemeRoute = (
   }
 }
 
+/**
+ * Resolve a route whose locale the caller already knows. Route files render one locale
+ * each, so prepending the served prefix keeps `route.locale` — and therefore breadcrumb
+ * labels, parent links and `aria-current` — in the page's own language. Locale-agnostic
+ * callers (`CatchAllView`, `SectionLoading`) keep using `resolveThemeRoute` with the
+ * real segment list, which already carries the prefix.
+ */
+export const resolveLocaleRoute = (
+  segments: string[],
+  locale: Locale,
+  site: Pick<SiteDescriptor, 'availableLocales' | 'defaultLocale'>,
+  search?: { page?: null | string; q?: null | string },
+): ResolvedRoute =>
+  resolveThemeRoute(locale === site.defaultLocale ? segments : [locale, ...segments], site, search)
+
 /** Sections whose own slug may arrive through the catch-all and must redirect home. */
 export const CANONICAL_SECTION_SLUGS = ['about', 'contact'] as const

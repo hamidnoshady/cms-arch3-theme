@@ -38,15 +38,18 @@ the resulting screenshots look fine while measuring nothing.
 | Vendored runtime builds | `npm run vendor:build` | passes (8 modules emitted) |
 | TypeScript | `npm run typecheck` | clean, `strict` + `noUncheckedIndexedAccess` + `verbatimModuleSyntax` |
 | ESLint | `npm run lint` | 0 errors, 0 warnings |
-| Unit/integration tests | `npm test` | **11 files, 105 tests, all passing** |
+| Unit/integration tests | `npm test` | **12 files, 120 tests, all passing** |
 | Production build | `npm run build` | Next 16.3.8, compiles, all routes emitted |
 | Browser evidence | `node scripts/screenshots.mjs` | **40 shots, 0 failures**, no page errors, no horizontal overflow |
-| Interaction behaviour | `node scripts/interaction-audit.mjs` | **9/9 checks pass** (keyboard + click entry, no intro replay, focus trap, Escape + focus restoration, scroll-lock cleanup, close on navigation, no double submit, values preserved on failure) |
+| Interaction behaviour | `node scripts/interaction-audit.mjs` | **21/21 checks pass** — the nine original entrance/drawer/form checks plus locale retention on English archives, canonical search sections, wrong-section redirects, blog category scoping, drawer edge + bounded motion per locale, inline email validation, 390px card-metadata stress, active Shazde weights, decorative stroke tokens at 1x/2x, reduced-motion stillness, and slow-archive loading compositions (see §3) |
 | Structural a11y | `npm run a11y` | **17/17 pages clean** (one `h1`, a `<main>`, no skipped heading levels, no missing/empty `alt`, no duplicate ids, no sub-24px target, no sub-4.5 contrast on body text) |
 | Manifest | `tests/manifest.test.ts` + the CMS's own parser | accepted (§5) |
 
 `npm run verify` chains typecheck → lint → test → build. Lint is *inside* verify (it is not
-excluded), and any of the four failing fails the chain.
+excluded), and any of the four failing fails the chain. The same four checks run in CI
+(`.github/workflows/checks.yml`, called by `ci.yml` on every push and pull request and by
+`publish-image.yml` before any image is published), together with the browser audits and a
+no-push container build; `publish-image.yml` pushes `ghcr.io/<owner>/<repo>` on `v*` tags.
 
 ### Test files
 
@@ -62,7 +65,8 @@ excluded), and any of the four failing fails the chain.
 | `tests/manifest.test.ts` | manifest ↔ code agreement, neutral identifiers, no unclaimed capability |
 | `tests/components.test.tsx` | server-rendered component output (marks, rules, skeletons) |
 | `tests/api.test.ts` | the public form-submission proxy: no credential/cookie/client-authorization is forwarded, the visitor's host travels as `x-forwarded-host`, the payload is bounded (413), an unconfigured CMS answers 503, and the CMS status is passed through rather than turned into a success |
-| `tests/form.test.tsx` | the CMS-defined form: required fields (incl. consent) block an empty submit with tied `aria-describedby` errors, errors clear on typing, the payload uses CMS field names with booleans stringified, success is announced via `aria-live`, values survive a failure, the control is disabled while in flight, and a filled honeypot is absorbed without a write |
+| `tests/form.test.tsx` | the CMS-defined form: required fields (incl. consent) block an empty submit with tied `aria-describedby` errors, invalid email is rejected, errors clear on typing, the payload uses CMS field names with booleans stringified, success is announced via `aria-live`, values survive a failure, the control is disabled while in flight, and a filled honeypot is absorbed without a write |
+| `tests/gallery.test.tsx` | gallery counter/title localization, focus restoration, and direction-aware ArrowLeft/ArrowRight stepping (next/previous mapping flips under RTL) |
 
 ## 3. Browser evidence
 
@@ -138,10 +142,24 @@ browser and asserted:
 | Navigating from the drawer closes it | pass |
 | A double submit reaches the CMS exactly once | 1 POST |
 | A failed submit keeps the entered values | pass |
+| The language link navigates before the menu is entered | `/en` |
+| English archive controls and breadcrumbs stay under `/en` | pass |
+| Search hits link to the section that owns the document | project detail opened |
+| Wrong-section detail URLs redirect to the canonical section | pass |
+| Blog category controls select a filter and reject cross-section slugs | pass |
+| The drawer opens from its own edge with bounded motion, per locale | fa right / en left, 280 ms |
+| An invalid email is blocked inline and posts nothing | pass |
+| Long card metadata stays readable at 390px (2 cards per row) | title 166px in a 166px card |
+| The licensed Shazde weights are installed and active | 300, 400, 500, 600, 700, 800, 900 |
+| Decorative strokes follow the decorative token at 1x and 2x | 1px → 0.5px |
+| Reduced motion: panel, rows and skeleton are static; the drawer still opens | pass |
+| Slow archive navigation keeps the real header and its own composition | education featured + 4 rows; blog lead/latest split + rows |
 
 Report: `docs/screenshots/interaction-report.json`; the script exits non-zero on failure.
-Both browser scripts refuse to run against a server whose own CSS/JS 500s, because an
-unstyled page manufactures defects that do not exist (see regression item 23).
+The loading check needs a slow-CMS instance — pass `--slow-base` (or `AUDIT_SLOW_BASE`);
+with none running it reports `skipped` rather than quietly passing. Both browser scripts
+refuse to run against a server whose own CSS/JS 500s, because an unstyled page manufactures
+defects that do not exist (see regression item 23).
 
 ### How the hard cases were made observable
 
@@ -197,7 +215,7 @@ identifier is neutral.
 
 ## 6. Regression list — real defects found and fixed during this work
 
-Each was reproduced in a browser or by a failing test before being fixed (25 items).
+Each was reproduced in a browser or by a failing test before being fixed (37 items).
 
 1. **CSS layers.** `styles/*.css` were unlayered and outranked Tailwind utilities, so
    `md:hidden` and `md:grid-cols-*` silently did nothing (the hamburger showed at 1440px).
@@ -281,11 +299,101 @@ Each was reproduced in a browser or by a failing test before being fixed (25 ite
     rule and cue are server-rendered at `opacity: 0`, so a visitor with scripting off saw a
     blank stage and no way into the site. A `<noscript>` menu now lists the same CMS
     destinations and a no-script stylesheet reveals the stage — captured as shot 40.
+26. **English archives lost their locale.** Filter chips, reset links, pagination and the
+    search form were built from hardcoded Persian paths, so `/en/projects` filtered into
+    `/projects`. All four now go through the locale URL helper; pagination carries a
+    localized label, Persian digits and the category/page state.
+27. **The Persian mobile drawer opened from the left.** `inset-inline-end: 0` is the
+    physical left in RTL, with the divider on the wrong edge. The panel now anchors to the
+    inline-start edge (right in fa, left in en), hairline on the exposed inner edge, with a
+    280 ms direction-aware entrance/exit and a short row stagger.
+28. **Reduced motion did not stop the RTL drawer.** The reset selector (0,2,0) lost
+    `animation-name` to the RTL override `[dir='rtl'] …` (0,3,0), so the panel still
+    travelled. The reset now repeats the direction-qualified selectors, and the interaction
+    audit pins computed `animationName: none` for panel, rows and skeleton.
+29. **Project cards collapsed under realistic metadata.** `white-space: nowrap` metadata in
+    one shrinkable flex row reduced a title to an 11px column. Captions now wrap with
+    `min-inline-size: 0`; two cards per mobile row and a 390px stress check hold the
+    geometry.
+30. **The homepage consumed Enter on the language link.** A window-level keydown called
+    `preventDefault()` for navigation keys regardless of target, so keyboard language
+    switching never left `/`. The handler now ignores interactive targets and modifier
+    chords, and opening the menu moves focus into it.
+31. **Search sent project and education hits to blog pages.** Every hit used the article URL,
+    and `ArticleView` accepted any section. Hits now resolve through the archive's canonical
+    section rule, and wrong-section detail URLs redirect to their real composition.
+32. **A category query replaced the archive's section.** `/projects?category=workshops`
+    rendered education posts as project cards. Membership is validated inside the active
+    subtree (a cross-section slug yields the empty state), and blog filters are exposed,
+    selected and consumed.
+33. **Invalid email bypassed field validation.** `noValidate` plus an empty-only check let
+    `not-an-email` reach the CMS. The form now validates email and numbers, focuses the
+    first invalid field, maps the CMS `{errors:[{field,message}]}` shape onto fields, and
+    keeps values in a stable live region.
+34. **Education and blog skeletons were generic.** Loading showed compact rows without the
+    featured entry or the lead/latest split. Each archive now renders a composition-matched
+    skeleton sharing the resolved header geometry, with one localized loading sentence.
+35. **The gallery's arrow keys were only a comment.** ArrowLeft/ArrowRight now step
+    direction-aware (ArrowLeft advances in RTL), with a localized dialog title and
+    Persian-digit counter; the decorative SVG strokes are driven by `--line-w-decor`
+    instead of a hardcoded `1`, pinned at 1x/2x.
+36. **The Persian @font-face format string Safari would skip.** The family was declared
+    `format('woff2-variations')`; it now declares `format('woff2')`, and only installed
+    weights are declared (100/200 are absent from the licensed family and reported as
+    such).
+37. **The loading audit raced the skeleton→content swap.** The check waited for any
+    `.skeleton-region`, then sampled after the inline swap had replaced it, so it
+    intermittently asserted against the resolved page. It now captures through a throttled
+    client navigation and waits for the variant's own selector (`.entry-row--compact`,
+    `.split`) inside `waitForFunction`.
 
 ## 7. What is *not* verified
 
-See `docs/LIMITATIONS.md` for the full list and reasoning. Summary: Shazde typography (not
-licensed here — Vazirmatn is used and the switch is drop-in), the real CMS and media CDN
-(shape-compatible mock instead), `next dev` hydration (sandbox HMR websocket — production
-hydration is verified), the CMS's real preview signature (the HMAC path is unit-tested), and
-any deployment (none was requested and none was performed).
+See `docs/LIMITATIONS.md` for the full list and reasoning. Summary: licensed Shazde files
+(the 300–900 weights are installed in this working copy and verified live in §8;
+redistributing them is the deployment's licensing decision, and 100/200 do not exist in
+the family), the real CMS and media CDN (the shape-compatible mock is the reproducible
+path; §8 records one live pass against `eshobe-cms`, and real media is still same-origin
+placeholders), `next dev` hydration (limited by the original sandbox websocket; §8 records
+a live dev-mode pass on another host), the CMS's real preview signature (the HMAC path is
+unit-tested), and any deployment (none was requested and none was performed).
+
+## 8. Live re-verification against eshobe-cms (2026-10-04)
+
+Beyond the mock topology above, the theme was re-run against the real **eshobe-cms** dev
+server (Payload 3, the seeded `studio.localhost` portfolio site) on a Windows host: theme on
+`localhost:3002`, tenant resolved by a site API key, system Chrome supplied through the new
+`ARCH2_CHROME_PATH` escape hatch.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Structural a11y | `a11y-audit.mjs --base http://localhost:3002 --paths …` | **11/11 pages clean** (the harness refreshes `docs/screenshots/live-cms/a11y-report.json` on every run and records its own `base`; the current copy is the newer mock-topology pass at 17/17) |
+| Interaction | `interaction-audit.mjs --base http://localhost:3002` | **9/9 checks pass** (the double-submit check files one real submission in the dev CMS; the failure case is intercepted, not sent) |
+| Production build | `npm run build` | compiles, all routes emitted |
+| Tests | `npm test` | **12 files, 108 tests** |
+| Manifest | the CMS's own `parseThemeManifestText` (platform contractVersion 1) | **accepted, no errors, no warnings** |
+| Routes | curl against the theme | `/`, `/projects`, `/projects/baagh-manzel`, `/education`, `/education/kargah-memari-paydar`, `/blog`, `/blog/first-post`, `/about`, `/contact`, `/search?q=…` → 200; unknown slug → real 404; `/en` → 404 because the site serves `fa` only |
+| Projects grid | browser computed styles at four widths | 2 columns at 390 and 768, 3 at 1024, 4 at 1440 |
+| Fonts | browser network + `document.fonts` | all seven installed Shazde weights (300–900) load 200; `body` resolves `Shazde` first |
+
+Since this pass the harnesses have grown: `npm test` is now **12 files / 120 tests** and
+`interaction-audit.mjs` runs **21 checks** (§2). The figures above are the state of the live
+pass, not today's limits.
+
+**Defects found and fixed by this live pass** (each now has a regression guard):
+
+1. **Search filtered the index by `_status`** — the CMS search index has no such field, so
+   the CMS answered 400 and the whole search page fell into the error boundary.
+   `searchPosts` no longer adds the filter (the index holds published documents only) and
+   `tests/content.test.ts` pins the exact query.
+2. **The error state had no `main`/`h1`** — the one surface a screen reader could not land
+   in or name. `ErrorState` (and the holding/unreachable states) now own `<main
+   id="content">` and an `h1`.
+3. **Tablet projects showed three columns** — the brief asks for two. The grid is now
+   2 / 2 / 3 / 4 at <1024 / 768 / 1024 / 1280; screenshots 06–07 predate the change.
+4. **The audits could not run off the sandbox image** — both now accept
+   `ARCH2_CHROME_PATH`, and the asset probe cache-busts so a revalidated (304) stylesheet
+   is re-fetched from the server instead of passing on the browser cache.
+
+Not covered by this pass: media on a real object-storage CDN, the CMS's real preview
+signature, and any deployment.

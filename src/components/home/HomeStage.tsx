@@ -54,6 +54,16 @@ const SESSION_KEY = 'arch2:entered'
  * real value without a cascading render, and storage being unavailable (private mode)
  * simply reports "not entered".
  */
+
+/**
+ * The stage's keyboard shortcut must never swallow a control's own key. Links, the
+ * Enter button and any other interactive target keep their native behaviour; only
+ * presses landing on the stage/background reveal the menu.
+ */
+const INTERACTIVE_TARGETS =
+  'a, button, input, select, textarea, summary, [contenteditable="true"], [role="button"], [role="link"], [role="menuitem"], [role="tab"], [tabindex]'
+const isInteractiveTarget = (target: EventTarget | null): boolean =>
+  target instanceof Element && target.closest(INTERACTIVE_TARGETS) !== null
 const subscribeStorage = (): (() => void) => () => {}
 const readEntered = (): boolean => {
   try {
@@ -80,12 +90,17 @@ export const HomeStage = ({
   const remembered = useSyncExternalStore(subscribeStorage, readEntered, () => false)
   const [entered, setEntered] = useState(false)
   const stageRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLElement>(null)
+  // Set when the reveal was requested from a control that disappears with the intro
+  // (the Enter button) or from the keyboard, so focus can land in the revealed menu.
+  const focusMenuOnOpen = useRef(false)
 
   // Returning to `/` in the same tab, or a site that disabled the intro, lands in the
   // stable menu state without an effect and without a hydration flash of the intro.
   const menuOpen = entered || remembered || !introEnabled
 
-  const enter = useCallback(() => {
+  const enter = useCallback((options?: { focusMenu?: boolean }) => {
+    if (options?.focusMenu) focusMenuOnOpen.current = true
     setEntered(true)
     try {
       window.sessionStorage.setItem(SESSION_KEY, '1')
@@ -93,6 +108,14 @@ export const HomeStage = ({
       /* storage unavailable — behaviour stays correct, just not remembered */
     }
   }, [])
+
+  // The Enter control and the keyboard shortcut unmount the affordances that were
+  // focused; hand focus to the first menu destination instead of leaving it on <body>.
+  useEffect(() => {
+    if (!menuOpen || !focusMenuOnOpen.current) return
+    focusMenuOnOpen.current = false
+    menuRef.current?.querySelector<HTMLElement>('a[href]')?.focus()
+  }, [menuOpen])
 
   // Bounded gesture handling: only while the intro is on screen.
   useEffect(() => {
@@ -113,9 +136,13 @@ export const HomeStage = ({
       if (touchStart - current > 24) enter()
     }
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
+      // A focused link or button owns its keys: Enter on the English link must navigate,
+      // Enter on the Enter button must run its own click handler.
+      if (isInteractiveTarget(event.target)) return
       if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown' || event.key === 'PageDown') {
         event.preventDefault()
-        enter()
+        enter({ focusMenu: true })
       }
     }
 
@@ -219,7 +246,7 @@ export const HomeStage = ({
         {/* Intro affordances: scroll cue + a real Enter control (never wheel-only). */}
         {!menuOpen ? (
           <div className="mt-10 flex flex-col items-center gap-4">
-            <button className="btn btn--quiet" onClick={enter} type="button">
+            <button className="btn btn--quiet" onClick={() => enter({ focusMenu: true })} type="button">
               {enterLabel}
             </button>
             <p className="type-caption">{scrollCue}</p>
@@ -265,6 +292,7 @@ export const HomeStage = ({
           aria-label={menuLabel}
           className="container-content pb-16"
           initial={{ opacity: 0 }}
+          ref={menuRef}
           transition={{ duration: fast }}
         >
           <Rule className="mb-2" />

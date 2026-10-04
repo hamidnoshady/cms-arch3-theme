@@ -9,10 +9,13 @@ import type { FormDoc } from '@/lib/cms/types'
  * The CMS-defined form's client behaviour.
  *
  * These are the promises the brief makes to a visitor: required fields are enforced with
- * visible, announced errors; the honeypot is invisible and silently absorbs a bot without
- * writing anything; a recoverable failure keeps what was typed; and a success is announced
- * rather than silently swapped in. The end-to-end version of this (a real browser against a
- * real server, including the double-submit guard) lives in `scripts/interaction-audit.mjs`.
+ * visible, announced errors; an invalid email is blocked with a field error tied to its
+ * control; the first invalid control takes focus; documented CMS field errors map back
+ * onto the fields; the honeypot is invisible and silently absorbs a bot without writing
+ * anything; a recoverable failure keeps what was typed; and an outcome is announced in a
+ * persistent live region rather than silently swapped in. The end-to-end version of this
+ * (a real browser against a real server, including the double-submit guard) lives in
+ * `scripts/interaction-audit.mjs`.
  */
 
 const form: FormDoc = {
@@ -86,6 +89,51 @@ describe('required-field validation', () => {
     await waitFor(() => expect(container.querySelector('[name="consent"]')?.getAttribute('aria-invalid')).toBe('true'))
     expect(posts).toHaveLength(0)
   })
+
+  it('blocks a malformed email with a tied field error and focuses the first invalid field', async () => {
+    const { container } = render(<CmsForm form={form} locale="fa" />)
+    fill(container, { email: 'not-an-email', message: 'سلام', name: 'نمونه' })
+    consent(container)
+    fireEvent.submit(container.querySelector('form') as Element)
+
+    await waitFor(() => expect(container.querySelector('[name="email"]')?.getAttribute('aria-invalid')).toBe('true'))
+    const email = container.querySelector('[name="email"]') as HTMLInputElement
+    expect(container.querySelector(`#${CSS.escape(email.getAttribute('aria-describedby') as string)}`)?.textContent).toContain('ایمیل')
+    expect(posts).toHaveLength(0)
+    // The first invalid control (declared order: email before message/name) is focused.
+    await waitFor(() => expect(document.activeElement).toBe(email))
+
+    // Correcting it clears the error and lets the submission through.
+    fill(container, { email: 'valid@example.com' })
+    await waitFor(() => expect(email.getAttribute('aria-invalid')).toBeNull())
+    fireEvent.submit(container.querySelector('form') as Element)
+    await waitFor(() => expect(posts).toHaveLength(1))
+  })
+
+  it('maps documented CMS field errors back onto the fields and keeps values', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response('{"errors":[{"field":"email","message":"نشانی ایمیل مورد پذیرش نیست."}]}', {
+          headers: { 'content-type': 'application/json' },
+          status: 400,
+        }),
+      ),
+    )
+    const { container } = render(<CmsForm form={form} locale="fa" />)
+    fill(container, { email: 'blocked@example.com', message: 'سلام', name: 'نمونه' })
+    consent(container)
+    fireEvent.submit(container.querySelector('form') as Element)
+
+    await waitFor(() =>
+      expect(container.querySelector('[name="email"]')?.getAttribute('aria-invalid')).toBe('true'),
+    )
+    const email = container.querySelector('[name="email"]') as HTMLInputElement
+    expect(container.querySelector(`#${CSS.escape(email.getAttribute('aria-describedby') as string)}`)?.textContent).toContain(
+      'مورد پذیرش نیست',
+    )
+    expect(email.value).toBe('blocked@example.com')
+  })
 })
 
 describe('submission', () => {
@@ -112,8 +160,10 @@ describe('submission', () => {
       ]),
     )
 
-    const live = await screen.findByText('پیام شما ثبت شد.')
-    expect(live.closest('[aria-live="polite"]')).not.toBeNull()
+    // The outcome is announced by the persistent live region *and* shown to sighted
+    // visitors; at least one copy must sit inside the live region.
+    const confirmed = await screen.findAllByText('پیام شما ثبت شد.')
+    expect(confirmed.some((node) => node.closest('[aria-live="polite"]') !== null)).toBe(true)
   })
 
   it('keeps what was typed when the CMS rejects the submission', async () => {
@@ -124,7 +174,9 @@ describe('submission', () => {
     const { container } = render(<CmsForm form={form} locale="fa" />)
     await complete(container)
 
-    expect(await screen.findByText(/ارسال فرم انجام نشد/)).not.toBeNull()
+    const failures = await screen.findAllByText(/ارسال فرم انجام نشد/)
+    expect(failures.length).toBeGreaterThan(0)
+    expect(failures.some((node) => node.closest('[aria-live="polite"]') !== null)).toBe(true)
     expect((container.querySelector('[name="email"]') as HTMLInputElement).value).toBe('a@example.com')
     expect((container.querySelector('[name="message"]') as HTMLTextAreaElement).value).toBe('سلام')
   })
@@ -142,7 +194,7 @@ describe('submission', () => {
 
     await waitFor(() => expect((container.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(true))
     release(new Response('{}', { status: 201 }))
-    await waitFor(() => expect(screen.getByText('پیام شما ثبت شد.')).toBeTruthy())
+    await waitFor(() => expect(screen.getAllByText('پیام شما ثبت شد.').length).toBeGreaterThan(0))
   })
 })
 
@@ -167,7 +219,7 @@ describe('honeypot', () => {
       fireEvent.submit(container.querySelector('form') as Element)
     })()
 
-    expect(await screen.findByText('پیام شما ثبت شد.')).toBeTruthy()
+    expect((await screen.findAllByText('پیام شما ثبت شد.')).length).toBeGreaterThan(0)
     expect(posts).toHaveLength(0)
   })
 })

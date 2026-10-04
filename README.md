@@ -6,10 +6,14 @@ linework, photography in colour, square corners, restrained motion, and a struct
 system that carries the layout instead of boxes.
 
 - The design brief this theme implements is transcribed in [`docs/SPEC.md`](./docs/SPEC.md).
+- Tokens, both line systems, layout primitives, breakpoints and the component inventory are
+  in [`docs/DESIGN-SYSTEM.md`](./docs/DESIGN-SYSTEM.md); font loading and weights are in
+  [`docs/TYPOGRAPHY.md`](./docs/TYPOGRAPHY.md).
 - Everything not verified, and every deliberate deviation, is in
   [`docs/LIMITATIONS.md`](./docs/LIMITATIONS.md).
 - What was tested, how to reproduce it, and the browser evidence is in
   [`docs/QA.md`](./docs/QA.md).
+- The CMS contract this theme is built against is [`docs/THEME_API.md`](./docs/THEME_API.md).
 
 **Nothing here is deployed.** No domain was changed and no site was published; the manifest
 deliberately declares no deployment strategy (see §Manifest).
@@ -60,7 +64,7 @@ npm run verify        # vendor:build → typecheck → lint → test → build
 ```
 
 `verify` includes lint — it is not skipped. Current state: typecheck clean, 0 lint errors,
-105 tests passing, production build succeeding. See `docs/QA.md` §2.
+120 tests passing, production build succeeding. See `docs/QA.md` §2.
 
 ## Configuration
 
@@ -86,11 +90,12 @@ credential — never from a visitor query parameter or body. Unknown hosts fail 
 
 ## Fonts
 
-- **Persian:** Vazirmatn Variable (OFL) ships in `public/fonts/`. Shazde 100–900 is the
-  designed family and is **not distributed here** (licensed). Drop the licensed
-  `Shazde-*.woff2` files into `public/fonts/shazde/` and the theme switches automatically;
-  missing weights are reported at boot and fall back to the nearest licensed weight, never a
-  synthesised one. See `public/fonts/shazde/README.md`.
+- **Persian:** Vazirmatn Variable (OFL) ships in `public/fonts/`. The licensed
+  **Shazde Pro** weights 300–900 are installed in `public/fonts/shazde/` (the family
+  contains no 100/200 cuts); drop a different licensed set in with the documented filenames
+  and the theme switches automatically. Missing weights are reported at boot and fall back
+  to the nearest licensed weight, never a synthesised one. See
+  `public/fonts/shazde/README.md` and [`docs/TYPOGRAPHY.md`](./docs/TYPOGRAPHY.md).
 - **English:** Inter Variable (OFL).
 - `npm run fonts` re-fetches the open fonts (needs network access to the font CDN).
 
@@ -128,13 +133,42 @@ all empty.
   and public-vs-preview.
 - `GET /api/health` reports ready only when the CMS's `contractVersion` matches this theme's.
 
+## Continuous integration and the release image
+
+Three workflows split the jobs by responsibility:
+
+| Workflow | Runs on | Does |
+| --- | --- | --- |
+| `.github/workflows/checks.yml` | called by the other two | typecheck → lint → tests → production build |
+| `.github/workflows/ci.yml` | push to `main`, pull requests, manual | the check suite, the browser audits against the mock topology (`:3200` + slow `:3300`), and a **no-push** image build |
+| `.github/workflows/publish-image.yml` | `v*` tags, manual dispatch | the check suite, then build + push to GHCR |
+
+The publisher is deliberately a separate workflow: a check run can never publish an image,
+and an image is never built from a tag that fails the checks. It tags the image
+`X.Y.Z` and `X.Y` from the release tag plus `sha-<commit>`; a manual dispatch adds `edge`.
+
+To build the image locally the same way CI does:
+
+```bash
+docker build -t cms-arch3-theme .
+docker run --rm -p 3000:3000 \
+  -e ESHOBE_CMS_URL=http://host.docker.internal:3001 \
+  -e ESHOBE_PUBLIC_ORIGIN=http://127.0.0.1:3000 \
+  cms-arch3-theme
+```
+
+The image serves on `:3000`, ships a `HEALTHCHECK` on `/api/health`, runs as a non-root
+user, and never includes `public/qa` fixtures.
+
 ## Release and rollback
 
 The manifest currently declares **no** `deployment` block, because this theme has never been
 deployed: claiming `registry_image` with an image repository that does not exist would be a
 false claim, and the parser requires one for that strategy. To release:
 
-1. Build and publish an image for this repository, then add to `eshobe.theme.json`:
+1. Tag a commit from green `main` (`git tag v0.1.0 && git push --tags`). The publisher
+   runs the checks and pushes `ghcr.io/<owner>/<image>:0.1.0`, `:0.1` and `:sha-<commit>`.
+2. Add to `eshobe.theme.json`:
    ```json
    "deployment": {
      "strategy": "registry_image",
@@ -143,12 +177,11 @@ false claim, and the parser requires one for that strategy. To release:
      "registryImageRepository": "ghcr.io/<owner>/<image>"
    }
    ```
-   (or switch to `strategy: "coolify_build"` and let the platform build the repo).
-2. Tag the release (`git tag v0.1.0 && git push --tags`) and set `previewUrl` if you want a
-   preview link surfaced in the CMS.
-3. **Roll back by deploying the previous tag** — the theme is versioned by commit and tag,
-   and the CMS records which ref a site was built from. Never roll back by editing a tag in
-   place.
+   (or switch to `strategy: "coolify_build"` and let the platform build the repo). Set
+   `previewUrl` if you want a preview link surfaced in the CMS.
+3. Deploy one of the immutable tags. **Roll back by deploying the previous tag** — the
+   theme is versioned by commit and tag, and the CMS records which ref a site was built
+   from. Never roll back by editing a tag in place.
 
 ## Security notes
 

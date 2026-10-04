@@ -36,14 +36,15 @@
     padding-block: var(--space-24);
   }
 
-  /* Projects: 4 → 3 → 2 columns, and TWO cards per row on mobile by design. */
+  /* Projects: TWO cards per row on mobile AND tablet, three at medium desktop,
+     four on wide desktop (the brief's 2/2/3/4 ramp). */
   .grid-projects {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--grid-gap);
   }
 
-  @media (min-width: 48rem) {
+  @media (min-width: 64rem) {
     .grid-projects {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }

@@ -9,7 +9,7 @@ import { getPageBySlug } from '@/lib/cms/endpoints'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { pagePath } from '@/lib/runtime'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
-import { resolveThemeRoute } from '@/lib/routing/resolve'
+import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { href } from '@/lib/routing/locale'
@@ -47,7 +47,7 @@ export const PageView = async ({ locale, slug }: { locale: Locale; slug: string 
   const t = dictionary(locale)
 
   const heroMedia = isMedia(page.hero?.media) ? page.hero.media : null
-  const route = resolveThemeRoute([slug], ctx.site)
+  const route = resolveLocaleRoute([slug], locale, ctx.site)
   const crumbs = breadcrumbsFor(route, ctx.site, page.title)
   const showHero = page.hero?.type !== 'none' && page.hero?.type !== 'lowImpact'
 

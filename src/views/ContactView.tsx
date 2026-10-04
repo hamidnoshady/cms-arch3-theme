@@ -12,7 +12,7 @@ import { getSectionPage } from '@/lib/cms/content'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { THEME_ROUTES } from '@/lib/routing/paths'
-import { resolveThemeRoute } from '@/lib/routing/resolve'
+import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { isMedia } from '@/lib/utils/media'
@@ -47,7 +47,7 @@ export const ContactView = async ({ locale }: { locale: Locale }) => {
   const ctx = outcome.ctx
   const t = dictionary(locale)
   const { page } = await getSectionPage('contact', ctx)
-  const route = resolveThemeRoute(['contact'], ctx.site)
+  const route = resolveLocaleRoute(['contact'], locale, ctx.site)
   const crumbs = breadcrumbsFor(route, ctx.site)
 
   // The form comes from a `formBlock` on the page, else from the `contactForm` slot.

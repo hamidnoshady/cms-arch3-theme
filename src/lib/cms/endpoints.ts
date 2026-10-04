@@ -269,21 +269,20 @@ export type SearchHit = {
   meta?: { description?: null | string } | null
 }
 
-export const searchPosts = async (
-  query: string,
-  locale: Locale,
-  draft = false,
-): Promise<SearchHit[]> => {
+export const searchPosts = async (query: string, locale: Locale): Promise<SearchHit[]> => {
   const env = cmsEnv()
   const result = await cmsFetchOptional<FindResult<SearchHit>>('/api/search', {
-    draft,
     locale,
     params: {
       depth: 0,
       fallbackLocale: false,
       limit: 20,
       locale,
-      where: { and: [{ title: { like: query } }, publishedFilter(draft)] },
+      // No `_status` filter here: the search index is a copy of *published* documents
+      // (the CMS plugin does not sync drafts) and the index collection has no `_status`
+      // field at all — querying it is a 400 QueryError, not an empty result. Tenant
+      // scoping is the CMS's, per the headless contract.
+      where: { and: [{ title: { like: query } }] },
     },
     tags: [cmsTag(env, 'search', locale)],
   })

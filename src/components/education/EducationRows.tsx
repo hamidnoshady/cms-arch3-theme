@@ -7,7 +7,7 @@ import type { PostDoc } from '@/lib/cms/types'
 import { dateText } from '@/lib/utils/dates'
 import { cn } from '@/lib/utils/cn'
 import { isMedia } from '@/lib/utils/media'
-import { truncate } from '@/lib/utils/text'
+import { readingTimeLabel, truncate } from '@/lib/utils/text'
 
 /**
  * Education entries are a *different composition* from project cards: one restrained
@@ -49,7 +49,7 @@ export const EducationFeatured = ({
           <p className="type-meta mt-5 flex flex-wrap items-center gap-x-4 gap-y-1">
             {category ? <span>{category}</span> : null}
             {dateText(post.publishedAt, context.locale) ? <span>{dateText(post.publishedAt, context.locale)}</span> : null}
-            {minutes > 0 ? <span>{minutesLabel(minutes, context.locale)}</span> : null}
+            {minutes > 0 ? <span>{readingTimeLabel(minutes, context.locale)}</span> : null}
           </p>
         </div>
         <span className="frame block" style={{ aspectRatio: media ? undefined : '4 / 3' }}>
@@ -99,14 +99,10 @@ export const EducationRow = ({
         <p className={cn('type-meta mt-2 flex flex-wrap items-center gap-x-4 gap-y-1')}>
           {category ? <span>{category}</span> : null}
           {dateText(post.publishedAt, context.locale) ? <span>{dateText(post.publishedAt, context.locale)}</span> : null}
-          {minutes > 0 ? <span>{minutesLabel(minutes, context.locale)}</span> : null}
+          {minutes > 0 ? <span>{readingTimeLabel(minutes, context.locale)}</span> : null}
         </p>
       </div>
     </li>
   )
 }
 
-export const minutesLabel = (minutes: number, locale: string): string => {
-  if (minutes <= 0) return ''
-  return locale === 'fa' ? `${minutes} دقیقه مطالعه` : `${minutes} min read`
-}
