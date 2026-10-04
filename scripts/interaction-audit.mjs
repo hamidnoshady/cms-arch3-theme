@@ -12,6 +12,14 @@ import puppeteer from 'puppeteer-core'
  * on Escape, restores focus, unlocks scrolling and closes on navigation, and a form that
  * cannot be submitted twice.
  *
+ * It also pins the behaviours a structural a11y pass cannot see: the language link must
+ * stay reachable before the menu is entered, English archive controls and breadcrumbs
+ * must remain English, search hits must open the section that owns the document,
+ * wrong-section detail URLs must redirect, the drawer must open from the correct physical
+ * edge with bounded motion, an invalid email must be blocked inline, long card metadata
+ * must not collapse the title, the licensed Shazde weights must be active, and the
+ * decorative stroke token must drive mark strokes at 1x/2x.
+ *
  *   node scripts/interaction-audit.mjs [--base http://127.0.0.1:3200] [--out docs/screenshots]
  *
  * Writes `interaction-report.json` and exits non-zero on failure.
@@ -24,6 +32,8 @@ const argOf = (name, fallback) => {
 
 const BASE = argOf('--base', process.env.AUDIT_BASE ?? 'http://127.0.0.1:3200')
 const OUT = argOf('--out', 'docs/screenshots')
+/** Optional slow-CMS instance (qa-servers.sh starts one on 3300); skipped when absent. */
+const SLOW_BASE = argOf('--slow-base', process.env.AUDIT_SLOW_BASE ?? 'http://127.0.0.1:3300')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -56,7 +66,11 @@ const assertAssetsServed = async (page, base) => {
     document.querySelector('link[rel="stylesheet"]')?.getAttribute('href') ?? '',
   )
   if (!href) return
-  const response = await page.goto(new URL(href, base).toString(), { waitUntil: 'domcontentloaded' })
+  // Cache-buster: a cached stylesheet revalidates with 304, which proves the browser
+  // cache, not the server. The asset itself has to come back 200 + text/css.
+  const probe = new URL(href, base)
+  probe.searchParams.set('arch2-audit', Date.now().toString(36))
+  const response = await page.goto(probe.toString(), { waitUntil: 'domcontentloaded' })
   const type = response?.headers()['content-type'] ?? ''
   if (response?.status() !== 200 || !type.includes('text/css')) {
     throw new Error(
@@ -66,11 +80,17 @@ const assertAssetsServed = async (page, base) => {
 }
 
 const main = async () => {
-  const { default: chromium } = await import('@sparticuz/chromium')
+  let executablePath = process.env.ARCH2_CHROME_PATH
+  let env = process.env
+  if (!executablePath) {
+    const { default: chromium } = await import('@sparticuz/chromium')
+    executablePath = await chromium.executablePath()
+    env = { ...process.env, LD_LIBRARY_PATH: [join(tmpdir(), 'arch2-chromium-libs', 'lib'), process.env.LIBRARY_PATH].filter(Boolean).join(':') }
+  }
   const browser = await puppeteer.launch({
     args: ['--no-sandbox'],
-    env: { ...process.env, LD_LIBRARY_PATH: [join(tmpdir(), 'arch2-chromium-libs', 'lib'), process.env.LIBRARY_PATH].filter(Boolean).join(':') },
-    executablePath: await chromium.executablePath(),
+    env,
+    executablePath,
     headless: true,
   })
   await assertAssetsServed(await browser.newPage(), BASE)
@@ -239,6 +259,394 @@ const main = async () => {
       throw new Error(`values were lost: ${JSON.stringify(values)}`)
     }
     return 'values preserved after a failure'
+  })
+
+  // ------------------------------------------------------- language and locale
+  await check('home: the language link navigates before the menu is entered', async (page) => {
+    await page.setViewport({ width: 1440, height: 900 })
+    await page.goto(`${BASE}/`, { waitUntil: 'load' })
+    await loaded(page, '.stage .btn')
+    const link = await page.$('a[hreflang="en"]')
+    if (!link) throw new Error('no English language link on the entrance')
+    await link.focus()
+    await page.keyboard.press('Enter')
+    await sleep(1500)
+    const url = page.url()
+    if (!url.includes('/en')) throw new Error(`language link did not navigate (still ${url})`)
+    if (await page.$('.menu-row__label')) throw new Error('the stage shortcut opened the menu instead of following the link')
+    return `navigated to ${url.replace(BASE, '')}`
+  })
+
+  await check('locale: English archive controls and breadcrumbs stay in English', async (page) => {
+    await page.setViewport({ width: 1440, height: 900 })
+    const problems = []
+    for (const path of ['/en/projects', '/en/education', '/en/blog', '/en/search']) {
+      await page.goto(`${BASE}${path}`, { waitUntil: 'load' })
+      await loaded(page, 'main')
+      const state = await page.evaluate(() => ({
+        actions: [...document.querySelectorAll('form[action]')].map((form) => form.getAttribute('action')),
+        chips: [...document.querySelectorAll('.filter-chip')].map((chip) => chip.getAttribute('href')),
+        crumbs: [...document.querySelectorAll('.breadcrumbs li')].map((li) => li.textContent.trim()),
+      }))
+      for (const href of [...state.chips, ...state.actions]) {
+        if (href && !href.startsWith('/en')) problems.push(`${path} → ${href}`)
+      }
+      if (state.crumbs.some((crumb) => /[\u0600-\u06FF]/u.test(crumb))) problems.push(`${path} has a Persian breadcrumb`)
+    }
+    if (problems.length > 0) throw new Error(problems.join('; '))
+    return 'filters, search actions and breadcrumbs all stay under /en'
+  })
+
+  await check('search: hits link to their real section and open its composition', async (page) => {
+    await page.setViewport({ width: 1440, height: 900 })
+    await page.goto(`${BASE}/search?q=${encodeURIComponent('نور')}`, { waitUntil: 'load' })
+    await loaded(page, '.entry-row')
+    const hrefs = await page.$$eval('.entry-row a', (els) => els.map((el) => el.getAttribute('href')))
+    const project = hrefs.find((href) => href?.includes('/projects/'))
+    const education = hrefs.find((href) => href?.includes('/education/'))
+    if (!project || !education) throw new Error(`hits were not section-resolved: ${hrefs.join(', ')}`)
+    await page.goto(`${BASE}${project}`, { waitUntil: 'load' })
+    await loaded(page, 'main')
+    const projectComposition = await page.evaluate(() => ({
+      facts: Boolean(document.querySelector('main section[aria-label] dl')),
+      blogLead: Boolean(document.querySelector('.split')),
+    }))
+    if (!projectComposition.facts || projectComposition.blogLead) {
+      throw new Error(`project hit did not open the project composition: ${JSON.stringify(projectComposition)}`)
+    }
+    return `${project} opens the project detail`
+  })
+
+  await check('detail: wrong-section URLs redirect to the canonical section', async (page) => {
+    const expectRedirect = async (from, to) => {
+      await page.goto(`${BASE}${from}`, { waitUntil: 'load' })
+      await sleep(600)
+      const url = page.url().replace(BASE, '')
+      if (!url.endsWith(to)) throw new Error(`${from} → ${url}, expected ${to}`)
+    }
+    await expectRedirect('/blog/workshop-light', '/education/workshop-light')
+    await expectRedirect('/education/notes-on-lines', '/blog/notes-on-lines')
+    return 'both mismatched detail URLs redirected'
+  })
+
+  // --------------------------------------------------------------- taxonomy
+  await check('blog: category controls filter and reject other sections', async (page) => {
+    await page.setViewport({ width: 1440, height: 900 })
+    await page.goto(`${BASE}/blog?category=notes`, { waitUntil: 'load' })
+    await loaded(page, 'main')
+    // A small filtered archive renders a lead + latest notes, not `.entry-row`s, so count
+    // any archive item: the split's links plus the rows below it.
+    const items = () => document.querySelectorAll('.split a[href], .entry-row').length
+    const state = await page.evaluate(() => ({
+      active: [...document.querySelectorAll('.filter-chip[aria-current="true"]')].map((chip) => chip.textContent.trim()),
+      items: document.querySelectorAll('.split a[href], .entry-row').length,
+    }))
+    if (state.active.length !== 1) throw new Error(`no single selected blog filter: ${JSON.stringify(state.active)}`)
+    if (state.items === 0) throw new Error('the blog filter returned no entries')
+    await page.goto(`${BASE}/blog?category=residential`, { waitUntil: 'load' })
+    await loaded(page, 'main')
+    const crossed = await page.evaluate(items)
+    if (crossed !== 0) throw new Error(`a project category returned ${crossed} blog entries`)
+    return `notes filter selected; a cross-section category is empty`
+  })
+
+  // ------------------------------------------------------------ drawer geometry
+  await check('drawer: each locale opens from its own edge with bounded motion', async (page) => {
+    const measure = async (path, expected) => {
+      await page.setViewport({ width: 390, height: 844 })
+      await page.goto(`${BASE}${path}`, { waitUntil: 'load' })
+      await loaded(page, 'header')
+      await page.click('button[aria-label]')
+      await page.waitForSelector('.drawer__panel', { timeout: 5000 })
+      const during = await page.evaluate(() => {
+        const panel = document.querySelector('.drawer__panel')
+        return {
+          animations: panel.getAnimations().map((animation) => ({
+            duration: animation.effect.getTiming().duration,
+            name: animation.animationName,
+          })),
+          rows: [...document.querySelectorAll('.drawer__row')].slice(0, 3).map((row) => ({
+            delay: getComputedStyle(row).animationDelay,
+            name: getComputedStyle(row).animationName,
+          })),
+        }
+      })
+      await sleep(500)
+      const settled = await page.evaluate(() => {
+        const panel = document.querySelector('.drawer__panel')
+        const rect = panel.getBoundingClientRect()
+        const styles = getComputedStyle(panel)
+        // Compare against the body's layout edge: `scrollbar-gutter: stable` may reserve
+        // a viewport gutter that no fixed panel should cover.
+        const bodyRect = document.body.getBoundingClientRect()
+        return {
+          dir: panel.getAttribute('dir'),
+          edgeEnd: Number.parseFloat(styles.borderInlineEndWidth) || 0,
+          edgeLeft: bodyRect.left,
+          edgeRight: bodyRect.right,
+          edgeStart: Number.parseFloat(styles.borderInlineStartWidth) || 0,
+          left: rect.left,
+          right: rect.right,
+        }
+      })
+      const animation = during.animations.find((entry) => entry.name.includes(expected.motion))
+      if (!animation) throw new Error(`${path}: panel animation ${JSON.stringify(during.animations)}`)
+      if (animation.duration < 250 || animation.duration > 350) {
+        throw new Error(`${path}: panel travel is ${animation.duration}ms, outside 250–350ms`)
+      }
+      if (settled.dir !== expected.dir) throw new Error(`${path}: panel dir is ${settled.dir}`)
+      const atEdge = expected.side === 'right'
+        ? Math.abs(settled.right - settled.edgeRight) < 1.5
+        : Math.abs(settled.left - settled.edgeLeft) < 1.5
+      if (!atEdge) {
+        throw new Error(`${path}: panel sits at ${settled.left}–${settled.right}, layout edge ${settled.edgeLeft}–${settled.edgeRight}`)
+      }
+      if (!(settled.edgeEnd > 0 && settled.edgeStart === 0)) throw new Error(`${path}: divider is not on the inner edge`)
+      if (during.rows.length >= 2) {
+        if (!during.rows.every((row) => row.name === 'drawer-row-in')) {
+          throw new Error(`${path}: drawer rows are not animated (${during.rows.map((row) => row.name).join(', ')})`)
+        }
+        if (during.rows[0].delay === during.rows[1].delay) throw new Error(`${path}: drawer rows do not stagger`)
+      }
+      return `${settled.dir} ${expected.side} edge, ${animation.duration}ms`
+    }
+    const fa = await measure('/projects', { dir: 'rtl', motion: 'rtl', side: 'right' })
+    const en = await measure('/en/projects', { dir: 'ltr', motion: 'ltr', side: 'left' })
+    return `fa: ${fa}; en: ${en}`
+  })
+
+  // ------------------------------------------------------------------- forms
+  await check('contact: an invalid email is blocked inline and posts nothing', async (page) => {
+    await page.setViewport({ width: 1440, height: 900 })
+    const posts = []
+    page.on('request', (request) => {
+      if (request.url().includes('/api/form-submissions') && request.method() === 'POST') posts.push(request.url())
+    })
+    await page.goto(`${BASE}/contact`, { waitUntil: 'load' })
+    await loaded(page, 'form')
+    await page.type('[name="name"]', 'نمونه')
+    await page.type('[name="email"]', 'not-an-email')
+    await page.type('[name="message"]', 'متن نمونه')
+    const consent = await page.$('[name="consent"]')
+    if (consent) await consent.click()
+    await page.click('button[type="submit"]')
+    await sleep(400)
+    const state = await page.evaluate(() => {
+      const email = document.querySelector('[name="email"]')
+      const describedBy = email?.getAttribute('aria-describedby')
+      return {
+        error: describedBy ? document.querySelector(`#${CSS.escape(describedBy)}`)?.textContent ?? '' : '',
+        invalid: email?.getAttribute('aria-invalid'),
+      }
+    })
+    if (state.invalid !== 'true' || !state.error.includes('ایمیل')) {
+      throw new Error(`invalid email not blocked inline: ${JSON.stringify(state)}`)
+    }
+    if (posts.length !== 0) throw new Error('an invalid email reached the submission endpoint')
+    await page.focus('[name="email"]')
+    await page.keyboard.down('Control')
+    await page.keyboard.press('KeyA')
+    await page.keyboard.up('Control')
+    await page.type('[name="email"]', 'valid@example.com')
+    await page.click('button[type="submit"]')
+    await sleep(1200)
+    if (posts.length !== 1) throw new Error(`a corrected email did not submit (${posts.length} POSTs)`)
+    return 'blocked inline, then submitted after correction'
+  })
+
+  // ------------------------------------------------------- responsive captions
+  await check('projects: long card metadata stays readable at 390px', async (page) => {
+    await page.setViewport({ width: 390, height: 844 })
+    await page.goto(`${BASE}/projects`, { waitUntil: 'load' })
+    await loaded(page, '.card')
+    const measured = await page.evaluate(() => {
+      const card = document.querySelector('.card')
+      const title = card.querySelector('.card__title')
+      const meta = card.querySelector('.card__meta')
+      title.textContent = 'خانه‌ای با نام بسیار طولانی در منطقه شمال غرب — نمونه'
+      if (meta) meta.textContent = 'تهران، منطقه شمال غرب — ۱۴۰۴'
+      const cardRect = card.getBoundingClientRect()
+      const titleRect = title.getBoundingClientRect()
+      const metaRect = meta.getBoundingClientRect()
+      return {
+        cardWidth: cardRect.width,
+        documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        metaInside: metaRect.left >= cardRect.left - 1 && metaRect.right <= cardRect.right + 1,
+        overflowX: card.scrollWidth - card.clientWidth,
+        titleWidth: titleRect.width,
+      }
+    })
+    if (measured.titleWidth < 100) throw new Error(`long metadata collapsed the title to ${Math.round(measured.titleWidth)}px`)
+    if (measured.overflowX > 1) throw new Error(`the card overflows by ${measured.overflowX}px`)
+    if (!measured.metaInside) throw new Error('metadata escaped its card')
+    if (measured.documentOverflow > 1) throw new Error(`the document overflows by ${measured.documentOverflow}px`)
+    return `title ${Math.round(measured.titleWidth)}px in a ${Math.round(measured.cardWidth)}px card, no overflow`
+  })
+
+  // ---------------------------------------------------------------- typography
+  await check('fonts: the licensed Shazde weights are installed and active', async (page) => {
+    await page.setViewport({ width: 1440, height: 900 })
+    await page.goto(`${BASE}/projects`, { waitUntil: 'load' })
+    await loaded(page, '.card')
+    const fonts = await page.evaluate(async () => {
+      await document.fonts.ready
+      const faces = [...document.fonts].filter((face) => face.family.includes('Shazde')).map((face) => face.weight)
+      return {
+        active: document.fonts.check('400 16px Shazde'),
+        bodyFamily: getComputedStyle(document.body).fontFamily,
+        faces: [...new Set(faces)].sort(),
+      }
+    })
+    if (!fonts.active) throw new Error(`Shazde is declared but not active (body: ${fonts.bodyFamily})`)
+    for (const weight of ['300', '400', '500', '600', '700', '800', '900']) {
+      if (!fonts.faces.includes(weight)) throw new Error(`missing Shazde weight ${weight}: ${fonts.faces.join(', ')}`)
+    }
+    return `weights ${fonts.faces.join(', ')}`
+  })
+
+  await check('lines: decorative strokes follow the decorative token at 1x and 2x', async (page) => {
+    const read = async (scale) => {
+      await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: scale })
+      await page.goto(`${BASE}/projects`, { waitUntil: 'load' })
+      await loaded(page, '.card')
+      return page.evaluate(() => ({
+        mark: getComputedStyle(document.querySelector('.mark svg')).strokeWidth,
+        rule: getComputedStyle(document.querySelector('.rule-h')).blockSize,
+      }))
+    }
+    const at1x = await read(1)
+    const at2x = await read(2)
+    if (at1x.mark !== '1px') throw new Error(`1x decorative stroke is ${at1x.mark}`)
+    if (at2x.mark !== '0.5px') throw new Error(`2x decorative stroke is ${at2x.mark}`)
+    if (at1x.rule !== '1px' || at2x.rule !== '0.5px') throw new Error(`structural rule drifted: ${at1x.rule}/${at2x.rule}`)
+    return `decorative ${at1x.mark} → ${at2x.mark}; structural ${at1x.rule} → ${at2x.rule}`
+  })
+
+  // --------------------------------------------------- loading + reduced motion
+  await check('reduced motion: the drawer is immediate but still operable', async (page) => {
+    await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
+    await page.setViewport({ width: 390, height: 844 })
+    await page.goto(`${BASE}/projects`, { waitUntil: 'load' })
+    await loaded(page, 'header')
+    await page.click('button[aria-label]')
+    await page.waitForSelector('.drawer__panel', { timeout: 5000 })
+    const state = await page.evaluate(() => {
+      const panel = document.querySelector('.drawer__panel')
+      const rows = [...document.querySelectorAll('.drawer__row')]
+      return {
+        panelAnimation: getComputedStyle(panel).animationName,
+        rowAnimations: rows.map((row) => getComputedStyle(row).animationName),
+        rows: rows.length,
+        skeletonAnimation: document.querySelector('.skeleton-region')
+          ? getComputedStyle(document.querySelector('.skeleton-region')).animationName
+          : 'absent',
+      }
+    })
+    if (state.panelAnimation !== 'none') throw new Error(`panel still animates: ${state.panelAnimation}`)
+    if (!state.rowAnimations.every((name) => name === 'none')) throw new Error('row stagger is not disabled')
+    if (state.skeletonAnimation !== 'none' && state.skeletonAnimation !== 'absent') {
+      throw new Error(`skeleton still pulses: ${state.skeletonAnimation}`)
+    }
+    if (state.rows === 0) throw new Error('drawer rows are missing under reduced motion')
+    return 'panel, rows and skeleton are static; drawer still opens'
+  })
+
+  await check('loading: slow archive navigation keeps the real header and its own composition', async (page) => {
+    const reachable = await fetch(`${SLOW_BASE}/`, { signal: AbortSignal.timeout(2500) })
+      .then((response) => response.ok)
+      .catch(() => false)
+    if (!reachable) return `skipped — no slow-CMS theme at ${SLOW_BASE}`
+
+    await page.setViewport({ width: 1440, height: 900 })
+
+    // Capture through a throttled *client* navigation, the path a visitor actually meets
+    // a skeleton on: the prefetched segment boundary paints while the data request is in
+    // flight. A full page load streams fallback and resolved content in one response, so
+    // the inline swap can land before a script reads the fallback, and the server's fetch
+    // cache makes a repeat load instant. The wait is scoped to the variant's own selector
+    // — never the root boundary — and the sample runs atomically inside `waitForFunction`.
+    const captureSkeleton = async ({ from, target, selector, sample }) => {
+      await page.goto(`${SLOW_BASE}${from}`, { waitUntil: 'load', timeout: 60000 })
+      await loaded(page, 'header')
+      const client = await page.createCDPSession()
+      await client.send('Network.enable')
+      await client.send('Network.emulateNetworkConditions', {
+        downloadThroughput: (500 * 1024) / 8,
+        latency: 400,
+        offline: false,
+        uploadThroughput: (500 * 1024) / 8,
+      })
+      try {
+        const clicked = await page.evaluate((href) => {
+          const link = [...document.querySelectorAll(`a[href="${href}"]`)].find((node) => {
+            const rect = node.getBoundingClientRect()
+            return rect.width > 0 && rect.height > 0
+          })
+          if (!link) return false
+          link.click()
+          return true
+        }, target)
+        if (!clicked) throw new Error(`no reachable link from ${from} to ${target}`)
+        await page.waitForSelector(selector, { timeout: 20000 })
+        const handle = await page.waitForFunction(sample, { polling: 'raf', timeout: 5000 })
+        return await handle.jsonValue()
+      } finally {
+        await client
+          .send('Network.emulateNetworkConditions', {
+            downloadThroughput: -1,
+            latency: 0,
+            offline: false,
+            uploadThroughput: -1,
+          })
+          .catch(() => {})
+      }
+    }
+
+    const education = await captureSkeleton({
+      from: '/blog',
+      target: '/education',
+      selector: '.skeleton-region .entry-row--compact',
+      sample: () => {
+        const region = document.querySelector('.skeleton-region')
+        if (!region || !region.querySelector('.entry-row--compact')) return false
+        return {
+          featured: Boolean(region.querySelector(':scope > div.grid')),
+          heading: document.querySelector('h1')?.textContent?.trim() ?? '',
+          label: region.querySelector('.sr-only')?.textContent?.trim() ?? '',
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          rows: region.querySelectorAll('.entry-row--compact').length,
+        }
+      },
+    })
+    if (education.heading !== 'آموزش') throw new Error(`education header changed while loading: “${education.heading}”`)
+    if (!education.featured || education.rows < 3) {
+      throw new Error(`education skeleton lost its composition: ${JSON.stringify(education)}`)
+    }
+    if (!education.label.includes('بارگذاری')) throw new Error(`education loading label: “${education.label}”`)
+    if (education.overflow > 1) throw new Error(`education skeleton overflows by ${education.overflow}px`)
+
+    const blog = await captureSkeleton({
+      from: '/projects',
+      target: '/blog',
+      selector: '.skeleton-region .split',
+      sample: () => {
+        const region = document.querySelector('.skeleton-region')
+        if (!region || !region.querySelector('.split')) return false
+        return {
+          divider: Boolean(region.querySelector('.split__divider')),
+          heading: document.querySelector('h1')?.textContent?.trim() ?? '',
+          label: region.querySelector('.sr-only')?.textContent?.trim() ?? '',
+          rows: region.querySelectorAll('.entry-row').length,
+          split: true,
+        }
+      },
+    })
+    if (blog.heading !== 'یادداشت‌ها') throw new Error(`blog header changed while loading: “${blog.heading}”`)
+    if (!blog.divider || blog.rows < 2) {
+      throw new Error(`blog skeleton lost its composition: ${JSON.stringify(blog)}`)
+    }
+    if (!blog.label.includes('بارگذاری')) throw new Error(`blog loading label: “${blog.label}”`)
+    return `education header + featured + ${education.rows} rows; blog lead/latest split + ${blog.rows} rows`
   })
 
   await browser.close()

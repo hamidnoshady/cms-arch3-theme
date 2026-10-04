@@ -21,8 +21,15 @@ export const ContentContainer = ({
   as: Tag = 'div',
   children,
   className,
+  id,
 }: {
   as?: 'div' | 'footer' | 'header' | 'main' | 'nav' | 'section'
   children: ReactNode
   className?: string
-}) => <Tag className={cn('container-content', className)}>{children}</Tag>
+  /** Usually `content`, so the shell's skip link has one target on every state. */
+  id?: string
+}) => (
+  <Tag className={cn('container-content', className)} id={id}>
+    {children}
+  </Tag>
+)

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getPageBySlug, getPostById, getPostBySlug } from '@/lib/cms/endpoints'
+import { getPageBySlug, getPostById, getPostBySlug, searchPosts } from '@/lib/cms/endpoints'
+import { getArchive, getSectionCategories, searchHrefs } from '@/lib/cms/content'
 import { FIXTURE_POSTS } from '@/lib/cms/fixtures.data'
 import { navLinks } from '@/lib/routing/nav'
 import type { SiteContext } from '@/lib/cms/context'
@@ -144,6 +145,19 @@ describe('document reads are single-locale', () => {
     expect(params.get('fallbackLocale')).toBe('false')
   })
 
+  it('never filters the search index by _status — the index has no such field', async () => {
+    // The live CMS answers a `_status` filter on `/api/search` with a 400 QueryError,
+    // which surfaced as the whole search page falling into the error boundary. The index
+    // holds published documents only, so the theme must not add the filter at all.
+    stubFetch({ docs: [] })
+    await searchPosts('نور', 'fa')
+
+    const params = queryOf(calls[0]!)
+    expect(new URL(calls[0]!).pathname).toBe('/api/search')
+    expect(params.get('where[and][0][title][like]')).toBe('نور')
+    expect(params.get('where[and][1][_status][equals]')).toBeNull()
+  })
+
   it('sends the site credential in a header, never in the URL', async () => {
     const seen: Record<string, string> = {}
     vi.stubGlobal('fetch', async (input: string | URL, init?: RequestInit) => {
@@ -159,6 +173,50 @@ describe('document reads are single-locale', () => {
   it('treats a 404 document read as missing rather than as a failure', async () => {
     vi.stubGlobal('fetch', async () => new Response('{"errors":[{"message":"not found"}]}', { headers: { 'content-type': 'application/json' }, status: 404 }))
     await expect(getPostBySlug('missing', 'fa', false)).resolves.toBeNull()
+  })
+})
+
+describe('archive scoping and search destinations', () => {
+  it('rejects a category from another section instead of crossing sections', async () => {
+    // `workshops` lives under education; asking for it on the projects archive must
+    // yield the empty state, never education entries rendered as project cards.
+    const crossed = await getArchive(ctx('fa'), { categorySlug: 'workshops', section: 'projects' })
+    expect(crossed.docs).toEqual([])
+    expect(crossed.totalDocs).toBe(0)
+
+    // The archive's own categories still filter normally.
+    const residential = await getArchive(ctx('fa'), { categorySlug: 'residential', section: 'projects' })
+    expect(residential.docs.length).toBeGreaterThan(0)
+    expect(
+      residential.docs.every((post) => (post.categories ?? []).includes('cat-residential')),
+    ).toBe(true)
+  })
+
+  it('scopes blog filters to the blog and rejects project/education categories', async () => {
+    await expect(getArchive(ctx('fa'), { categorySlug: 'residential', section: 'blog' })).resolves.toMatchObject({
+      docs: [],
+      totalDocs: 0,
+    })
+    const notes = await getArchive(ctx('fa'), { categorySlug: 'notes', section: 'blog' })
+    expect(notes.docs.length).toBeGreaterThan(0)
+    expect(notes.totalDocs).toBe(notes.docs.length)
+  })
+
+  it('offers the unbound blog its real top-level categories, not an always-empty list', async () => {
+    const section = await getSectionCategories('blog', ctx('fa'))
+    expect(section.root).toBeNull()
+    expect(section.children.map((child) => child.slug)).toEqual(['notes'])
+    expect(section.excludedIds).toEqual(expect.arrayContaining(['cat-residential', 'cat-workshops']))
+  })
+
+  it('resolves each search hit to the section that owns the document', async () => {
+    const educationHits = await searchPosts('نور', 'fa')
+    const educationHrefs = await searchHrefs(educationHits, ctx('fa'))
+    expect([...educationHrefs.values()]).toContain('/education/workshop-light')
+
+    const projectHits = await searchPosts('دبستان', 'fa')
+    const projectHrefs = await searchHrefs(projectHits, ctx('fa'))
+    expect([...projectHrefs.values()]).toContain('/projects/madrese-e-aban')
   })
 })
 

@@ -11,7 +11,7 @@ import { loadPageContext } from '@/lib/cms/pageContext'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
 import { blogPath, THEME_ROUTES } from '@/lib/routing/paths'
-import { resolveThemeRoute } from '@/lib/routing/resolve'
+import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { lexicalText } from '@/lib/utils/lexical'
@@ -25,33 +25,43 @@ import type { Locale } from '@/lib/cms/types'
  * a lead story, a "latest notes" column divided from it by a fine vertical rule, then
  * article rows with small thumbnails and hairline separators.
  */
-export const blogMetadata = async (locale: Locale, page: number): Promise<Metadata> => {
+export const blogMetadata = async (locale: Locale, page: number, category?: null | string): Promise<Metadata> => {
   const outcome = await loadPageContext(locale, THEME_ROUTES.blog)
   if (!outcome.ok) return { robots: { follow: false, index: false } }
   const t = dictionary(locale)
   return metadataFor({
     context: outcome.ctx,
-    noindex: page > 1,
+    noindex: page > 1 || Boolean(category),
     path: blogPath(page),
     title: `${t.blog} — ${outcome.ctx.site.name}`,
   })
 }
 
-export const BlogIndexView = async ({ locale, page }: { locale: Locale; page: number }) => {
+export const BlogIndexView = async ({
+  category,
+  locale,
+  page,
+}: {
+  category?: null | string
+  locale: Locale
+  page: number
+}) => {
   const outcome = await loadPageContext(locale, THEME_ROUTES.blog)
   if (!outcome.ok) return <StateView locale={locale} outcome={outcome} />
   const ctx = outcome.ctx
   const t = dictionary(locale)
 
   const [archive, section] = await Promise.all([
-    getArchive(ctx, { limit: 13, page, section: 'blog' }),
+    getArchive(ctx, { categorySlug: category ?? null, limit: 13, page, section: 'blog' }),
     getSectionCategories('blog', ctx),
   ])
   const [lead, ...others] = archive.docs
   const latest = others.slice(0, 4)
   const rows = others.slice(4)
-  const route = resolveThemeRoute(['blog'], ctx.site)
+  const route = resolveLocaleRoute(['blog'], locale, ctx.site)
   const crumbs = breadcrumbsFor(route, ctx.site)
+  // One localized base for filters, reset and pagination (English stays under /en).
+  const basePath = href(THEME_ROUTES.blog, locale, ctx.site)
 
   // One href map for the whole page: a post's URL depends on the section it belongs to,
   // so resolving it per list item with a second rule can only ever disagree with itself
@@ -59,7 +69,7 @@ export const BlogIndexView = async ({ locale, page }: { locale: Locale; page: nu
   const hrefById = new Map(
     await Promise.all(archive.docs.map(async (post) => [post.id, href(await postHref(post, ctx), locale, ctx.site)] as const)),
   )
-  const hrefFor = (post: { id: string }): string => hrefById.get(post.id) ?? THEME_ROUTES.blog
+  const hrefFor = (post: { id: string }): string => hrefById.get(post.id) ?? basePath
 
   return (
     <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.blog} label={t.breadcrumb} locale={locale}>
@@ -68,8 +78,16 @@ export const BlogIndexView = async ({ locale, page }: { locale: Locale; page: nu
           section.children.length > 0 ? (
             <div className="filter-group">
               <span className="type-label me-2">{t.filterLabel}</span>
+              <a aria-current={!category ? 'true' : undefined} className="filter-chip" href={basePath}>
+                {t.blog}
+              </a>
               {section.children.map((child) => (
-                <a className="filter-chip" href={`${THEME_ROUTES.blog}?category=${encodeURIComponent(child.slug)}`} key={child.id}>
+                <a
+                  aria-current={category === child.slug ? 'true' : undefined}
+                  className="filter-chip"
+                  href={`${basePath}?category=${encodeURIComponent(child.slug)}`}
+                  key={child.id}
+                >
                   {child.title}
                 </a>
               ))}
@@ -126,9 +144,12 @@ export const BlogIndexView = async ({ locale, page }: { locale: Locale; page: nu
           ) : null}
 
           <Pagination
-            basePath={THEME_ROUTES.blog}
+            basePath={basePath}
             currentPage={page}
+            label={t.pagination}
             labels={{ next: t.next, previous: t.previous }}
+            locale={locale}
+            query={category ? `?category=${encodeURIComponent(category)}` : ''}
             totalPages={archive.totalPages}
           />
         </ContentContainer>

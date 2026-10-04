@@ -1,10 +1,13 @@
 import { BlogIndexView, blogMetadata } from '@/views/BlogIndexView'
 
-type SearchParams = Promise<{ page?: string }>
+type SearchParams = Promise<{ category?: string; page?: string }>
 
-export const generateMetadata = async ({ searchParams }: { searchParams: SearchParams }) =>
-  blogMetadata('fa', Number((await searchParams).page ?? 1) || 1)
+export const generateMetadata = async ({ searchParams }: { searchParams: SearchParams }) => {
+  const { category, page } = await searchParams
+  return blogMetadata('fa', Number(page ?? 1) || 1, category)
+}
 
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
-  return <BlogIndexView locale="fa" page={Number((await searchParams).page ?? 1) || 1} />
+  const { category, page } = await searchParams
+  return <BlogIndexView category={category ?? null} locale="fa" page={Number(page ?? 1) || 1} />
 }

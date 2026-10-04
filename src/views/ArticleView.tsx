@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import { RichText } from '@/components/blocks/RichText'
 import { ContentContainer } from '@/components/design/Container'
@@ -13,12 +13,12 @@ import { dateText } from '@/lib/utils/dates'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
 import { articlePath, educationEntryPath } from '@/lib/routing/paths'
-import { resolveThemeRoute } from '@/lib/routing/resolve'
+import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { lexicalText } from '@/lib/utils/lexical'
 import { isMedia } from '@/lib/utils/media'
-import { readingMinutes } from '@/lib/utils/text'
+import { readingMinutes, readingTimeLabel } from '@/lib/utils/text'
 import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
 import type { Locale } from '@/lib/cms/types'
@@ -67,10 +67,19 @@ export const ArticleView = async ({
   const { post, related, siblings } = data
   const t = dictionary(locale)
 
+  // One document, one canonical URL: a note opened through `/education/<slug>` (or a
+  // workshop through `/blog/<slug>`) moves to the section that owns it instead of
+  // rendering a second, differently-composed version of the same document. Preview
+  // keeps the requested URL so an editor can still open the draft in place.
+  const expectedSection = kind === 'article' ? 'blog' : 'education'
+  if (!ctx.draft && data.section !== expectedSection) {
+    redirect(href(await postHref(post, ctx), locale, ctx.site))
+  }
+
   const hero = isMedia(post.heroImage) ? post.heroImage : null
   const author = authorLine(post)
   const minutes = readingMinutes(lexicalText(post.content as never))
-  const route = resolveThemeRoute(kind === 'article' ? ['blog', slug] : ['education', slug], ctx.site)
+  const route = resolveLocaleRoute(kind === 'article' ? ['blog', slug] : ['education', slug], locale, ctx.site)
   const crumbs = breadcrumbsFor(route, ctx.site, post.title)
 
   return (
@@ -90,7 +99,7 @@ export const ArticleView = async ({
             <p className="type-meta mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 ps-4 md:ps-6">
               {author ? <span>{author}</span> : null}
               {dateText(post.publishedAt, locale) ? <span>{dateText(post.publishedAt, locale)}</span> : null}
-              {minutes > 0 ? <span>{minutes} {locale === 'fa' ? 'دقیقه مطالعه' : 'min read'}</span> : null}
+              {minutes > 0 ? <span>{readingTimeLabel(minutes, locale)}</span> : null}
               {siblings.map((category) => (
                 <span key={category.id}>{category.title}</span>
               ))}

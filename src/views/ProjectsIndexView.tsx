@@ -11,7 +11,7 @@ import { postHref } from '@/lib/cms/content'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
 import { projectsPath, THEME_ROUTES } from '@/lib/routing/paths'
-import { resolveThemeRoute } from '@/lib/routing/resolve'
+import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { StateView } from '@/views/StateView'
@@ -51,8 +51,11 @@ export const ProjectsIndexView = async ({
     getSectionCategories('projects', ctx),
   ])
 
-  const route = resolveThemeRoute(['projects'], ctx.site)
+  const route = resolveLocaleRoute(['projects'], locale, ctx.site)
   const crumbs = breadcrumbsFor(route, ctx.site)
+  // Filters, reset and pagination all build on the *localized* archive path, so an
+  // English archive never sends a click back to the unprefixed Persian route.
+  const basePath = href(THEME_ROUTES.projects, locale, ctx.site)
 
   return (
     <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.projects} label={t.breadcrumb} locale={locale}>
@@ -61,14 +64,14 @@ export const ProjectsIndexView = async ({
           section.children.length > 0 ? (
             <div className="filter-group">
               <span className="type-label me-2">{t.filterLabel}</span>
-              <a aria-current={!category ? 'true' : undefined} className="filter-chip" href={THEME_ROUTES.projects}>
+              <a aria-current={!category ? 'true' : undefined} className="filter-chip" href={basePath}>
                 {t.allProjects}
               </a>
               {section.children.map((child) => (
                 <a
                   aria-current={category === child.slug ? 'true' : undefined}
                   className="filter-chip"
-                  href={`${THEME_ROUTES.projects}?category=${encodeURIComponent(child.slug)}`}
+                  href={`${basePath}?category=${encodeURIComponent(child.slug)}`}
                   key={child.id}
                 >
                   {child.title}
@@ -99,9 +102,11 @@ export const ProjectsIndexView = async ({
               )}
             </div>
             <Pagination
-              basePath={THEME_ROUTES.projects}
+              basePath={basePath}
               currentPage={page}
+              label={t.pagination}
               labels={{ next: t.next, previous: t.previous }}
+              locale={locale}
               query={category ? `?category=${encodeURIComponent(category)}` : ''}
               totalPages={archive.totalPages}
             />

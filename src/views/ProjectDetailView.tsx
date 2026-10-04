@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import { ContentContainer } from '@/components/design/Container'
 import { DecorativeMark } from '@/components/design/DecorativeMark'
@@ -9,11 +9,11 @@ import { Gallery, type GalleryItem } from '@/components/media/Gallery'
 import { CmsImage } from '@/components/media/CmsImage'
 import { ProjectFacts } from '@/components/projects/ProjectCard'
 import { loadPageContext } from '@/lib/cms/pageContext'
-import { getPostContext } from '@/lib/cms/content'
+import { getPostContext, postHref } from '@/lib/cms/content'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
 import { projectPath } from '@/lib/routing/paths'
-import { resolveThemeRoute } from '@/lib/routing/resolve'
+import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { collectMedia, lexicalText } from '@/lib/utils/lexical'
@@ -54,6 +54,13 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
   const { post, related } = data
   const t = dictionary(locale)
 
+  // A note reached through `/projects/<slug>` is not a project; send it to the section
+  // that owns it rather than rendering the project composition around it. Preview keeps
+  // the requested URL for editors.
+  if (!ctx.draft && data.section !== 'projects') {
+    redirect(href(await postHref(post, ctx), locale, ctx.site))
+  }
+
   const hero = isMedia(post.heroImage) ? post.heroImage : null
   const galleryMedia = collectMedia(post.content as never)
   const galleryItems: GalleryItem[] = galleryMedia.flatMap((media) => {
@@ -71,7 +78,7 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
     ]
   })
 
-  const route = resolveThemeRoute(['projects', slug], ctx.site)
+  const route = resolveLocaleRoute(['projects', slug], locale, ctx.site)
   const crumbs = breadcrumbsFor(route, ctx.site, post.title)
 
   return (
@@ -113,7 +120,11 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
         <ContentContainer className="pb-12">
           <Rule className="mb-8" />
           <h2 className="type-heading mb-6">{t.gallery}</h2>
-          <Gallery items={galleryItems} labels={{ close: t.close, next: t.next, previous: t.previous }} locale={locale} />
+          <Gallery
+            items={galleryItems}
+            labels={{ close: t.close, next: t.next, previous: t.previous, title: t.gallery }}
+            locale={locale}
+          />
         </ContentContainer>
       ) : null}
 

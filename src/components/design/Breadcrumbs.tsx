@@ -1,5 +1,11 @@
-import Link from 'next/link'
-
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import type { Crumb } from '@/lib/routing/breadcrumbs'
 
 /**
@@ -9,22 +15,18 @@ import type { Crumb } from '@/lib/routing/breadcrumbs'
  * Persian trail reads right-to-left without extra markup.
  */
 export const Breadcrumbs = ({ crumbs, label }: { crumbs: Crumb[]; label: string }) => (
-  <nav aria-label={label}>
-    <ol className="breadcrumbs">
+  <Breadcrumb label={label}>
+    <BreadcrumbList>
       {crumbs.map((crumb, index) => (
-        <li className="flex min-w-0 items-center gap-2" key={`${crumb.label}-${index}`}>
-          {index > 0 ? (
-            <span aria-hidden="true" className="breadcrumbs__sep">
-              /
-            </span>
-          ) : null}
+        <BreadcrumbItem key={`${crumb.label}-${index}`}>
+          {index > 0 ? <BreadcrumbSeparator /> : null}
           {crumb.href && !crumb.current ? (
-            <Link href={crumb.href}>{crumb.label}</Link>
+            <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
           ) : (
-            <span aria-current={crumb.current ? 'page' : undefined}>{crumb.label}</span>
+            <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
           )}
-        </li>
+        </BreadcrumbItem>
       ))}
-    </ol>
-  </nav>
+    </BreadcrumbList>
+  </Breadcrumb>
 )

@@ -12,7 +12,7 @@ import { loadPageContext } from '@/lib/cms/pageContext'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
 import { THEME_ROUTES } from '@/lib/routing/paths'
-import { resolveThemeRoute } from '@/lib/routing/resolve'
+import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { collectMedia } from '@/lib/utils/lexical'
@@ -49,7 +49,7 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
   const ctx = outcome.ctx
   const t = dictionary(locale)
   const { page } = await getSectionPage('about', ctx)
-  const route = resolveThemeRoute(['about'], ctx.site)
+  const route = resolveLocaleRoute(['about'], locale, ctx.site)
   const crumbs = breadcrumbsFor(route, ctx.site)
 
   if (!page) {

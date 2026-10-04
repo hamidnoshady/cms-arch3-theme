@@ -112,6 +112,7 @@
   /* --- motion (restrained) --- */
   --motion-fast: 140ms;
   --motion-base: 240ms;
+  --motion-drawer: 280ms;   /* mobile drawer travel; brief: 250–350ms */
   --motion-slow: 420ms;
   --motion-reveal: 560ms;
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);

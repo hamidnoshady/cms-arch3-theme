@@ -15,6 +15,9 @@ import puppeteer from 'puppeteer-core'
  *
  *   node scripts/a11y-audit.mjs [--base http://127.0.0.1:3200] [--out docs/screenshots]
  *
+ * Set `ARCH2_CHROME_PATH` to a host browser (same escape hatch as the screenshot
+ * harness) when the bundled @sparticuz/chromium binary cannot run on this OS.
+ *
  * Writes `a11y-report.json` next to the screenshot report and exits non-zero when a page
  * has a problem, so it can gate a change the same way the screenshots do. Links inside a
  * running sentence are exempt from SC 2.5.8 by the criterion itself and are not flagged;
@@ -130,7 +133,11 @@ const assertAssetsServed = async (page, base) => {
     document.querySelector('link[rel="stylesheet"]')?.getAttribute('href') ?? '',
   )
   if (!href) return
-  const response = await page.goto(new URL(href, base).toString(), { waitUntil: 'domcontentloaded' })
+  // Cache-buster: a cached stylesheet revalidates with 304, which proves the browser
+  // cache, not the server. The asset itself has to come back 200 + text/css.
+  const probe = new URL(href, base)
+  probe.searchParams.set('arch2-audit', Date.now().toString(36))
+  const response = await page.goto(probe.toString(), { waitUntil: 'domcontentloaded' })
   const type = response?.headers()['content-type'] ?? ''
   if (response?.status() !== 200 || !type.includes('text/css')) {
     throw new Error(
@@ -140,12 +147,17 @@ const assertAssetsServed = async (page, base) => {
 }
 
 const main = async () => {
-  const { default: chromium } = await import('@sparticuz/chromium')
-  const exe = await chromium.executablePath()
+  let executablePath = process.env.ARCH2_CHROME_PATH
+  let env = process.env
+  if (!executablePath) {
+    const { default: chromium } = await import('@sparticuz/chromium')
+    executablePath = await chromium.executablePath()
+    env = { ...process.env, LD_LIBRARY_PATH: [join(tmpdir(), 'arch2-chromium-libs', 'lib'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':') }
+  }
   const browser = await puppeteer.launch({
     args: ['--no-sandbox'],
-    env: { ...process.env, LD_LIBRARY_PATH: [join(tmpdir(), 'arch2-chromium-libs', 'lib'), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':') },
-    executablePath: exe,
+    env,
+    executablePath,
     headless: true,
   })
   await assertAssetsServed(await browser.newPage(), BASE)

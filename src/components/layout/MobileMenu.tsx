@@ -1,15 +1,15 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import type { NavLink } from '@/lib/routing/nav'
 
 /**
  * Mobile drawer: two rules that become a sharp X, a white panel entering from the
- * inline-end edge (right in Persian, left in English via `dir`), hairline rows with a
- * small decorative tick, and the language switch pinned near the bottom.
+ * inline-start edge (right in Persian, left in English via `dir`), hairline rows that
+ * settle with a short stagger, and the language switch pinned near the bottom.
  *
  * Radix Dialog owns the focus trap, Escape, focus restoration and scroll lock; the
  * close-on-navigation effect below covers the one thing it cannot know about (the
@@ -67,8 +67,13 @@ export const MobileMenu = ({
         <nav className="mt-6 flex flex-1 flex-col" aria-label={labels.menuTitle}>
           {links.length === 0 ? null : (
             <ul>
-              {links.map((link) => (
-                <li className="relative" key={link.href}>
+              {links.map((link, index) => (
+                <li
+                  className="relative"
+                  key={link.href}
+                  // Drives the CSS row stagger (`.drawer__row` delay).
+                  style={{ '--drawer-row': index } as CSSProperties}
+                >
                   <span aria-hidden="true" className="mark top-1/2 -translate-y-1/2" style={{ insetInlineStart: 0 }}>
                     <svg height="10" viewBox="0 0 10 1" width="10">
                       <path d="M0 0.5H10" stroke="currentColor" />

@@ -63,9 +63,12 @@ export const preloadFiles = (): string[] => {
     : ['/fonts/vazirmatn-arabic.woff2']
 }
 
+/* `format('woff2')` is correct for both static and variable WOFF2: the spec dropped the
+   `-variations` suffix, and engines that never recognised it (Safari) would skip a
+   static Shazde face labelled that way. The variable axis is declared by `font-weight`. */
 const face = (family: string, file: string, format: string, weight: string, unicodeRange?: string) =>
   `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:swap;` +
-  `src:url('/fonts/${file}') format('${format}-variations');` +
+  `src:url('/fonts/${file}') format('${format}');` +
   (unicodeRange ? `unicode-range:${unicodeRange};` : '') +
   '}'
 
@@ -122,10 +125,15 @@ export const fontFaceCss = (): string => {
 
 /** Reminder used by scripts and `/api/health`; never throws, never blocks a build. */
 export const missingFontNotice = (): null | string => {
-  const { missing } = shazdeFiles()
-  return missing.length
-    ? `Shazde weights not installed (${missing.length}/9): ${missing.join(', ')} — Persian falls back to Vazirmatn. Drop the licensed files into public/fonts/shazde/.`
-    : null
+  const { found, missing } = shazdeFiles()
+  if (!missing.length) return null
+  // A partially installed family must not claim the Vazirmatn fallback: any installed
+  // Shazde weight keeps Persian on Shazde, and an absent weight resolves to the nearest
+  // installed one (never a synthesised face).
+  const persian = found.length
+    ? 'the nearest installed Shazde weight'
+    : 'Vazirmatn'
+  return `Shazde weights not installed (${missing.length}/9): ${missing.join(', ')} — Persian renders on ${persian}. Drop the licensed files into public/fonts/shazde/.`
 }
 
 /** Keeps the directory listing meaningful for the report above. */

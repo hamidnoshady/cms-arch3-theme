@@ -10,7 +10,9 @@ import {
   getCategories,
   getPageById,
   getPageBySlug,
+  getPostBySlug,
   getPosts,
+  getPostsByIds,
   type SearchHit,
 } from './endpoints'
 import type { CategoryDoc, FindResult, PageDoc, PostDoc } from './types'
@@ -116,15 +118,19 @@ export const getSectionCategories = async (section: CategorySection, ctx: SiteCo
             : undefined,
       )
       .filter((category): category is CategoryDoc => Boolean(category))
-    return {
-      children: [],
-      excludedIds: blogExclusion(
-        index.all,
-        excludedRoots.map((category) => String(category.id)),
-      ),
-      ref,
-      root,
-    }
+    const excludedIds = blogExclusion(
+      index.all,
+      excludedRoots.map((category) => String(category.id)),
+    )
+    const excluded = new Set(excludedIds)
+    // A bound blog category behaves like the other archive roots: its direct children
+    // are the filters. With no blog category bound the archive is "everything outside
+    // the project/education subtrees", so the applicable controls are the top-level
+    // categories that remain inside that scope — not an always-empty filter group.
+    const children = root
+      ? index.all.filter((category) => idOf(category.parent) === String(root.id))
+      : index.all.filter((category) => !idOf(category.parent) && !excluded.has(String(category.id)))
+    return { children, excludedIds, ref, root }
   }
 
   return {
@@ -166,7 +172,13 @@ export const getArchive = async (
   if (categorySlug) {
     const filter = index.bySlug.get(categorySlug)
     if (!filter) return emptyPage(page, limit)
-    where = { categories: { in: index.subtreeIds(String(filter.id)) } }
+    const allowed = allowedCategoryIds(sectionData, index)
+    const scoped = index.subtreeIds(String(filter.id)).filter((id) => allowed.has(id))
+    // A category that belongs to another section (a project category asked of the
+    // blog, an education workshop asked of projects) is not a filter this archive can
+    // honour: the query yields the empty state instead of silently crossing sections.
+    if (scoped.length === 0) return emptyPage(page, limit)
+    where = { categories: { in: scoped } }
   } else if (sectionData.root) {
     where = { categories: { in: index.subtreeIds(String(sectionData.root.id)) } }
   } else if (section === 'blog' && sectionData.excludedIds.length > 0) {
@@ -180,6 +192,14 @@ export const getArchive = async (
   }
 
   return getPosts(ctx.locale, { limit, page, where }, ctx.draft)
+}
+
+/** The category ids an archive may show, so `?category=` can only ever narrow it. */
+const allowedCategoryIds = (sectionData: SectionCategory, index: CategoryIndex): Set<string> => {
+  if (sectionData.root) return new Set(index.subtreeIds(String(sectionData.root.id)))
+  const allowed = new Set(index.all.map((category) => String(category.id)))
+  for (const id of sectionData.excludedIds) allowed.delete(id)
+  return allowed
 }
 
 const emptyPage = (page: number, limit: number): FindResult<PostDoc> => ({
@@ -226,7 +246,6 @@ export const getPostContext = async (
   related: PostDoc[]
   siblings: CategoryDoc[]
 } | null> => {
-  const { getPostBySlug } = await import('./endpoints')
   const post = await getPostBySlug(slug, ctx.locale, ctx.draft)
   if (!post) return null
   const section = await postSection(post, ctx)
@@ -235,7 +254,7 @@ export const getPostContext = async (
     .map((entry) => (typeof entry === 'string' ? entry : entry.id))
     .filter((id): id is string => Boolean(id))
   const related = relatedIds.length
-    ? (await (await import('./endpoints')).getPostsByIds(relatedIds, ctx.locale, ctx.draft)).slice(0, 3)
+    ? (await getPostsByIds(relatedIds, ctx.locale, ctx.draft)).slice(0, 3)
     : []
   const siblings = (post.categories ?? [])
     .map((entry) => idOf(entry))
@@ -245,6 +264,37 @@ export const getPostContext = async (
 }
 
 export const previewSearch = (hits: SearchHit[]): SearchHit[] => hits.slice(0, 20)
+
+/**
+ * Canonical href per search hit.
+ *
+ * The search index returns hits, not sections: every hit is resolved through the same
+ * `postSection` rule the archives use, so a project hit links to `/projects/<slug>`
+ * and an education hit to `/education/<slug>` instead of every hit being presented as
+ * a blog article. One batched read resolves the hit documents (`doc.value` is the
+ * source document id when the CMS populates it, the hit id otherwise); only the hits
+ * that batch misses fall back to a per-slug read.
+ */
+export const searchHrefs = async (
+  hits: SearchHit[],
+  ctx: SiteContext,
+): Promise<Map<string, string>> => {
+  const resolved = new Map<string, string>()
+  if (hits.length === 0) return resolved
+
+  const documentId = (hit: SearchHit): string => hit.doc?.value ?? hit.id
+  const ids = [...new Set(hits.map(documentId))]
+  const posts = await getPostsByIds(ids, ctx.locale, ctx.draft)
+  const byId = new Map(posts.map((post) => [String(post.id), post]))
+
+  await Promise.all(
+    hits.map(async (hit) => {
+      const post = byId.get(documentId(hit)) ?? (await getPostBySlug(hit.slug, ctx.locale, ctx.draft))
+      if (post) resolved.set(hit.id, await postHref(post, ctx))
+    }),
+  )
+  return resolved
+}
 
 export const sectionRootCategory = async (
   section: CategorySection,

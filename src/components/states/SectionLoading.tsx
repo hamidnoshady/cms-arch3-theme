@@ -1,53 +1,86 @@
 import { ContentContainer } from '@/components/design/Container'
+import { SectionHeader } from '@/components/design/SectionHeader'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  BlogSkeleton,
+  EducationSkeleton,
+  PageSkeleton,
+  ProjectGridSkeleton,
+  SearchSkeleton,
+} from '@/components/states/States'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { resolveThemeRoute } from '@/lib/routing/resolve'
-import { labels as dictionary } from '@/lib/theme/labels'
+import { labels as dictionary, type Dictionary } from '@/lib/theme/labels'
 import { InteriorPage } from '@/views/InteriorPage'
-import { ArticleRowsSkeleton, EntryRowsSkeleton, PageSkeleton, ProjectGridSkeleton } from '@/components/states/States'
 import type { Locale } from '@/lib/cms/types'
 
 /**
  * Segment-level loading UI.
  *
- * Two rules make this worth its weight:
+ * Three rules make this worth its weight:
  *
  * 1. **The shell stays.** The bar the visitor just clicked in, the footer and the
  *    breadcrumb row are the *real* ones — they come from the same chrome the resolved
  *    page renders, so a slow archive never flashes a blank white screen or shifts the
  *    layout when the content lands.
- * 2. **The skeleton is the real geometry.** Each variant mirrors the component it
- *    replaces: the project grid keeps its 4/3/2 columns (two columns at 390px, exactly
- *    like the archive), the article variant keeps the lead-story/rows rhythm, the entry
- *    variant keeps the small inline-start thumbnail. Nothing here is a generic grey box.
+ * 2. **The header survives too.** Archives render their real `SectionHeader` (title,
+ *    hairline rule, filter geometry) while loading; only the collection-dependent part
+ *    becomes a skeleton, so the visible anchor does not change on resolve.
+ * 3. **The skeleton is the real geometry.** Each variant mirrors the component it
+ *    replaces: the project grid keeps its 2/3/4 columns and mixed ratios, education
+ *    keeps the featured-entry-then-rows rhythm, the blog keeps the lead/latest split
+ *    with its divider, and search keeps single-column rows. Nothing is a generic box.
  *
- * Chrome data (`/api/site`, header, footer) is cached by the CMS client, so the shell
- * is normally already warm by the time a visitor navigates; only the archive's own
- * collection read is slow.
+ * Each region carries one localized sentence for screen readers; the placeholder
+ * geometry itself is `aria-hidden`. Chrome data (`/api/site`, header, footer) is cached
+ * by the CMS client, so the shell is normally warm by the time a visitor navigates —
+ * only the archive's own collection read is slow.
  */
 
-export type LoadingVariant = 'article' | 'detail' | 'entries' | 'page' | 'projects' | 'search'
+export type LoadingVariant = 'blog' | 'detail' | 'education' | 'page' | 'projects' | 'search'
 
-const skeletonFor = (variant: LoadingVariant) => {
+const titleFor = (variant: LoadingVariant, t: Dictionary): null | string => {
   switch (variant) {
     case 'projects':
-      return <ProjectGridSkeleton />
-    case 'entries':
-      return <EntryRowsSkeleton />
-    case 'article':
-      return <ArticleRowsSkeleton />
+      return t.projects
+    case 'education':
+      return t.education
+    case 'blog':
+      return t.blog
     case 'search':
-      return (
-        <div className="py-10">
-          <Skeleton className="mb-8 h-9 w-1/3" />
-          <ArticleRowsSkeleton count={3} />
-        </div>
-      )
+      return t.search
+    default:
+      return null
+  }
+}
+
+const showsFilters = (variant: LoadingVariant): boolean =>
+  variant === 'projects' || variant === 'education' || variant === 'blog'
+
+/** Filter chips exist only when the CMS returned categories; the stub keeps the row. */
+const FilterRowSkeleton = () => (
+  <div aria-hidden="true" className="filter-group">
+    <Skeleton className="h-10 w-24" />
+    <Skeleton className="h-10 w-20" />
+    <Skeleton className="h-10 w-28" />
+  </div>
+)
+
+const skeletonFor = (variant: LoadingVariant, label: string) => {
+  switch (variant) {
+    case 'projects':
+      return <ProjectGridSkeleton label={label} />
+    case 'education':
+      return <EducationSkeleton label={label} />
+    case 'blog':
+      return <BlogSkeleton label={label} />
+    case 'search':
+      return <SearchSkeleton label={label} />
     case 'detail':
     case 'page':
     default:
-      return <PageSkeleton />
+      return <PageSkeleton label={label} />
   }
 }
 
@@ -66,7 +99,8 @@ export const SectionLoading = async ({
 }) => {
   const outcome = await loadPageContext(locale, path)
   const t = dictionary(locale)
-  const skeleton = skeletonFor(variant)
+  const skeleton = skeletonFor(variant, t.loading)
+  const title = titleFor(variant, t)
 
   // Chrome unavailable: the skeleton is still the honest thing to show. It is
   // deliberately not the holding or error state — those belong to a resolved read.
@@ -83,8 +117,11 @@ export const SectionLoading = async ({
 
   return (
     <InteriorPage context={ctx} crumbs={crumbs} currentPath={path} label={t.breadcrumb} locale={locale}>
+      {title ? (
+        <SectionHeader actions={showsFilters(variant) ? <FilterRowSkeleton /> : null} title={title} />
+      ) : null}
       <ContentContainer>
-        <div className="py-10">{skeleton}</div>
+        <div className={title ? undefined : 'py-10'}>{skeleton}</div>
       </ContentContainer>
     </InteriorPage>
   )

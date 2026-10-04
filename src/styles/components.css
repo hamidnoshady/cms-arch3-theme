@@ -302,29 +302,136 @@
     background-color: rgba(0, 0, 0, 0.25);
   }
 
+  .drawer__overlay[data-state='open'] {
+    animation: drawer-fade-in var(--motion-base) var(--ease-out);
+  }
+
+  .drawer__overlay[data-state='closed'] {
+    animation: drawer-fade-out var(--motion-base) var(--ease-out);
+  }
+
+  /* The panel anchors to the *inline-start* edge of its own direction: right in RTL,
+     left in LTR, hairline on the exposed inner (inline-end) edge. Logical insets, so
+     both locales are correct with one rule and the panel's own `dir` decides. */
   .drawer__panel {
     position: fixed;
     inset-block: 0;
+    inset-inline-start: 0;
     z-index: 51;
     display: flex;
     flex-direction: column;
     inline-size: min(24rem, 88vw);
     padding: var(--space-5) var(--gutter) calc(var(--space-6) + env(safe-area-inset-bottom));
     background-color: var(--surface);
-    border-inline-start: var(--line-w) solid var(--line-structural-color);
+    border-inline-end: var(--line-w) solid var(--line-structural-color);
     overflow-y: auto;
   }
 
-  [dir='rtl'] .drawer__panel {
-    inset-inline-end: 0;
-    border-inline-start: var(--line-w) solid var(--line-structural-color);
-    border-inline-end: 0;
+  /* 250–350ms travel. Radix waits on the `closed` animation before unmounting, so the
+     exit is a real slide too — not an instant disappearance. */
+  .drawer__panel[data-state='open'] {
+    animation: drawer-in-ltr var(--motion-drawer) var(--ease-out);
   }
 
-  [dir='ltr'] .drawer__panel {
-    inset-inline-start: 0;
-    border-inline-end: var(--line-w) solid var(--line-structural-color);
-    border-inline-start: 0;
+  .drawer__panel[data-state='closed'] {
+    animation: drawer-out-ltr var(--motion-drawer) var(--ease-out);
+  }
+
+  [dir='rtl'] .drawer__panel[data-state='open'] {
+    animation-name: drawer-in-rtl;
+  }
+
+  [dir='rtl'] .drawer__panel[data-state='closed'] {
+    animation-name: drawer-out-rtl;
+  }
+
+  /* Rows settle in a short stagger; `both` holds the delayed rows invisible until they
+     start, so nothing flashes in before its turn. */
+  .drawer__panel[data-state='open'] .drawer__row {
+    animation: drawer-row-in var(--motion-fast) var(--ease-out) both;
+    animation-delay: min(calc(var(--drawer-row, 0) * 40ms), 200ms);
+  }
+
+  @keyframes drawer-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes drawer-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes drawer-in-ltr {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes drawer-out-ltr {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100%);
+    }
+  }
+
+  @keyframes drawer-in-rtl {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes drawer-out-rtl {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes drawer-row-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Reduced motion: no travel, no stagger, no leftover delay — every state immediate.
+     Each reset selector repeats the animated rule's specificity, including the
+     `[dir='rtl']` overrides: a plain `.drawer__panel[data-state='open']` (0,2,0) would
+     lose the `animation-name` to `[dir='rtl'] …[data-state='open']` (0,3,0) and leave
+     the panel translating on a machine that asked for stillness. */
+  @media (prefers-reduced-motion: reduce) {
+    .drawer__overlay[data-state='open'],
+    .drawer__overlay[data-state='closed'],
+    .drawer__panel[data-state='open'],
+    .drawer__panel[data-state='closed'],
+    [dir='rtl'] .drawer__panel[data-state='open'],
+    [dir='rtl'] .drawer__panel[data-state='closed'],
+    .drawer__panel[data-state='open'] .drawer__row {
+      animation: none;
+    }
   }
 
   .drawer__row {
@@ -391,13 +498,19 @@
 
   .card__caption {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
-    gap: var(--space-3);
+    gap: var(--space-1) var(--space-3);
     min-inline-size: 0;
   }
 
+  /* Both fields may shrink and wrap. On a 130–175px mobile card the metadata drops to
+     its own line instead of squeezing the title into a single-character column; on a
+     wide card the baseline row stays. No `nowrap`: long real locations must wrap. */
   .card__title {
+    flex: 1 1 auto;
+    min-inline-size: 0;
     font-size: var(--text-ui);
     font-weight: var(--weight-ui);
     line-height: 1.5;
@@ -405,9 +518,11 @@
   }
 
   .card__meta {
+    flex: 0 1 auto;
+    min-inline-size: 0;
     font-size: var(--text-meta);
     color: var(--ink-secondary);
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   .card__link {
@@ -451,6 +566,12 @@
   /* Education rows read as horizontal entries on mobile too, with a small thumb. */
   .entry-row--compact {
     grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  /* Search results are text-only rows: without this, the single child would land in
+     the 88px thumbnail track. */
+  .entry-row--single {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   /* --- skip link ----------------------------------------------------------- */
@@ -635,54 +756,12 @@
     }
   }
 
-  /* --- Radix surfaces: dialog, select, accordion (square, white, hairline) --- */
+  /* --- Radix surfaces: dialog, accordion (square, white, hairline) --- */
 
   .surface-panel {
     background-color: var(--surface);
     border: var(--line-w) solid var(--line-structural-color);
     color: var(--ink);
-  }
-
-  .select__trigger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    min-block-size: 40px;
-    padding-inline: var(--space-3);
-    border: var(--line-w) solid var(--line-structural-color);
-    background-color: var(--surface);
-    font-size: var(--text-ui);
-  }
-
-  .select__trigger:hover {
-    border-color: var(--line-emphasis-color);
-  }
-
-  .select__content {
-    z-index: 60;
-    min-inline-size: var(--radix-select-trigger-width);
-    background-color: var(--surface);
-    border: var(--line-w) solid var(--line-structural-color);
-  }
-
-  .select__item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    padding: var(--space-3);
-    font-size: var(--text-ui);
-    cursor: pointer;
-  }
-
-  .select__item[data-highlighted] {
-    background-color: var(--line-skeleton-color);
-    outline: none;
-  }
-
-  .select__item[data-state='checked'] {
-    font-weight: var(--weight-strong);
   }
 
   .accordion__item {

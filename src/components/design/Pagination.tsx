@@ -1,23 +1,38 @@
-import Link from 'next/link'
-
+import {
+  PaginationDisabled,
+  Pagination as PaginationNav,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+} from '@/components/ui/pagination'
+import type { Locale } from '@/lib/cms/types'
+import { formatNumber } from '@/lib/runtime'
 import { cn } from '@/lib/utils/cn'
 
 /**
  * Square pagination. Plain links (no client state) so it works without JS, and the
  * page numbers are the only interactive furniture — no "showing X of Y" chrome.
+ * The href/query rules live here; the parts come from the themed shadcn Pagination.
+ * `basePath` is always the **localized** archive path, so page 2 of `/en/projects`
+ * stays under `/en`; the visible numbers go through the runtime digit formatter.
  */
 export const Pagination = ({
   basePath,
   className,
   currentPage,
+  label,
   labels,
+  locale,
   query = '',
   totalPages,
 }: {
   basePath: string
   className?: string
   currentPage: number
+  label: string
   labels: { next: string; previous: string }
+  locale: Locale
   query?: string
   totalPages: number
 }) => {
@@ -36,41 +51,39 @@ export const Pagination = ({
   )
 
   return (
-    <nav aria-label="pagination" className={cn('pagination', className)}>
-      {currentPage > 1 ? (
-        <Link className="pagination__item" href={hrefFor(currentPage - 1)} rel="prev">
-          {labels.previous}
-        </Link>
-      ) : (
-        <span aria-disabled="true" className="pagination__item">
-          {labels.previous}
-        </span>
-      )}
-      {pages.map((page, index) => {
-        const previous = pages[index - 1]
-        const gap = previous !== undefined && page - previous > 1
-        return (
-          <span className="flex items-center gap-2" key={page}>
-            {gap ? <span aria-hidden="true">…</span> : null}
-            <Link
-              aria-current={page === currentPage ? 'page' : undefined}
-              className="pagination__item"
-              href={hrefFor(page)}
-            >
-              {page}
-            </Link>
-          </span>
-        )
-      })}
-      {currentPage < totalPages ? (
-        <Link className="pagination__item" href={hrefFor(currentPage + 1)} rel="next">
-          {labels.next}
-        </Link>
-      ) : (
-        <span aria-disabled="true" className="pagination__item">
-          {labels.next}
-        </span>
-      )}
-    </nav>
+    <PaginationNav className={cn(className)} label={label}>
+      <PaginationContent>
+        <PaginationItem>
+          {currentPage > 1 ? (
+            <PaginationLink href={hrefFor(currentPage - 1)} rel="prev">
+              {labels.previous}
+            </PaginationLink>
+          ) : (
+            <PaginationDisabled>{labels.previous}</PaginationDisabled>
+          )}
+        </PaginationItem>
+        {pages.map((page, index) => {
+          const previous = pages[index - 1]
+          const gap = previous !== undefined && page - previous > 1
+          return (
+            <PaginationItem key={page}>
+              {gap ? <PaginationEllipsis /> : null}
+              <PaginationLink current={page === currentPage} href={hrefFor(page)}>
+                {formatNumber(page, locale)}
+              </PaginationLink>
+            </PaginationItem>
+          )
+        })}
+        <PaginationItem>
+          {currentPage < totalPages ? (
+            <PaginationLink href={hrefFor(currentPage + 1)} rel="next">
+              {labels.next}
+            </PaginationLink>
+          ) : (
+            <PaginationDisabled>{labels.next}</PaginationDisabled>
+          )}
+        </PaginationItem>
+      </PaginationContent>
+    </PaginationNav>
   )
 }
