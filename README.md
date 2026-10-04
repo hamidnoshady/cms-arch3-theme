@@ -135,13 +135,17 @@ all empty.
 
 ## Continuous integration and the release image
 
-Three workflows split the jobs by responsibility:
+Two workflows split the jobs by responsibility:
 
 | Workflow | Runs on | Does |
 | --- | --- | --- |
-| `.github/workflows/checks.yml` | called by the other two | typecheck → lint → tests → production build |
-| `.github/workflows/ci.yml` | push to `main`, pull requests, manual | the check suite, the browser audits against the mock topology (`:3200` + slow `:3300`), and a **no-push** image build |
-| `.github/workflows/publish-image.yml` | `v*` tags, manual dispatch | the check suite, then build + push to GHCR |
+| `.github/workflows/ci.yml` | pull requests, manual, called by the publisher | typecheck → lint → tests → production build, the browser audits against the mock topology (`:3200` + slow `:3300`), and (PRs only) a **no-push** image build |
+| `.github/workflows/publish-image.yml` | merge to `main`, `v*` tags, manual dispatch | `ci.yml` as a gate, then build + push to GHCR (`:latest` on `main`, `:<full-commit>`, `:sha-<short>`, semver on tags), verify the served digest, and **register it with the CMS** |
+
+Registration is what makes an image deployable: the CMS only deploys a `theme-artifacts`
+row for the exact commit. Set repository variables `ESHOBE_CMS_URL` and
+`ESHOBE_THEME_PACKAGE_ID` and secret `ESHOBE_THEME_ARTIFACT_SECRET` (same value as the
+CMS's env var). Without them the image is pushed and a warning is annotated on the run.
 
 The publisher is deliberately a separate workflow: a check run can never publish an image,
 and an image is never built from a tag that fails the checks. It tags the image
