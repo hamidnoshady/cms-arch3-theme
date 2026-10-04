@@ -35,9 +35,11 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     env:
-      # Repository variables / secrets. Registration is skipped (with a warning) if unset.
-      ESHOBE_CMS_URL: ${{ vars.ESHOBE_CMS_URL }}
-      ESHOBE_THEME_PACKAGE_ID: ${{ vars.ESHOBE_THEME_PACKAGE_ID }}
+      # Each may be a repository variable or a repository secret (the settings page
+      # offers both, and they are easy to mix up). Registration FAILS the job if unset:
+      # an unregistered image is undeployable, so a green run would be a false claim.
+      ESHOBE_CMS_URL: ${{ vars.ESHOBE_CMS_URL || secrets.ESHOBE_CMS_URL }}
+      ESHOBE_THEME_PACKAGE_ID: ${{ vars.ESHOBE_THEME_PACKAGE_ID || secrets.ESHOBE_THEME_PACKAGE_ID }}
       ESHOBE_THEME_ARTIFACT_SECRET: ${{ secrets.ESHOBE_THEME_ARTIFACT_SECRET }}
     steps:
       - uses: actions/checkout@v4
@@ -96,8 +98,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${ESHOBE_CMS_URL:-}" ] || [ -z "${ESHOBE_THEME_PACKAGE_ID:-}" ] || [ -z "${ESHOBE_THEME_ARTIFACT_SECRET:-}" ]; then
-            echo '::warning::Image pushed but NOT registered: set repo variables ESHOBE_CMS_URL, ESHOBE_THEME_PACKAGE_ID and secret ESHOBE_THEME_ARTIFACT_SECRET. The CMS cannot deploy this commit until it is registered.'
-            exit 0
+            echo '::error::Image pushed but NOT registered: set ESHOBE_CMS_URL, ESHOBE_THEME_PACKAGE_ID (variable or secret) and secret ESHOBE_THEME_ARTIFACT_SECRET. The CMS cannot deploy this commit until it is registered.'
+            exit 1
           fi
           body="$(jq -nc \
             --arg repository "${GITHUB_REPOSITORY,,}" \
