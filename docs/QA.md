@@ -47,9 +47,9 @@ the resulting screenshots look fine while measuring nothing.
 
 `npm run verify` chains typecheck → lint → test → build. Lint is *inside* verify (it is not
 excluded), and any of the four failing fails the chain. The same four checks run in CI
-(`.github/workflows/checks.yml`, called by `ci.yml` on every push and pull request and by
+(`.github/workflows/ci.yml`, run on every pull request and called by
 `publish-image.yml` before any image is published), together with the browser audits and a
-no-push container build; `publish-image.yml` pushes `ghcr.io/<owner>/<repo>` on `v*` tags.
+no-push container build; `publish-image.yml` pushes `ghcr.io/<owner>/<repo>` on merges to `main` and `v*` tags.
 
 ### Test files
 

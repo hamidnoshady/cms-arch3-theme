@@ -1,16 +1,16 @@
 name: CI
 
-# Push / pull-request gate. The GHCR publisher is a separate workflow
-# (`publish-image.yml`) so a check run can never publish a release image; this one only
-# builds the image without pushing to prove the Dockerfile still works.
+# The one test gate. It runs on every pull request, and `publish-image.yml` calls it
+# (`workflow_call`) before building the GHCR image, so "the tests pass" has a single
+# definition. There is deliberately no `push: main` trigger: a merge starts the
+# publisher, which runs this workflow first — adding the trigger would run it twice.
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -18,7 +18,23 @@ permissions:
 
 jobs:
   checks:
-    uses: ./.github/workflows/checks.yml
+    name: Typecheck, lint, tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm test
+      - name: Production build
+        run: npm run build
 
   audits:
     name: Browser audits (a11y + interaction)
@@ -94,6 +110,8 @@ jobs:
 
   image:
     name: Image build (no push)
+    # The publisher builds the image for real; this proves the Dockerfile on PRs only.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
