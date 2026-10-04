@@ -37,13 +37,20 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \
     PORT=3000
+# Coolify replaces the HEALTHCHECK below with its own `curl`/`wget` probe of the
+# manifest's `healthCheckPath`, run inside the container. This base image ships neither,
+# so without curl every rollout is judged "unhealthy" and rolled back even though the
+# server is up.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system --gid 1001 nodejs \
  && useradd --system --uid 1001 --gid nodejs nextjs
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 USER nextjs
 EXPOSE 3000
-# The app's own readiness endpoint, which also checks the CMS contract version. `node`
-# is the only HTTP client guaranteed to exist in this base image.
+# The app's own readiness endpoint, which also checks the CMS contract version. Uses
+# `node` so this stays valid independent of curl (which Coolify's probe needs, above).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "server.js"]
