@@ -15,8 +15,9 @@ system that carries the layout instead of boxes.
   [`docs/QA.md`](./docs/QA.md).
 - The CMS contract this theme is built against is [`docs/THEME_API.md`](./docs/THEME_API.md).
 
-**Nothing here is deployed.** No domain was changed and no site was published; the manifest
-deliberately declares no deployment strategy (see §Manifest).
+The manifest declares a `registry_image` deployment to the immutable public GHCR repository
+`ghcr.io/hamidnoshady/cms-arch3-theme`. Deploying an artifact remains an explicit CMS
+operator action; a GitHub push publishes and registers an image but never promotes a site.
 
 ---
 
@@ -127,11 +128,13 @@ all empty.
 
 - `POST /api/preview` sets the preview cookie after verifying a signed token. Preview
   bypasses shared caches, is `noindex`, and may show drafts.
-- `POST /api/revalidate` verifies an HMAC over the **raw request body** with a bounded TTL
-  fallback, then revalidates the affected cache tags.
-- Public rendering never includes drafts. Caches are partitioned by tenant, locale, query,
-  and public-vs-preview.
-- `GET /api/health` reports ready only when the CMS's `contractVersion` matches this theme's.
+- `POST /api/revalidate` verifies an HMAC over the **exact raw request bytes**. It returns
+  `202` before purging the named paths, tags and resources, including the cached site descriptor.
+- Public rendering never includes drafts. CMS reads are partitioned by tenant, locale, query,
+  and public-vs-preview, held in this process for three minutes, and served stale while an
+  unavailable CMS is retried in the background.
+- `GET /api/health` is a process-only, unredirected `200` endpoint. It never contacts the CMS
+  or waits for cache warming, so Coolify can probe it immediately after startup.
 
 ## Continuous integration and the release image
 
@@ -139,13 +142,13 @@ Two workflows split the jobs by responsibility:
 
 | Workflow | Runs on | Does |
 | --- | --- | --- |
-| `.github/workflows/ci.yml` | pull requests, manual, called by the publisher | typecheck → lint → tests → production build, the browser audits against the mock topology (`:3200` + slow `:3300`), and (PRs only) a **no-push** image build |
-| `.github/workflows/publish-image.yml` | merge to `main`, `v*` tags, manual dispatch | `ci.yml` as a gate, then build + push to GHCR (`:latest` on `main`, `:<full-commit>`, `:sha-<short>`, semver on tags), verify the served digest, and **register it with the CMS** |
+| `.github/workflows/ci.yml` | pull requests, manual, called by the publisher | validate manifest → install → lint → typecheck → tests → production build, browser audits against the mock topology (`:3200` + slow `:3300`), and (PRs only) a **no-push** linux/amd64 image build |
+| `.github/workflows/publish-image.yml` | push to `main`, `v*` tags, manual dispatch | `ci.yml` as a gate, then Buildx linux/amd64 build + GHCR push, digest verification, and **CMS artifact registration** |
 
 Registration is what makes an image deployable: the CMS only deploys a `theme-artifacts`
-row for the exact commit. Set `ESHOBE_CMS_URL` and
-`ESHOBE_THEME_PACKAGE_ID` (repository variables or secrets) and secret
-`ESHOBE_THEME_ARTIFACT_SECRET` (same value as the CMS's env var). Without them the image
+row for the exact commit. Add these **repository secrets**: `ESHOBE_CMS_URL` (the CMS admin
+origin, never a customer domain), `ESHOBE_THEME_PACKAGE_ID` (the theme-packages row UUID),
+and `ESHOBE_THEME_ARTIFACT_SECRET` (the CMS callback HMAC secret). Without them the image
 is pushed but the run **fails** at the registration step.
 
 The publisher is deliberately a separate workflow: a check run can never publish an image,
@@ -167,26 +170,11 @@ user, and never includes `public/qa` fixtures.
 
 ## Release and rollback
 
-The manifest currently declares **no** `deployment` block, because this theme has never been
-deployed: claiming `registry_image` with an image repository that does not exist would be a
-false claim, and the parser requires one for that strategy. To release:
-
-1. Tag a commit from green `main` (`git tag v0.1.0 && git push --tags`). The publisher
-   runs the checks and pushes `ghcr.io/<owner>/<image>:0.1.0`, `:0.1` and `:sha-<commit>`.
-2. Add to `eshobe.theme.json`:
-   ```json
-   "deployment": {
-     "strategy": "registry_image",
-     "registryProvider": "ghcr",
-     "registryVisibility": "public",
-     "registryImageRepository": "ghcr.io/<owner>/<image>"
-   }
-   ```
-   (or switch to `strategy: "coolify_build"` and let the platform build the repo). Set
-   `previewUrl` if you want a preview link surfaced in the CMS.
-3. Deploy one of the immutable tags. **Roll back by deploying the previous tag** — the
-   theme is versioned by commit and tag, and the CMS records which ref a site was built
-   from. Never roll back by editing a tag in place.
+A push to `main` builds `ghcr.io/hamidnoshady/cms-arch3-theme` and registers its exact
+`sha256:` digest with Eshobe. The CMS/Coolify deployment must pull that digest rather than a
+mutable tag. A release tag adds semantic version tags for people, but production identity
+remains the digest. **Roll back by selecting a previously registered artifact digest** — never
+by editing a tag in place.
 
 ## Security notes
 

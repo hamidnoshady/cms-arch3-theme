@@ -13,17 +13,17 @@ export const revalidateSecret = (): null | string => {
   return value && value.length >= MIN_SECRET_LENGTH ? value : null
 }
 
-export const revalidateSignature = (secret: string, rawBody: string): string =>
+export const revalidateSignature = (secret: string, rawBody: Buffer | string): string =>
   createHmac('sha256', secret).update(rawBody).digest('hex')
 
-/** Accepts the bare hex digest or the documented `sha256=<digest>` form. */
+/** The v1 renderer contract requires the literal `sha256=<hex>` header form. */
 export const verifyRevalidateSignature = (
   secret: string,
-  rawBody: string,
+  rawBody: Buffer | string,
   header: null | string,
 ): boolean => {
-  if (!header) return false
-  const provided = header.replace(/^sha256=/u, '')
+  if (!header || !/^sha256=[0-9a-f]{64}$/iu.test(header)) return false
+  const provided = header.slice('sha256='.length).toLowerCase()
   const expected = Buffer.from(revalidateSignature(secret, rawBody))
   const actual = Buffer.from(provided)
   return expected.length === actual.length && timingSafeEqual(expected, actual)

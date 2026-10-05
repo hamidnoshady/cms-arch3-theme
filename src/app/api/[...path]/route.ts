@@ -1,23 +1,15 @@
 import { NextResponse } from 'next/server'
 
-import { cmsEnv } from '@/lib/cms/client'
+import { cachedCmsRead } from '@/lib/cms/cache'
+import { cmsEnv, requestWithHost } from '@/lib/cms/client'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * CMS-owned public paths, proxied for the `direct` deployment mode (the customer's DNS
- * points at the theme container, so `/api/*` would otherwise 404 here).
- *
- * Security posture:
- * - **Allowlist only.** A fixed set of public content collections; anything else
- *   (orders, users, api-keys, sites, platform endpoints, deployments) is refused before
- *   a socket is opened, so the proxy cannot be steered at a privileged CMS route.
- * - **No credential is attached.** The site key never leaves the server-side client;
- *   visitor `authorization`/`cookie` headers are dropped on the way out.
- * - **No recursion.** If `ESHOBE_CMS_URL` resolves to this same origin, the request is
- *   refused instead of looping back into this container.
- * - `POST` is not proxied here at all; the one public write path
- *   (`/api/form-submissions`) has its own handler with a body limit.
+ * CMS-owned public paths for direct/Coolify deployments. Customer DNS terminates at the
+ * theme container, so these routes must be relayed to the CMS with the visitor's
+ * original Host intact. Theme-owned `/api/health` and `/api/revalidate` have concrete
+ * route handlers and therefore never reach this catch-all route.
  */
 const ALLOWED_EXACT = new Set([
   'categories',
@@ -27,12 +19,16 @@ const ALLOWED_EXACT = new Set([
   'media',
   'pages',
   'posts',
+  'products',
   'redirects',
   'search',
   'site',
+  'store',
+  'theme',
 ])
 
-const ALLOWED_PREFIXES = ['media/file']
+const ALLOWED_PREFIXES = ['checkout', 'media/file', 'payments']
+const FORWARDED_METHODS = new Set(['GET', 'HEAD', 'POST'])
 
 const isAllowed = (segments: string[]): boolean => {
   if (segments.length === 0) return false
@@ -41,10 +37,20 @@ const isAllowed = (segments: string[]): boolean => {
   return ALLOWED_PREFIXES.some((prefix) => joined === prefix || joined.startsWith(`${prefix}/`))
 }
 
+const responseHeaders = (upstream: Headers): Headers => {
+  const headers = new Headers()
+  for (const name of ['cache-control', 'content-type', 'etag', 'last-modified', 'location', 'vary']) {
+    const value = upstream.get(name)
+    if (value) headers.set(name, value)
+  }
+  headers.set('x-content-type-options', 'nosniff')
+  return headers
+}
+
 const forward = async (request: Request, segments: string[]): Promise<Response> => {
   const env = cmsEnv()
   if (!env.cmsUrl) return NextResponse.json({ error: 'cms-unconfigured' }, { status: 503 })
-  if (request.method !== 'GET') {
+  if (!FORWARDED_METHODS.has(request.method)) {
     return NextResponse.json({ error: 'method-not-allowed' }, { status: 405 })
   }
   if (!isAllowed(segments)) {
@@ -57,28 +63,64 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
     return NextResponse.json({ error: 'proxy-recursion-refused' }, { status: 508 })
   }
 
-  const target = new URL(`${cms.origin}/api/${segments.join('/')}`)
+  const path = `/api/${segments.join('/')}`
+  const target = new URL(`${cms.origin}${path}`)
   target.search = incoming.search
-
-  const upstream = await fetch(target, {
-    cache: 'no-store',
-    headers: {
-      accept: request.headers.get('accept') ?? 'application/json',
-      // The CMS resolves the tenant from Host (or the key, which is never attached
-      // here). The original Host is preserved verbatim.
-      ...(request.headers.get('host') ? { 'x-forwarded-host': request.headers.get('host') as string } : {}),
-    },
-    redirect: 'manual',
-  })
-
-  const headers = new Headers()
-  for (const name of ['cache-control', 'content-type', 'etag', 'last-modified', 'vary']) {
-    const value = upstream.headers.get(name)
-    if (value) headers.set(name, value)
+  const host = request.headers.get('host')
+  // Cache GET only: a HEAD response has no body and must never populate a later GET.
+  const isRead = request.method === 'GET'
+  const body = isRead ? undefined : await request.text()
+  const requestHeaders = {
+    accept: request.headers.get('accept') ?? 'application/json',
+    ...(request.headers.get('content-type') ? { 'content-type': request.headers.get('content-type') as string } : {}),
+    ...(host ? { 'x-forwarded-host': host } : {}),
   }
-  headers.set('x-content-type-options', 'nosniff')
 
-  return new NextResponse(upstream.body, { headers, status: upstream.status })
+  const load = async () => {
+    try {
+      // Undici deliberately derives Host from the URL and ignores a `fetch` Host
+      // header. Use node:http(s) when there is an incoming Host so the CMS receives
+      // the customer domain it uses as tenant authority.
+      if (host) {
+        const upstream = await requestWithHost(target.toString(), host, {
+          body,
+          headers: requestHeaders,
+          method: request.method,
+        })
+        return { body: upstream.body, headers: responseHeaders(upstream.headers), status: upstream.status }
+      }
+
+      const upstream = await fetch(target, {
+        body,
+        cache: 'no-store',
+        headers: requestHeaders,
+        method: request.method,
+        redirect: 'manual',
+        signal: AbortSignal.timeout(5000),
+      })
+      return { body: await upstream.text(), headers: responseHeaders(upstream.headers), status: upstream.status }
+    } catch {
+      return {
+        body: JSON.stringify({ error: 'cms-unavailable' }),
+        headers: new Headers({ 'content-type': 'application/json' }),
+        status: 503,
+      }
+    }
+  }
+
+  const upstream = isRead
+    ? await cachedCmsRead({
+        key: `proxy:${cms.origin}:${host ?? 'no-host'}:${path}${incoming.search}`,
+        load,
+        path,
+        tags: [`proxy:${host ?? 'no-host'}:${segments[0] ?? 'api'}`],
+      })
+    : await load()
+
+  return new NextResponse(request.method === 'HEAD' ? null : upstream.body, {
+    headers: upstream.headers,
+    status: upstream.status,
+  })
 }
 
 type Context = { params: Promise<{ path?: string[] }> }
@@ -88,5 +130,12 @@ export const GET = async (request: Request, context: Context): Promise<Response>
   return forward(request, path)
 }
 
-export const POST = async (): Promise<Response> =>
-  NextResponse.json({ error: 'method-not-allowed' }, { status: 405 })
+export const HEAD = async (request: Request, context: Context): Promise<Response> => {
+  const { path = [] } = await context.params
+  return forward(request, path)
+}
+
+export const POST = async (request: Request, context: Context): Promise<Response> => {
+  const { path = [] } = await context.params
+  return forward(request, path)
+}

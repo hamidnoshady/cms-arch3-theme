@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { cmsEnv } from '@/lib/cms/client'
+import { cmsEnv, requestWithHost } from '@/lib/cms/client'
 import { fixturesEnabled } from '@/lib/cms/fixtures'
 
 export const dynamic = 'force-dynamic'
@@ -34,18 +34,34 @@ export const POST = async (request: Request) => {
 
   const target = `${env.cmsUrl.replace(/\/$/, '')}/api/form-submissions`
   const host = request.headers.get('host')
-  const response = await fetch(target, {
-    body: raw,
-    cache: 'no-store',
-    headers: {
-      'content-type': request.headers.get('content-type') ?? 'application/json',
-      ...(host ? { 'x-forwarded-host': host } : {}),
-    },
-    method: 'POST',
-  })
+  const headers = {
+    'content-type': request.headers.get('content-type') ?? 'application/json',
+    ...(host ? { 'x-forwarded-host': host } : {}),
+  }
 
-  return new NextResponse(await response.text(), {
-    headers: { 'cache-control': 'no-store', 'content-type': 'application/json' },
-    status: response.status,
-  })
+  try {
+    // Node's fetch derives Host from the upstream URL. The native client is the only
+    // safe way to preserve the customer Host that the CMS uses for tenant resolution.
+    if (host) {
+      const response = await requestWithHost(target, host, { body: raw, headers, method: 'POST' })
+      return new NextResponse(response.body, {
+        headers: { 'cache-control': 'no-store', 'content-type': 'application/json' },
+        status: response.status,
+      })
+    }
+
+    const response = await fetch(target, {
+      body: raw,
+      cache: 'no-store',
+      headers,
+      method: 'POST',
+      signal: AbortSignal.timeout(5000),
+    })
+    return new NextResponse(await response.text(), {
+      headers: { 'cache-control': 'no-store', 'content-type': 'application/json' },
+      status: response.status,
+    })
+  } catch {
+    return NextResponse.json({ error: 'cms-unavailable' }, { headers: { 'cache-control': 'no-store' }, status: 503 })
+  }
 }
