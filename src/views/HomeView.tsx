@@ -10,6 +10,7 @@ import { metadataFor } from '@/lib/seo/metadata'
 import { switchTargetsForPath } from '@/lib/seo/translations'
 import { labels as dictionary } from '@/lib/theme/labels'
 import type { Locale } from '@/lib/cms/types'
+import { formatNumber } from '@/lib/runtime'
 import { mediaUrl } from '@/lib/utils/media'
 
 /**
@@ -39,6 +40,13 @@ export const HomeView = async ({ locale }: { locale: Locale }) => {
   const settings = ctx.site.themeRuntime?.settings ?? {}
   const branding = ctx.site.branding
   const t = dictionary(locale)
+  const logoMedia = branding?.homeLogo ?? branding?.primaryLogo ?? branding?.logo ?? null
+  const logoUrl = mediaUrl(logoMedia, ctx.site.media.origin)
+  // Two-digit drafting numbers (۰۱, ۰۲ … / 01, 02 …) through the runtime formatter.
+  const indexed = links.map((link, index) => ({
+    ...link,
+    index: formatNumber(index + 1, locale, { minimumIntegerDigits: 2, useGrouping: false }),
+  }))
 
   // The switch is path-based: the home path is locale-neutral, so `href` applies the
   // prefix exactly once. Pre-prefixing it here produced `/en/en` on the English home.
@@ -48,12 +56,13 @@ export const HomeView = async ({ locale }: { locale: Locale }) => {
       enterLabel={t.enter}
       introDuration={typeof settings.introDuration === 'number' ? settings.introDuration : 1200}
       introEnabled={settings.introAnimation !== false}
-      links={links}
+      links={indexed}
       locale={locale}
-      logoUrl={mediaUrl(
-        branding?.homeLogo ?? branding?.primaryLogo ?? branding?.logo ?? null,
-        ctx.site.media.origin,
-      )}
+      logo={
+        logoUrl
+          ? { height: logoMedia?.height ?? null, url: logoUrl, width: logoMedia?.width ?? null }
+          : null
+      }
       menuLabel={t.menuTitle}
       menuNoScript={t.menuNoScript}
       name={branding?.displayName ?? ctx.site.name}

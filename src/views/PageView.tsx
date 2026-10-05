@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { Blocks } from '@/components/blocks/Blocks'
 import { RichText } from '@/components/blocks/RichText'
 import { ContentContainer } from '@/components/design/Container'
-import { CmsImage } from '@/components/media/CmsImage'
+import { FramedMedia } from '@/components/media/CmsImage'
 import { getPageBySlug } from '@/lib/cms/endpoints'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { pagePath } from '@/lib/runtime'
@@ -68,9 +68,7 @@ export const PageView = async ({ locale, slug }: { locale: Locale; slug: string 
           </div>
         ) : null}
         {showHero && heroMedia ? (
-          <div className="frame mt-10" style={{ aspectRatio: heroMedia.width && heroMedia.height ? `${heroMedia.width} / ${heroMedia.height}` : '3 / 2' }}>
-            <CmsImage className="frame__media" media={heroMedia} origin={ctx.site.media.origin} priority sizes="100vw" />
-          </div>
+          <FramedMedia cap={76} className="mt-10" media={heroMedia} origin={ctx.site.media.origin} priority size="wide" />
         ) : null}
       </ContentContainer>
       <Blocks blocks={page.layout} context={ctx} />

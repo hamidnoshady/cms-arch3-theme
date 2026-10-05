@@ -5,7 +5,7 @@ import { RichText } from '@/components/blocks/RichText'
 import { ContentContainer } from '@/components/design/Container'
 import { DecorativeMark } from '@/components/design/DecorativeMark'
 import { Rule } from '@/components/design/Rule'
-import { CmsImage } from '@/components/media/CmsImage'
+import { FramedMedia } from '@/components/media/CmsImage'
 import { authorLine } from '@/components/blog/PostRows'
 import { getPostContext, postHref } from '@/lib/cms/content'
 import { loadPageContext } from '@/lib/cms/pageContext'
@@ -107,9 +107,7 @@ export const ArticleView = async ({
           </header>
 
           {hero ? (
-            <div className="frame mt-8" style={{ aspectRatio: hero.width && hero.height ? `${hero.width} / ${hero.height}` : '3 / 2' }}>
-              <CmsImage className="frame__media" media={hero} origin={ctx.site.media.origin} priority sizes="(min-width: 1024px) 60vw, 100vw" />
-            </div>
+            <FramedMedia cap={70} className="mt-8" media={hero} origin={ctx.site.media.origin} priority size="content" />
           ) : null}
 
           <div className="mt-10">

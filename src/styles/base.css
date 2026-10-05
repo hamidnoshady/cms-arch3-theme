@@ -53,6 +53,11 @@
     overflow: visible;
   }
 
+  /* Full-bleed figures use 100vw, which includes a classic scrollbar's width. */
+  body {
+    overflow-x: clip;
+  }
+
   /* Mixed Persian/Latin/number strings (titles, captions, captions with a date) keep
      the direction the author typed per field, without moving the surrounding layout. */
   [dir='auto'],

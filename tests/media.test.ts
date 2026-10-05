@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   aspectRatio,
+  frameRatio,
+  mediaPresentation,
+  ratioNumber,
   frameRatioFor,
   mediaAlt,
   mediaOriginAllowed,
@@ -127,5 +130,40 @@ describe('lexical helpers', () => {
   it('collects inline and block media that actually has a URL', () => {
     const found = collectMedia(content)
     expect(found.map((entry) => entry.id)).toEqual(['m9', 'm10'])
+  })
+})
+
+describe('frame sizing rule', () => {
+  const photo = (width: number, height: number) => ({ height, id: 'm', url: '/x.jpg', width })
+
+  it('buckets by orientation instead of using the exact pixel ratio', () => {
+    expect(frameRatio(photo(1080, 1350))).toBe('3 / 4')
+    expect(frameRatio(photo(1500, 1000))).toBe('3 / 2')
+    expect(frameRatio(photo(1920, 1080))).toBe('16 / 9')
+    expect(frameRatio(photo(1000, 1000))).toBe('1 / 1')
+  })
+
+  it('honours an editor choice, and "original" only when dimensions exist', () => {
+    expect(frameRatio(photo(1080, 1350), '16/9')).toBe('16 / 9')
+    expect(frameRatio(photo(1080, 1350), 'original')).toBe('1080 / 1350')
+    expect(frameRatio({ id: 'm', url: '/x.jpg' }, 'original')).toBe('3 / 2')
+  })
+
+  it('validates CMS presentation fields and falls back safely', () => {
+    expect(mediaPresentation({ aspect: '4/5', caption: '  نمای شمالی ', size: 'wide' })).toEqual({
+      aspect: '4/5',
+      caption: 'نمای شمالی',
+      size: 'wide',
+    })
+    expect(mediaPresentation({ aspect: '7/3', caption: 3, size: 'giant' })).toEqual({
+      aspect: 'auto',
+      caption: null,
+      size: 'content',
+    })
+  })
+
+  it('converts a ratio string to the number the height cap multiplies', () => {
+    expect(ratioNumber('3 / 4')).toBeCloseTo(0.75)
+    expect(ratioNumber('nonsense')).toBe(1.5)
   })
 })

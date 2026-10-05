@@ -115,3 +115,52 @@ export const objectPosition = (media: Media | null | undefined): undefined | str
 
 export const mediaAlt = (media: Media | null | undefined, fallback = ''): string =>
   (media?.alt ?? '').trim() || fallback
+
+/* --- the frame sizing rule ---------------------------------------------------
+   A frame never takes a photograph's exact pixel ratio at full width: a 1080×1350
+   portrait at the content width is taller than two screens. Every framed image
+   gets (1) a ratio from a short, deliberate set — chosen by the editor, or derived
+   from the photo's orientation — and (2) a height cap in viewport units, so the
+   frame narrows instead of growing past the screen. The photo fills the frame
+   (`object-fit: cover`, focal point respected).
+------------------------------------------------------------------------------ */
+
+export const FRAME_ASPECTS = ['16/9', '3/2', '4/3', '1/1', '4/5', '3/4'] as const
+export type FrameAspect = (typeof FRAME_ASPECTS)[number] | 'auto' | 'original'
+
+const asRatio = (value: string): string => value.replace('/', ' / ')
+
+/** The frame ratio for a medium: the editor's choice, else an orientation bucket. */
+export const frameRatio = (media: Media | null | undefined, aspect: FrameAspect | null | undefined = 'auto'): string => {
+  if (aspect && (FRAME_ASPECTS as readonly string[]).includes(aspect)) return asRatio(aspect)
+  const width = media?.width ?? 0
+  const height = media?.height ?? 0
+  if (aspect === 'original' && width && height) return `${width} / ${height}`
+  if (!width || !height) return '3 / 2'
+  const ratio = width / height
+  if (ratio >= 1.6) return '16 / 9'
+  return frameRatioFor(media)
+}
+
+export const ratioNumber = (ratio: string): number => {
+  const [w, h] = ratio.split('/').map((part) => Number(part.trim()))
+  return w && h ? w / h : 1.5
+}
+
+export const isFrameAspect = (value: unknown): value is FrameAspect =>
+  typeof value === 'string' && (value === 'auto' || value === 'original' || (FRAME_ASPECTS as readonly string[]).includes(value))
+
+export const FRAME_SIZES = ['narrow', 'content', 'wide', 'full'] as const
+export type FrameSize = (typeof FRAME_SIZES)[number]
+
+export const isFrameSize = (value: unknown): value is FrameSize =>
+  typeof value === 'string' && (FRAME_SIZES as readonly string[]).includes(value)
+
+/** Editor-chosen presentation for a media row/block; every field optional, validated. */
+export const mediaPresentation = (
+  fields: Record<string, unknown>,
+): { aspect: FrameAspect; caption: null | string; size: FrameSize } => ({
+  aspect: isFrameAspect(fields.aspect) ? fields.aspect : 'auto',
+  caption: typeof fields.caption === 'string' && fields.caption.trim() ? fields.caption.trim() : null,
+  size: isFrameSize(fields.size) ? fields.size : 'content',
+})

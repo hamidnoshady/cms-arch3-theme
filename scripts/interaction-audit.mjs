@@ -111,6 +111,19 @@ const main = async () => {
     await page.waitForSelector(selector, { timeout, visible: true })
   }
 
+  // The home menu lives below the entrance in normal flow; "opened" means scrolled into view.
+  const menuInView = async (page, timeout = 8000) => {
+    await page.waitForFunction(
+      () => {
+        const menu = document.querySelector('#home-menu')
+        if (!menu) return false
+        const box = menu.getBoundingClientRect()
+        return box.top < window.innerHeight * 0.5 && box.bottom > 0
+      },
+      { timeout },
+    )
+  }
+
   // ------------------------------------------------------------------ entrance
   await check('home: the Enter control is visible before any interaction', async (page) => {
     await page.setViewport({ width: 1440, height: 900 })
@@ -126,7 +139,7 @@ const main = async () => {
     await page.goto(`${BASE}/`, { waitUntil: 'load' })
     await loaded(page, '.stage .btn')
     await page.keyboard.press('Enter')
-    await waitFor(page, '.menu-row__label')
+    await menuInView(page)
     const rows = await page.$$eval('.menu-row__label', (els) => els.map((el) => el.textContent.trim()))
     if (rows.length === 0) throw new Error('menu opened with no rows')
     return `${rows.length} rows after a keypress`
@@ -137,8 +150,8 @@ const main = async () => {
     await page.goto(`${BASE}/`, { waitUntil: 'load' })
     await loaded(page, '.stage .btn')
     await page.click('.stage .btn')
-    await waitFor(page, '.menu-row__label')
-    return 'menu opened'
+    await menuInView(page)
+    return 'menu scrolled into view'
   })
 
   await check('home: the intro does not replay (menu shown on the second visit)', async (page) => {
@@ -146,13 +159,11 @@ const main = async () => {
     await page.goto(`${BASE}/`, { waitUntil: 'load' })
     await loaded(page, '.stage .btn')
     await page.click('.stage .btn')
-    await waitFor(page, '.menu-row__label')
+    await menuInView(page)
     await page.goto(`${BASE}/about`, { waitUntil: 'load' })
     await loaded(page, 'main')
     await page.goto(`${BASE}/`, { waitUntil: 'load' })
-    await waitFor(page, '.menu-row__label')
-    const enterControl = await page.$('.stage .btn')
-    if (enterControl) throw new Error('the entrance came back after the menu was entered once')
+    await menuInView(page)
     return 'went straight to the menu'
   })
 
@@ -273,7 +284,6 @@ const main = async () => {
     await sleep(1500)
     const url = page.url()
     if (!url.includes('/en')) throw new Error(`language link did not navigate (still ${url})`)
-    if (await page.$('.menu-row__label')) throw new Error('the stage shortcut opened the menu instead of following the link')
     return `navigated to ${url.replace(BASE, '')}`
   })
 

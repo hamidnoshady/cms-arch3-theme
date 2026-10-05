@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
-import { CmsImage } from '@/components/media/CmsImage'
+import { FramedMedia } from '@/components/media/CmsImage'
 import type { SiteContext } from '@/lib/cms/context'
 import type { LexicalNode, Media } from '@/lib/cms/types'
 import { cn } from '@/lib/utils/cn'
@@ -106,13 +106,7 @@ const Node = ({
       const value = node.value as Media | null | undefined
       if (isMedia(value)) {
         return (
-          <figure className="frame" style={{ aspectRatio: `${value.width ?? 4} / ${value.height ?? 3}` }}>
-            <CmsImage
-              className="frame__media"
-              media={value}
-              origin={context.site.media.origin}
-            />
-          </figure>
+          <FramedMedia cap={70} media={value} origin={context.site.media.origin} size="content" />
         )
       }
       return null

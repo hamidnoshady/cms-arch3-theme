@@ -85,6 +85,41 @@ describe('direct-mode API proxy', () => {
     }
   })
 
+  it('relays media files byte for byte with the customer Host', async () => {
+    // A JPEG header plus bytes that are invalid UTF-8: decoding them as text replaced
+    // each with U+FFFD and every CMS image on a direct deployment arrived corrupt.
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x80, 0x9f, 0xc3, 0xff, 0xd9])
+    const hosts: (string | undefined)[] = []
+    const cms = createServer((request, response) => {
+      hosts.push(request.headers.host)
+      response.setHeader('content-type', 'image/jpeg')
+      response.setHeader('cache-control', 'public, max-age=31536000')
+      response.end(jpeg)
+    })
+    await new Promise<void>((resolve) => cms.listen(0, '127.0.0.1', resolve))
+    const address = cms.address()
+    if (!address || typeof address === 'string') throw new Error('test CMS did not expose a TCP port')
+    process.env.ESHOBE_CMS_URL = `http://127.0.0.1:${address.port}`
+
+    try {
+      const context = { params: Promise.resolve({ path: ['media', 'file', 'photo.jpg'] }) }
+      const request = () =>
+        new Request('https://customer.example/api/media/file/photo.jpg', { headers: { host: 'customer.example' } })
+
+      const first = await proxyGet(request(), context)
+      expect(first.status).toBe(200)
+      expect(first.headers.get('content-type')).toBe('image/jpeg')
+      expect(first.headers.get('cache-control')).toBe('public, max-age=31536000')
+      expect(Buffer.from(await first.arrayBuffer()).equals(jpeg)).toBe(true)
+
+      // Not held in the text read cache: a second request goes upstream again.
+      await proxyGet(request(), context)
+      expect(hosts).toEqual(['customer.example', 'customer.example'])
+    } finally {
+      await new Promise<void>((resolve, reject) => cms.close((error) => (error ? reject(error) : resolve())))
+    }
+  })
+
   it('forwards public checkout POSTs but does not cache them', async () => {
     const calls: { body: string; host?: string; url?: string }[] = []
     const cms = createServer((request, response) => {

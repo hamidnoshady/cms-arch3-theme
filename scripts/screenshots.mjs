@@ -207,8 +207,9 @@ const main = async () => {
     }
 
     if (shot.action === 'enter-stage') {
-      await page.mouse.wheel({ deltaY: 240 })
-      await new Promise((resolve) => setTimeout(resolve, 1400))
+      // The menu sits below the entrance; the Enter control scrolls it into view.
+      await page.click('.stage .btn')
+      await new Promise((resolve) => setTimeout(resolve, 1600))
     }
     if (shot.action === 'open-drawer') {
       await page.evaluate(() => {

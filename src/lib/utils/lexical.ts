@@ -17,10 +17,13 @@ export const collectMedia = (
   const found: { alt?: null | string; height?: null | number; id: string; url?: null | string; width?: null | number }[] = []
   const visit = (node: LexicalNode): void => {
     const fields = (node.fields ?? {}) as Record<string, unknown>
-    const candidate = node.type === 'upload' ? node.value : fields.media
-    if (candidate && typeof candidate === 'object' && 'id' in (candidate as Record<string, unknown>)) {
-      const media = candidate as { id: string; alt?: null | string; url?: null | string; width?: null | number; height?: null | number }
-      if (media.url) found.push(media)
+    // `upload` nodes, `mediaBlock.media`, and every image of a `mediaGrid` block.
+    const candidates = node.type === 'upload' ? [node.value] : [fields.media, ...(Array.isArray(fields.images) ? fields.images : [])]
+    for (const candidate of candidates) {
+      if (candidate && typeof candidate === 'object' && 'id' in (candidate as Record<string, unknown>)) {
+        const media = candidate as { id: string; alt?: null | string; url?: null | string; width?: null | number; height?: null | number }
+        if (media.url) found.push(media)
+      }
     }
     for (const child of node.children ?? []) visit(child)
   }

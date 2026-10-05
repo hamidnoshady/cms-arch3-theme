@@ -116,14 +116,15 @@
     }
   }
 
-  /* Full-viewport entrance stage (home only). */
+  /* Home: a full-viewport entrance followed by the menu, in normal document flow.
+     `overflow-x: clip` (not hidden) so the sticky bar keeps working. */
   .stage {
     position: relative;
     display: flex;
     flex-direction: column;
     min-block-size: 100svh;
     inline-size: 100%;
-    overflow: hidden;
+    overflow-x: clip;
   }
 
 }
