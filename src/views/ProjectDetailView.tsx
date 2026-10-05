@@ -2,11 +2,10 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 
 import { ContentContainer } from '@/components/design/Container'
-import { DecorativeMark } from '@/components/design/DecorativeMark'
 import { Rule } from '@/components/design/Rule'
 import { RichText } from '@/components/blocks/RichText'
 import { Gallery, type GalleryItem } from '@/components/media/Gallery'
-import { CmsImage } from '@/components/media/CmsImage'
+import { FramedMedia } from '@/components/media/CmsImage'
 import { ProjectFacts } from '@/components/projects/ProjectCard'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { getPostContext, postHref } from '@/lib/cms/content'
@@ -97,16 +96,7 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
 
       {hero ? (
         <ContentContainer className="mt-10">
-          <div className="frame relative" style={{ aspectRatio: hero.width && hero.height ? `${hero.width} / ${hero.height}` : '3 / 2' }}>
-            <DecorativeMark className="top-1 end-1 hidden md:block" variant="corner" />
-            <CmsImage
-              className="frame__media"
-              media={hero}
-              origin={ctx.site.media.origin}
-              priority
-              sizes="(min-width: 1440px) 1360px, 100vw"
-            />
-          </div>
+          <FramedMedia cap={78} media={hero} origin={ctx.site.media.origin} priority size="wide" />
         </ContentContainer>
       ) : null}
 

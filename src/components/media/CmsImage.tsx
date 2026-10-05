@@ -1,10 +1,15 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
+import { DecorativeMark } from '@/components/design/DecorativeMark'
 import type { Media } from '@/lib/cms/types'
 import { cn } from '@/lib/utils/cn'
 import {
   aspectRatio,
+  frameRatio,
   frameRatioFor,
+  ratioNumber,
+  type FrameAspect,
+  type FrameSize,
   isSvg,
   mediaAlt,
   mediaOriginAllowed,
@@ -101,3 +106,53 @@ export const MediaFrame = ({
     <CmsImage className={cn('frame__media', frameClassName)} {...props} />
   </span>
 )
+
+/**
+ * The one way a page shows a standalone photograph (hero, media block, image in an
+ * article): a ratio from the frame rule and a viewport-height cap, so a portrait never
+ * outgrows the screen and frames stay a consistent family instead of every image's
+ * exact pixel size. `size` sets how wide the figure may run inside its container.
+ */
+export const FramedMedia = ({
+  aspect = 'auto',
+  cap = 72,
+  caption,
+  className,
+  mark = true,
+  media,
+  origin,
+  priority = false,
+  size = 'content',
+  sizes,
+}: {
+  aspect?: FrameAspect | null
+  /** Maximum frame height, in `svh`. */
+  cap?: number
+  caption?: ReactNode
+  className?: string
+  mark?: boolean
+  media: Media
+  origin: string
+  priority?: boolean
+  size?: FrameSize
+  sizes?: string
+}) => {
+  const ratio = frameRatio(media, aspect)
+  const style = { '--ar': ratioNumber(ratio), '--frame-cap': `${cap}svh`, aspectRatio: ratio } as CSSProperties
+  return (
+    <figure className={cn('media-figure', `media-figure--${size}`, className)}>
+      <span className="frame frame--capped" style={style}>
+        {mark ? <DecorativeMark className="top-1 end-1 hidden md:block" variant="corner" /> : null}
+        <CmsImage
+          className="frame__media"
+          media={media}
+          origin={origin}
+          priority={priority}
+          ratio={ratio}
+          sizes={sizes ?? (size === 'full' ? '100vw' : size === 'narrow' ? '(min-width: 768px) 36rem, 100vw' : '(min-width: 1440px) 1360px, 100vw')}
+        />
+      </span>
+      {caption ? <figcaption className="media-figure__caption type-caption">{caption}</figcaption> : null}
+    </figure>
+  )
+}

@@ -8,6 +8,7 @@ import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui
 import type { Locale } from '@/lib/cms/types'
 import { formatNumber } from '@/lib/runtime'
 import { cn } from '@/lib/utils/cn'
+import { frameRatioFor } from '@/lib/utils/media'
 
 /**
  * Gallery + lightbox.
@@ -17,6 +18,11 @@ import { cn } from '@/lib/utils/cn'
  * controls and direction-aware Arrow keys move between images; the lightbox title and
  * the politely-announced counter name the current position in the active locale.
  */
+
+/** Thumbnails follow the frame rule's orientation buckets, not each photo's exact size. */
+const thumbRatio = (item: { height?: number; width?: number }): string =>
+  frameRatioFor({ height: item.height ?? null, id: '', width: item.width ?? null })
+
 export type GalleryItem = {
   alt: string
   height?: number
@@ -81,7 +87,7 @@ export const Gallery = ({
             <button
               className="gallery-item gallery-item--button frame"
               onClick={() => show(index)}
-              style={{ aspectRatio: item.width && item.height ? `${item.width} / ${item.height}` : '4 / 3' }}
+              style={{ aspectRatio: thumbRatio(item) }}
               type="button"
             >
               <DecorativeMark className="top-1 end-1 hidden md:block" variant="corner" />
@@ -94,7 +100,7 @@ export const Gallery = ({
                 sizes="(min-width: 768px) 33vw, 50vw"
                 src={item.src}
                 srcSet={item.srcSet}
-                style={{ aspectRatio: item.width && item.height ? `${item.width} / ${item.height}` : '4 / 3' }}
+                style={{ aspectRatio: thumbRatio(item) }}
                 width={item.width}
               />
             </button>

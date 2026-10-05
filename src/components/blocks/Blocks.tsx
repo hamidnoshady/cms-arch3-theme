@@ -6,7 +6,7 @@ import { DecorativeMark, type MarkVariant } from '@/components/design/Decorative
 import { Rule } from '@/components/design/Rule'
 import { Type } from '@/components/design/Type'
 import { CmsForm } from '@/components/forms/CmsForm'
-import { CmsImage } from '@/components/media/CmsImage'
+import { CmsImage, FramedMedia } from '@/components/media/CmsImage'
 import { Gallery, type GalleryItem } from '@/components/media/Gallery'
 import {
   Accordion,
@@ -22,7 +22,7 @@ import { formatNumber, toLocaleDigits } from '@/lib/runtime'
 import { postHref } from '@/lib/cms/content'
 import { cn } from '@/lib/utils/cn'
 import { dateText } from '@/lib/utils/dates'
-import { isMedia, mediaSrcSet, mediaUrl } from '@/lib/utils/media'
+import { isMedia, mediaPresentation, mediaSrcSet, mediaUrl } from '@/lib/utils/media'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { warnUnknown } from './node'
 import { RichText } from './RichText'
@@ -129,24 +129,48 @@ const asMedia = (value: unknown): Media | null => (isMedia(value as never) ? (va
 
 /* --- blocks --------------------------------------------------------------- */
 
+/**
+ * Column widths are the editor's: each column spans part of a 12-track grid on wide
+ * screens and stacks on phones. Written out in full so Tailwind generates every class.
+ */
+const COLUMN_SPAN: Record<string, string> = {
+  full: 'lg:col-span-12',
+  half: 'lg:col-span-6',
+  oneQuarter: 'lg:col-span-3',
+  oneThird: 'lg:col-span-4',
+  threeQuarters: 'lg:col-span-9',
+  twoThirds: 'lg:col-span-8',
+}
+const TABLET_SPAN: Record<string, string> = {
+  full: 'md:col-span-6',
+  half: 'md:col-span-3',
+  oneQuarter: 'md:col-span-3',
+  oneThird: 'md:col-span-3',
+  threeQuarters: 'md:col-span-6',
+  twoThirds: 'md:col-span-6',
+}
+
 const ContentBlock = async ({ context, row }: { context: SiteContext; row: BlockRow }) => {
   const columns = Array.isArray(row.columns)
-    ? (row.columns as { enableLink?: boolean; link?: CmsLink; richText?: unknown }[])
+    ? (row.columns as { enableLink?: boolean; link?: CmsLink; richText?: unknown; size?: string }[])
     : []
   if (columns.length === 0) return null
   return (
     <BlockShell>
-      <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
-        {columns.map((column, index) => (
-          <div key={`column-${index}`}>
-            <RichText content={column.richText as never} context={context} fallbackDir={context.dir} />
-            {column.enableLink && column.link ? (
-              <Link className="link-inline type-ui mt-4 target-standalone" href={linkHref(column.link)}>
-                {linkLabel(column.link)}
-              </Link>
-            ) : null}
-          </div>
-        ))}
+      <div className="grid grid-cols-1 gap-x-10 gap-y-12 md:grid-cols-6 lg:grid-cols-12">
+        {columns.map((column, index) => {
+          const size = column.size && COLUMN_SPAN[column.size] ? column.size : 'oneThird'
+          return (
+            <div className={cn('min-w-0', TABLET_SPAN[size], COLUMN_SPAN[size])} key={`column-${index}`}>
+              <RichText content={column.richText as never} context={context} fallbackDir={context.dir} />
+              {column.enableLink && column.link ? (
+                <Link className="link-inline type-ui mt-4 target-standalone" href={linkHref(column.link)}>
+                  {linkLabel(column.link)}
+                </Link>
+              ) : null}
+            </div>
+          )
+        })}
       </div>
     </BlockShell>
   )
@@ -158,13 +182,10 @@ const MediaBlock = ({ context, row }: { context: SiteContext; row: BlockRow }) =
     warnUnknown('mediaBlock with unpopulated media')
     return null
   }
+  const { aspect, caption, size } = mediaPresentation(row as Record<string, unknown>)
   return (
     <BlockShell tone="tight">
-      <div className="frame mx-auto max-w-[60rem]" style={{ aspectRatio: `${media.width ?? 3} / ${media.height ?? 2}` }}>
-        <DecorativeMark className="top-1 end-1 hidden md:block" variant="corner" />
-        <CmsImage className="frame__media" media={media} origin={context.site.media.origin} sizes="(min-width: 1024px) 60vw, 100vw" />
-      </div>
-      {media.alt ? <p className="type-caption mt-3 text-center">{media.alt}</p> : null}
+      <FramedMedia aspect={aspect} cap={size === 'full' ? 82 : 72} caption={caption} media={media} origin={context.site.media.origin} size={size} />
     </BlockShell>
   )
 }

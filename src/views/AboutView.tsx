@@ -5,7 +5,7 @@ import { RichText } from '@/components/blocks/RichText'
 import { ContentContainer } from '@/components/design/Container'
 import { DecorativeMark } from '@/components/design/DecorativeMark'
 import { Rule } from '@/components/design/Rule'
-import { CmsImage } from '@/components/media/CmsImage'
+import { FramedMedia } from '@/components/media/CmsImage'
 import { EmptyState } from '@/components/states/States'
 import { getSectionPage } from '@/lib/cms/content'
 import { loadPageContext } from '@/lib/cms/pageContext'
@@ -100,15 +100,13 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
 
           <div className="relative">
             {image ? (
-              <span className="frame block" style={{ aspectRatio: image.width && image.height ? `${image.width} / ${image.height}` : '4 / 5' }}>
-                <CmsImage
-                  className="frame__media"
-                  media={image}
-                  origin={ctx.site.media.origin}
-                  sizes="(min-width: 1024px) 42vw, 100vw"
-                />
-                <DecorativeMark className="bottom-1 end-1 hidden md:block" variant="corner" />
-              </span>
+              <FramedMedia
+                cap={70}
+                media={image}
+                origin={ctx.site.media.origin}
+                size="wide"
+                sizes="(min-width: 1024px) 42vw, 100vw"
+              />
             ) : (
               <span aria-hidden="true" className="skeleton block" style={{ aspectRatio: '4 / 5' }} />
             )}

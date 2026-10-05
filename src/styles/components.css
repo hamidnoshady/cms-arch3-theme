@@ -255,42 +255,477 @@
     font-weight: var(--weight-strong);
   }
 
-  /* Home menu row: hover/focus affordance is a real underline on the label (the
-     decorative mark is never the only signal) and a mirrored corner fragment that
-     follows the reading direction. */
-  .menu-row__label {
-    min-inline-size: 0;
+  /* --- standalone media (FramedMedia) ------------------------------------- */
+
+  .media-figure {
+    margin-inline: auto;
+    margin-block: 0;
   }
 
-  .menu-row:hover .menu-row__label,
-  .menu-row:focus-visible .menu-row__label {
-    text-decoration: underline;
-    text-decoration-thickness: var(--line-w);
-    text-underline-offset: 0.35em;
+  .prose .media-figure,
+  .prose figure.frame {
+    margin-block: var(--space-10);
   }
 
-  .menu-row__mark {
+  .media-figure--narrow {
+    max-inline-size: 36rem;
+  }
+
+  .media-figure--content {
+    max-inline-size: 60rem;
+  }
+
+  .media-figure--wide {
+    max-inline-size: none;
+  }
+
+  /* Bleeds to the viewport edges from inside any container; `overflow-x: clip` on
+     the body keeps a scrollbar's width from adding a horizontal scroll. */
+  .media-figure--full {
+    inline-size: 100vw;
+    max-inline-size: 100vw;
+    margin-inline: calc(50% - 50vw);
+  }
+
+  .media-figure--full .frame--capped {
+    max-inline-size: 100%;
+  }
+
+  .media-figure__caption {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-block-start: var(--space-3);
+    color: var(--ink-secondary);
+  }
+
+  .media-figure__caption::before {
+    content: '';
+    flex: 0 0 1rem;
+    block-size: var(--line-w);
+    translate: 0 -0.3em;
+    background: var(--line-structural-color);
+  }
+
+  .media-figure--full .media-figure__caption {
+    padding-inline: var(--gutter);
+  }
+
+  .media-grid {
+    margin: 0;
+  }
+
+  .media-grid__list {
+    display: grid;
+    gap: var(--grid-gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: 48rem) {
+    .media-grid__list--3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .media-grid__list--4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* --- home ---------------------------------------------------------------
+     The menu is drawn like a sheet of dimensions: every row sits on a hairline
+     with end ticks (an architectural dimension line), numbered in drafting
+     style. Hover is three coordinated, compositor-only moves: the label steps
+     forward, a leader line extends from it to an arrow, and the other rows
+     recede. The underline on the label stays, so the affordance never depends
+     on the faint linework alone.
+  ------------------------------------------------------------------------- */
+
+  .home {
+    --dir-sign: 1;
+  }
+
+  [dir='rtl'] .home,
+  .home[dir='rtl'] {
+    --dir-sign: -1;
+  }
+
+  .home-bar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-block-size: 4rem;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(6px);
+  }
+
+  .home-bar__mark {
+    display: flex;
+    align-items: center;
+    block-size: 2rem;
+  }
+
+  .home-bar__mark img {
+    block-size: 2rem;
+    inline-size: auto;
+    max-inline-size: 9rem;
+    object-fit: contain;
+  }
+
+  .home-intro {
+    position: relative;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: var(--space-12);
+    min-block-size: calc(100svh - 4rem);
+    padding-block: var(--space-8) var(--space-16);
+  }
+
+  .home-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-8);
+    will-change: transform, opacity;
+  }
+
+  .home-logo__inner {
+    position: relative;
+    padding: clamp(1.25rem, 3vw, 2.5rem);
+  }
+
+  .home-logo__frame {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .home-logo__corner {
+    position: absolute;
+    inline-size: 18px;
+    block-size: 18px;
+    overflow: visible;
+    stroke: var(--line-structural-color);
+    stroke-width: var(--line-w);
+  }
+
+  /* Physical corners on purpose: the frame is symmetric, so it reads the same in
+     both directions and a logical mapping would only add RTL mirroring rules. */
+  .home-logo__corner--tl {
+    top: 0;
+    left: 0;
+  }
+
+  .home-logo__corner--tr {
+    top: 0;
+    right: 0;
+    rotate: 90deg;
+  }
+
+  .home-logo__corner--br {
+    right: 0;
+    bottom: 0;
+    rotate: 180deg;
+  }
+
+  .home-logo__corner--bl {
+    bottom: 0;
+    left: 0;
+    rotate: 270deg;
+  }
+
+  .home-logo__mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+  }
+
+  /* Explicit size: an SVG with only a viewBox has no intrinsic width and would
+     collapse to 0px as a flex item. */
+  .home-logo__img {
+    display: block;
+    inline-size: min(26rem, 68vw);
+    block-size: auto;
+    max-block-size: 42svh;
+    object-fit: contain;
+  }
+
+  .home-logo__wordmark {
+    font-family: var(--font-brand);
+    font-size: var(--text-display);
+    font-weight: var(--weight-light);
+    line-height: var(--leading-display);
+    text-align: center;
+  }
+
+  .home-logo__datum {
     position: relative;
     display: block;
-    flex: 0 0 auto;
-    inline-size: 12px;
-    block-size: 12px;
-    color: var(--line-decor-color);
+    inline-size: min(18rem, 60vw);
+    block-size: 9px;
   }
 
-  .menu-row__mark .mark {
-    inset-block-start: 0;
-    inset-inline-start: 0;
+  .home-logo__datum::before,
+  .home-logo__datum::after {
+    content: '';
     position: absolute;
+    inset-block: 0;
+    inline-size: var(--line-w);
+    background: var(--line-structural-color);
   }
 
-  [dir='rtl'] .menu-row__mark {
-    transform: scaleX(-1);
+  .home-logo__datum::before {
+    inset-inline-start: 0;
   }
 
-  .menu-row:hover .menu-row__mark,
-  .menu-row:focus-visible .menu-row__mark {
+  .home-logo__datum::after {
+    inset-inline-end: 0;
+  }
+
+  .home-logo__datum-line {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 4px;
+    display: block;
+    block-size: var(--line-w);
+    background: var(--line-structural-color);
+  }
+
+  .home-cue {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .home-cue__line {
+    position: relative;
+    display: block;
+    inline-size: var(--line-w);
+    block-size: 3rem;
+    overflow: hidden;
+    background: var(--line-decor-color);
+  }
+
+  .home-cue__line::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: -40%;
+    block-size: 40%;
+    background: var(--ink);
+    animation: home-cue-travel 2.4s var(--ease-in-out) infinite;
+  }
+
+  @keyframes home-cue-travel {
+    to {
+      transform: translateY(350%);
+    }
+  }
+
+  .home-menu {
+    position: relative;
+    min-block-size: calc(100svh - 4rem);
+    padding-block: var(--space-16) var(--space-24);
+    scroll-margin-block-start: 4rem;
+  }
+
+  .home-menu__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-block-end: var(--space-6);
+  }
+
+  .home-menu__count {
+    color: var(--ink-faint);
+    font-family: var(--font-numeral);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .home-menu__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .home-row {
+    position: relative;
+  }
+
+  /* Dimension line: a hairline with a short tick at each end. It draws in from
+     the reading start (scaleX driven by Motion). */
+  .home-row__rule {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 0;
+    display: block;
+    block-size: var(--line-w);
+    background: var(--line-structural-color);
+    transform-origin: var(--rule-origin, left center);
+  }
+
+  [dir='rtl'] .home-row__rule {
+    --rule-origin: right center;
+  }
+
+  .home-row__rule::before,
+  .home-row__rule::after {
+    content: '';
+    position: absolute;
+    inset-block-start: -4px;
+    inline-size: var(--line-w);
+    block-size: 9px;
+    background: var(--line-structural-color);
+  }
+
+  .home-row__rule::before {
+    inset-inline-start: 0;
+  }
+
+  .home-row__rule::after {
+    inset-inline-end: 0;
+  }
+
+  .home-row__rule--closing {
+    position: relative;
+  }
+
+  .home-row__link {
+    position: relative;
+    display: grid;
+    grid-template-columns: 3rem minmax(0, auto) minmax(2rem, 1fr) 1.5rem;
+    align-items: center;
+    gap: var(--space-4);
+    min-block-size: 44px;
+    padding-block: clamp(1rem, 2.4vw, 1.75rem);
     color: var(--ink);
+    text-decoration: none;
+  }
+
+  .home-row__index {
+    color: var(--ink-faint);
+    font-family: var(--font-numeral);
+    font-size: var(--text-meta);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-ui);
+    transition: color var(--motion-base) var(--ease-out);
+  }
+
+  [lang='fa'] .home-row__index {
+    font-family: var(--font-ui);
+    letter-spacing: 0;
+  }
+
+  .home-row__label {
+    font-family: var(--font-brand);
+    font-size: clamp(1.5rem, 3.4vw, 2.75rem);
+    font-weight: var(--weight-light);
+    line-height: var(--leading-title);
+    overflow-wrap: anywhere;
+    text-decoration-color: transparent;
+    text-decoration-line: underline;
+    text-decoration-thickness: var(--line-w);
+    text-underline-offset: 0.3em;
+    transition:
+      translate var(--motion-slow) var(--ease-out),
+      opacity var(--motion-slow) var(--ease-out),
+      text-decoration-color var(--motion-base) var(--ease-out);
+  }
+
+  .home-row__leader {
+    display: block;
+    block-size: var(--line-w);
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: var(--rule-origin, left center);
+    transition: transform var(--motion-reveal) var(--ease-out);
+  }
+
+  [dir='rtl'] .home-row__leader {
+    --rule-origin: right center;
+  }
+
+  .home-row__arrow {
+    inline-size: 1.5rem;
+    block-size: 0.75rem;
+    stroke: var(--ink);
+    stroke-width: var(--line-w);
+    opacity: 0.25;
+    translate: calc(var(--dir-sign) * -0.5rem) 0;
+    transition:
+      opacity var(--motion-base) var(--ease-out),
+      translate var(--motion-slow) var(--ease-out);
+  }
+
+  [dir='rtl'] .home-row__arrow {
+    scale: -1 1;
+  }
+
+  /* Others recede while one row is pointed at (hover or keyboard focus). */
+  .home-menu__list:hover .home-row:not(:hover) .home-row__label,
+  .home-menu__list:focus-within .home-row:not(:focus-within) .home-row__label {
+    opacity: 0.32;
+  }
+
+  .home-row__link:hover .home-row__label,
+  .home-row__link:focus-visible .home-row__label {
+    translate: calc(var(--dir-sign) * 0.75rem) 0;
+    text-decoration-color: currentColor;
+  }
+
+  .home-row__link:hover .home-row__index,
+  .home-row__link:focus-visible .home-row__index,
+  .home-row__link[aria-current='page'] .home-row__index {
+    color: var(--ink);
+  }
+
+  .home-row__link:hover .home-row__leader,
+  .home-row__link:focus-visible .home-row__leader {
+    transform: scaleX(1);
+  }
+
+  .home-row__link:hover .home-row__arrow,
+  .home-row__link:focus-visible .home-row__arrow {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  @media (max-width: 47.99rem) {
+    .home-row__link {
+      grid-template-columns: 2rem minmax(0, 1fr) 1.25rem;
+    }
+
+    .home-row__leader {
+      display: none;
+    }
+  }
+
+  @media (hover: none) {
+    .home-row__arrow {
+      opacity: 0.6;
+      translate: 0 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-cue__line::after {
+      animation: none;
+      inset-block-start: 30%;
+    }
+
+    .home-logo {
+      will-change: auto;
+    }
   }
 
   /* --- mobile drawer ------------------------------------------------------- */

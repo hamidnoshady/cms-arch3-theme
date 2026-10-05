@@ -75,6 +75,14 @@
     object-fit: cover;
   }
 
+  /* The frame sizing rule (see `FramedMedia`): full width, but never taller than
+     `--frame-cap` — the frame narrows to keep its ratio instead. */
+  .frame--capped {
+    inline-size: 100%;
+    max-inline-size: min(100%, calc(var(--frame-cap, 72svh) * var(--ar, 1.5)));
+    margin-inline: auto;
+  }
+
   .frame::after {
     content: '';
     position: absolute;

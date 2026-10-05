@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
 
-import { CmsImage } from '@/components/media/CmsImage'
+import { CmsImage, FramedMedia } from '@/components/media/CmsImage'
 import type { SiteContext } from '@/lib/cms/context'
 import type { LexicalNode, Media } from '@/lib/cms/types'
-import { isMedia } from '@/lib/utils/media'
+import { frameRatio, isFrameAspect, isMedia, mediaPresentation } from '@/lib/utils/media'
 
 /**
  * Inline lexical blocks (the `BlocksFeature` inside `posts.content`): `mediaBlock`,
- * `banner` and `code`. Page-level blocks live in `Blocks.tsx`; splitting the two keeps
+ * `mediaGrid`, `banner` and `code`. Page-level blocks live in `Blocks.tsx`; splitting the two keeps
  * the rich-text renderer free of a circular import.
  */
 export const renderBlockNode = (node: LexicalNode, context: SiteContext): ReactNode => {
@@ -21,13 +21,49 @@ export const renderBlockNode = (node: LexicalNode, context: SiteContext): ReactN
         warnUnknown(`mediaBlock without populated media`)
         return null
       }
-      const value = media as Media
+      const { aspect, caption, size } = mediaPresentation(fields)
       return (
-        <figure>
-          <span className="frame block" style={{ aspectRatio: `${value.width ?? 3} / ${value.height ?? 2}` }}>
-            <CmsImage className="frame__media" media={value} origin={context.site.media.origin} sizes="(min-width: 1024px) 60vw, 100vw" />
-          </span>
-          {value.alt ? <figcaption className="type-caption mt-2">{value.alt}</figcaption> : null}
+        <FramedMedia
+          aspect={aspect}
+          cap={size === 'full' ? 82 : 70}
+          caption={caption}
+          media={media as Media}
+          origin={context.site.media.origin}
+          size={size}
+        />
+      )
+    }
+
+    case 'mediaGrid': {
+      // Several photographs side by side inside an article: one shared ratio so the
+      // row reads as a composed set, never a ragged strip of exact image sizes.
+      const images = (Array.isArray(fields.images) ? fields.images : []).filter((item): item is Media =>
+        isMedia(item as never),
+      )
+      if (images.length === 0) {
+        warnUnknown('mediaGrid without populated images')
+        return null
+      }
+      const columns = fields.columns === '3' ? 3 : fields.columns === '4' ? 4 : 2
+      const aspect = isFrameAspect(fields.aspect) && fields.aspect !== 'original' ? fields.aspect : '4/5'
+      const ratio = frameRatio(images[0], aspect)
+      const caption = typeof fields.caption === 'string' && fields.caption.trim() ? fields.caption.trim() : null
+      return (
+        <figure className="media-grid">
+          <ul className={`media-grid__list media-grid__list--${columns}`}>
+            {images.map((image) => (
+              <li className="frame" key={image.id} style={{ aspectRatio: ratio }}>
+                <CmsImage
+                  className="frame__media"
+                  media={image}
+                  origin={context.site.media.origin}
+                  ratio={ratio}
+                  sizes={`(min-width: 1024px) ${Math.round(60 / columns)}rem, 50vw`}
+                />
+              </li>
+            ))}
+          </ul>
+          {caption ? <figcaption className="media-figure__caption type-caption">{caption}</figcaption> : null}
         </figure>
       )
     }
