@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+
+import { CmsImage } from '@/components/media/CmsImage'
 import {
+  absoluteMediaUrl,
   aspectRatio,
   frameRatio,
   mediaPresentation,
@@ -36,33 +41,57 @@ const media: Media = {
 }
 
 describe('media URLs', () => {
-  it('resolves relative CMS URLs against the descriptor origin', () => {
-    expect(mediaUrl(media, origin)).toBe(`${origin}/api/media/file/photo.jpg`)
+  it('keeps CMS upload URLs relative so the rendering host serves them', () => {
+    expect(mediaUrl(media, origin)).toBe('/api/media/file/photo.jpg')
+  })
+
+  it('reduces an absolute URL on the declared origin to the same relative path', () => {
+    // A preview deployment must never load images from the production domain.
+    const production = 'https://arch.eshobe.com'
+    expect(mediaUrl({ url: `${production}/api/media/file/photo.jpg?v=2` }, production)).toBe('/api/media/file/photo.jpg?v=2')
+    expect(mediaUrl({ url: 'https://elsewhere.example/photo.jpg' }, production)).toBe('https://elsewhere.example/photo.jpg')
+  })
+
+  it('resolves to an absolute URL only from the deployment origin', () => {
+    expect(absoluteMediaUrl('/api/media/file/photo.jpg', 'https://abc-preview.theme.eshobe.com')).toBe(
+      'https://abc-preview.theme.eshobe.com/api/media/file/photo.jpg',
+    )
+    expect(absoluteMediaUrl(null, 'https://abc-preview.theme.eshobe.com')).toBeNull()
   })
 
   it('returns null for a missing url or an unparsable origin', () => {
     expect(mediaUrl({ url: null }, origin)).toBeNull()
     expect(mediaUrl(null, origin)).toBeNull()
-    expect(mediaUrl(media, 'not a url')).toBeNull()
+    expect(mediaUrl({ url: '/a.jpg' }, 'not a url')).toBeNull()
   })
 
   it('picks a named size and falls back to the original', () => {
-    expect(sizeUrl(media, 'small', origin)).toBe(`${origin}/api/media/file/photo-600.jpg`)
+    expect(sizeUrl(media, 'small', origin)).toBe('/api/media/file/photo-600.jpg')
+    // Not a CMS upload path: nothing on this deployment serves it, so it stays on the CMS origin.
     expect(sizeUrl({ id: 'x', url: '/a.jpg' }, 'large', origin)).toBe(`${origin}/a.jpg`)
   })
 
   it('builds a srcset with real widths and skips SVGs', () => {
     expect(mediaSrcSet(media, origin)).toBe(
-      `${origin}/api/media/file/photo-600.jpg 600w, ${origin}/api/media/file/photo-1400.jpg 1400w, ${origin}/api/media/file/photo.jpg 2000w`,
+      '/api/media/file/photo-600.jpg 600w, /api/media/file/photo-1400.jpg 1400w, /api/media/file/photo.jpg 2000w',
     )
     expect(mediaSrcSet({ ...media, mimeType: 'image/svg+xml' }, origin)).toBeUndefined()
   })
 
   it('only accepts origins on the allowlist', () => {
     expect(mediaOriginAllowed(`${origin}/x.jpg`, [origin])).toBe(true)
+    expect(mediaOriginAllowed('/api/media/file/x.jpg', [origin])).toBe(true)
     expect(mediaOriginAllowed('https://evil.example.com/x.jpg', [origin])).toBe(false)
     expect(mediaOriginAllowed('javascript:alert(1)', [origin])).toBe(false)
     expect(mediaOriginAllowed('/relative.jpg', [origin])).toBe(false)
+  })
+})
+
+describe('media on a preview host', () => {
+  it('renders relative media URLs even though the descriptor names the production domain', () => {
+    const html = renderToStaticMarkup(createElement(CmsImage, { media, origin: 'https://arch.eshobe.com' }))
+    expect(html).toContain('src="/api/media/file/photo.jpg"')
+    expect(html).not.toContain('arch.eshobe.com')
   })
 })
 

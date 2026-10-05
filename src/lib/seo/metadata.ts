@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import type { SiteContext } from '@/lib/cms/context'
 import type { Media } from '@/lib/cms/types'
 import { href } from '@/lib/routing/locale'
-import { mediaUrl } from '@/lib/utils/media'
+import { absoluteMediaUrl, mediaUrl } from '@/lib/utils/media'
 import { truncate } from '@/lib/utils/text'
 
 /**
@@ -39,7 +39,12 @@ export const absoluteUrl = (context: SiteContext, path: string, locale = context
 export const metadataFor = (input: MetadataInput): Metadata => {
   const { context, title, description, path, image, type = 'website', languages } = input
   const siteName = context.site.name
-  const ogImage = mediaUrl(image ?? context.site.branding?.defaultOgImage ?? null, context.site.media.origin)
+  // Absolute for crawlers, but from where this deployment answers (ESHOBE_PUBLIC_ORIGIN),
+  // so a preview's og:image never points at production.
+  const ogImage = absoluteMediaUrl(
+    mediaUrl(image ?? context.site.branding?.defaultOgImage ?? null, context.site.media.origin),
+    context.deploymentOrigin,
+  )
   const canonical = absoluteUrl(context, path)
 
   return {

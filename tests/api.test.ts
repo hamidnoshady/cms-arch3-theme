@@ -6,9 +6,9 @@ import { POST } from '@/app/api/form-submissions/route'
  * The public form endpoint — the theme's one write path into the CMS.
  *
  * It is a *proxy*, and the properties worth pinning are the ones that make that safe:
- * a visitor's enquiry is filed without any privileged credential, the tenant travels as
- * the visitor's own host, the payload is bounded, and the CMS's answer (status included)
- * is what the browser sees — the theme never invents a success.
+ * the visitor's own credentials never reach the CMS, the site key names the tenant, the
+ * payload is bounded, and the CMS's answer (status included) is what the browser sees —
+ * the theme never invents a success.
  */
 
 const ENV = { ...process.env }
@@ -62,7 +62,7 @@ describe('form submissions proxy', () => {
     await expect(response.json()).resolves.toEqual({ message: 'submitted' })
   })
 
-  it('never attaches the site credential, a cookie or a client authorization header', async () => {
+  it("sends the site key, never the visitor's cookie or authorization header", async () => {
     stubFetch()
     await POST(
       submit(payload, {
@@ -72,11 +72,19 @@ describe('form submissions proxy', () => {
     )
 
     const headers = captured[0]!.headers
+    // The key names the site, so a preview hostname the CMS does not know resolves.
+    expect(headers.authorization).toBe('Bearer site-key-for-test')
     const serialised = JSON.stringify(headers).toLowerCase()
-    expect(serialised).not.toContain('site-key-for-test')
-    expect(serialised).not.toContain('bearer')
+    expect(serialised).not.toContain('visitor-supplied')
     expect(serialised).not.toContain('cookie')
-    expect(Object.keys(headers).map((key) => key.toLowerCase())).not.toContain('authorization')
+  })
+
+  it('refuses a request carrying its own proxy marker instead of looping', async () => {
+    stubFetch()
+    const response = await POST(submit(payload, { 'x-eshobe-theme-proxy': '1' }))
+    expect(response.status).toBe(508)
+    await expect(response.json()).resolves.toEqual({ error: 'proxy-recursion-refused' })
+    expect(captured).toHaveLength(0)
   })
 
   it('forwards the declared JSON content type without client credentials', async () => {

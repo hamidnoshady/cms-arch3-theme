@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GET as health } from '@/app/api/health/route'
 import { GET as proxyGet, POST as proxyPost } from '@/app/api/[...path]/route'
 import { cachedCmsRead, clearCmsReadCache, purgeCmsReadCache } from '@/lib/cms/cache'
+import { nativeRequestOptions } from '@/lib/cms/client'
 
 const ENV = { ...process.env }
 
@@ -155,5 +156,114 @@ describe('direct-mode API proxy', () => {
     } finally {
       await new Promise<void>((resolve, reject) => cms.close((error) => (error ? reject(error) : resolve())))
     }
+  })
+})
+
+describe('keyed relay (preview hostnames)', () => {
+  type Seen = { authorization?: string; host?: string; marker?: string; xForwardedHost?: string }
+
+  const withCms = async (
+    status: number,
+    run: (seen: Seen[]) => Promise<void>,
+    contentType = 'image/jpeg',
+  ) => {
+    const seen: Seen[] = []
+    const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value)
+    const cms = createServer((request, response) => {
+      seen.push({
+        authorization: one(request.headers.authorization),
+        host: request.headers.host,
+        marker: one(request.headers['x-eshobe-theme-proxy']),
+        xForwardedHost: one(request.headers['x-forwarded-host']),
+      })
+      response.statusCode = status
+      response.setHeader('content-type', contentType)
+      response.end(status === 200 ? 'bytes' : '{"errors":[{"message":"Forbidden"}]}')
+    })
+    await new Promise<void>((resolve) => cms.listen(0, '127.0.0.1', resolve))
+    const address = cms.address()
+    if (!address || typeof address === 'string') throw new Error('test CMS did not expose a TCP port')
+    process.env.ESHOBE_CMS_URL = `http://127.0.0.1:${address.port}`
+    process.env.ESHOBE_API_KEY = 'site-key-for-test'
+    try {
+      await run(seen)
+    } finally {
+      await new Promise<void>((resolve, reject) => cms.close((error) => (error ? reject(error) : resolve())))
+    }
+  }
+
+  const previewHost = 'abc123def456-cms-arch3-theme-preview.theme.eshobe.com'
+  const mediaRequest = (headers: Record<string, string> = {}) =>
+    new Request(`https://${previewHost}/api/media/file/photo.jpg`, { headers: { host: previewHost, ...headers } })
+  const mediaContext = () => ({ params: Promise.resolve({ path: ['media', 'file', 'photo.jpg'] }) })
+
+  it('sends the site key on media requests, keeps the CMS Host and never forwards the browser credential', async () => {
+    await withCms(200, async (seen) => {
+      const response = await proxyGet(mediaRequest({ authorization: 'Bearer visitor-supplied' }), mediaContext())
+      expect(response.status).toBe(200)
+      expect(response.headers.get('authorization')).toBeNull()
+      expect(seen).toHaveLength(1)
+      expect(seen[0]!.authorization).toBe('Bearer site-key-for-test')
+      expect(seen[0]!.host).toBe(new URL(process.env.ESHOBE_CMS_URL!).host)
+      expect(seen[0]!.xForwardedHost).toBe(previewHost)
+      expect(seen[0]!.marker).toBe('1')
+    })
+  })
+
+  it('sends the site key on JSON reads too', async () => {
+    await withCms(
+      200,
+      async (seen) => {
+        const request = new Request(`https://${previewHost}/api/pages`, { headers: { host: previewHost } })
+        await proxyGet(request, { params: Promise.resolve({ path: ['pages'] }) })
+        expect(seen[0]!.authorization).toBe('Bearer site-key-for-test')
+        expect(seen[0]!.host).not.toBe(previewHost)
+      },
+      'application/json',
+    )
+  })
+
+  it('returns the CMS error status instead of a generic 503', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    await withCms(403, async () => {
+      const response = await proxyGet(mediaRequest(), mediaContext())
+      expect(response.status).toBe(403)
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('403'))
+    })
+    warn.mockRestore()
+  })
+
+  it('answers 503 only when the CMS cannot be reached', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    process.env.ESHOBE_CMS_URL = 'http://127.0.0.1:1'
+    process.env.ESHOBE_API_KEY = 'site-key-for-test'
+    const response = await proxyGet(mediaRequest(), mediaContext())
+    expect(response.status).toBe(503)
+    error.mockRestore()
+  })
+
+  it('refuses a request carrying its own proxy marker without contacting the CMS', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await withCms(200, async (seen) => {
+      const response = await proxyGet(mediaRequest({ 'x-eshobe-theme-proxy': '1' }), mediaContext())
+      expect(response.status).toBe(508)
+      await expect(response.json()).resolves.toEqual({ error: 'proxy-recursion-refused' })
+      expect(seen).toHaveLength(0)
+    })
+    error.mockRestore()
+  })
+})
+
+describe('native CMS request options', () => {
+  it('uses the CMS hostname as TLS SNI, not the visitor host it sends as Host', () => {
+    const options = nativeRequestOptions('https://cms.eshobe.com/api/site', 'customer.example')
+    expect(options.servername).toBe('cms.eshobe.com')
+    expect(options.headers.host).toBe('customer.example')
+  })
+
+  it('omits the Host override when none is given, and never sets an IP as SNI', () => {
+    const options = nativeRequestOptions('https://10.0.0.5:8443/api/site', null)
+    expect(options.headers).not.toHaveProperty('host')
+    expect(options).not.toHaveProperty('servername')
   })
 })
