@@ -102,8 +102,10 @@ describe('eshobe.theme.json', () => {
   it('describes a build the parser accepts and this repository can actually run', () => {
     const build = manifest.build as Record<string, unknown>
     expect(BUILD_PACKS.has(String(build.buildPack))).toBe(true)
-    expect(Number(build.port)).toBeGreaterThan(0)
-    expect(String(build.healthCheckPath)).toMatch(/^\//)
+    expect(build.buildPack).toBe('dockerfile')
+    expect(build.dockerfileLocation).toBe('Dockerfile')
+    expect(build.port).toBe(3000)
+    expect(build.healthCheckPath).toBe('/api/health')
     for (const command of ['installCommand', 'buildCommand', 'startCommand']) {
       expect(SAFE_COMMAND.test(String(build[command])), `unsafe ${command}`).toBe(true)
     }
@@ -133,9 +135,11 @@ describe('eshobe.theme.json', () => {
   })
 
   it('keeps settings and content slots in step with the code', () => {
-    for (const setting of manifest.settings as { key: string; type: string }[]) {
-      expect(SETTINGS_READ_BY_CODE.has(setting.key), `${setting.key} is declared but unread`).toBe(true)
-      expect(SCHEMA_KEY.test(setting.key)).toBe(true)
+    const settings = manifest.settings as Record<string, { type: string }>
+    expect(Array.isArray(settings)).toBe(false)
+    for (const [key, setting] of Object.entries(settings)) {
+      expect(SETTINGS_READ_BY_CODE.has(key), `${key} is declared but unread`).toBe(true)
+      expect(SCHEMA_KEY.test(key)).toBe(true)
       expect(SETTING_TYPES.has(setting.type)).toBe(true)
     }
     const keys = new Set<string>()
@@ -164,8 +168,13 @@ describe('eshobe.theme.json', () => {
     expect(design.foreground).toBe('#000000')
   })
 
-  it('does not ship a deployment strategy it has never been deployed with', () => {
-    expect(manifest.deployment ?? null).toBeNull()
+  it('declares the immutable GHCR image that CI builds and registers', () => {
+    expect(manifest.deployment).toEqual({
+      strategy: 'registry_image',
+      registryProvider: 'ghcr',
+      registryImageRepository: 'ghcr.io/hamidnoshady/cms-arch3-theme',
+      registryVisibility: 'public',
+    })
     expect(manifest.preview ?? manifest.previewUrl ?? null).toBeNull()
   })
 })

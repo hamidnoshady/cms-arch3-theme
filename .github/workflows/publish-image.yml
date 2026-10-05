@@ -35,11 +35,11 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     env:
-      # Each may be a repository variable or a repository secret (the settings page
-      # offers both, and they are easy to mix up). Registration FAILS the job if unset:
-      # an unregistered image is undeployable, so a green run would be a false claim.
-      ESHOBE_CMS_URL: ${{ vars.ESHOBE_CMS_URL || secrets.ESHOBE_CMS_URL }}
-      ESHOBE_THEME_PACKAGE_ID: ${{ vars.ESHOBE_THEME_PACKAGE_ID || secrets.ESHOBE_THEME_PACKAGE_ID }}
+      # These are repository secrets. The CMS URL is its admin/control-plane origin,
+      # never a customer storefront domain. Registration fails if any value is absent:
+      # an unregistered image is not deployable.
+      ESHOBE_CMS_URL: ${{ secrets.ESHOBE_CMS_URL }}
+      ESHOBE_THEME_PACKAGE_ID: ${{ secrets.ESHOBE_THEME_PACKAGE_ID }}
       ESHOBE_THEME_ARTIFACT_SECRET: ${{ secrets.ESHOBE_THEME_ARTIFACT_SECRET }}
     steps:
       - uses: actions/checkout@v4
@@ -52,10 +52,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: image
-        name: Compute the image name and commit
-        # GHCR requires a lowercase repository path; `github.repository` preserves case.
+        name: Read the immutable image identity and commit
+        # Keep CI and the manifest identical. Coolify deploys this repository by digest,
+        # not by any mutable tag.
         run: |
-          echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          image='ghcr.io/hamidnoshady/cms-arch3-theme'
+          manifest_image="$(node -e "console.log(JSON.parse(require('node:fs').readFileSync('eshobe.theme.json', 'utf8')).deployment.registryImageRepository)")"
+          if [ "$manifest_image" != "$image" ]; then
+            echo "::error::Manifest image $manifest_image does not match CI image $image"
+            exit 1
+          fi
+          echo "name=$image" >> "$GITHUB_OUTPUT"
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - id: meta
         uses: docker/metadata-action@v5
@@ -72,6 +79,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -98,10 +106,12 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${ESHOBE_CMS_URL:-}" ] || [ -z "${ESHOBE_THEME_PACKAGE_ID:-}" ] || [ -z "${ESHOBE_THEME_ARTIFACT_SECRET:-}" ]; then
-            echo '::error::Image pushed but NOT registered: set ESHOBE_CMS_URL, ESHOBE_THEME_PACKAGE_ID (variable or secret) and secret ESHOBE_THEME_ARTIFACT_SECRET. The CMS cannot deploy this commit until it is registered.'
+            echo '::error::Image pushed but NOT registered: add repository secrets ESHOBE_CMS_URL, ESHOBE_THEME_PACKAGE_ID and ESHOBE_THEME_ARTIFACT_SECRET.'
             exit 1
           fi
-          body="$(jq -nc \
+          # Build this compact JSON string once. Its exact UTF-8 bytes are the bytes
+          # HMAC-signed and the bytes curl sends -- never parse/re-encode it in between.
+          body="$(jq -c -n \
             --arg repository "${GITHUB_REPOSITORY,,}" \
             --arg ref "$REF_NAME" \
             --arg commit "$COMMIT" \
@@ -112,11 +122,21 @@ jobs:
             --arg runUrl "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             '{repository:$repository, ref:$ref, commit:$commit, registry:"ghcr", image:$image, tag:$tag, digest:$digest, workflowRunId:$runId, workflowRunUrl:$runUrl, platform:"linux/amd64"}')"
           sig="sha256=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$ESHOBE_THEME_ARTIFACT_SECRET" -hex | sed 's/^.* //')"
-          curl -sS --fail-with-body --retry 3 --retry-all-errors \
+          response_file="$(mktemp)"
+          status="$(curl -sS --retry 3 --retry-all-errors \
+            -o "$response_file" -w '%{http_code}' \
             -X POST "${ESHOBE_CMS_URL%/}/api/platform/theme-packages/${ESHOBE_THEME_PACKAGE_ID}/artifacts" \
             -H 'Content-Type: application/json' \
             -H "X-Eshobe-Signature-256: $sig" \
-            --data-binary "$body"
+            --data-binary "$body")"
+          case "$status" in
+            200|201) cat "$response_file" ;;
+            *)
+              echo "::error::Artifact registration returned HTTP $status" >&2
+              cat "$response_file" >&2 || true
+              exit 1
+              ;;
+          esac
       - name: Job summary
         env:
           COMMIT: ${{ steps.image.outputs.commit }}
