@@ -48,7 +48,8 @@ export const DecorativeMark = ({
         fill="none"
         height={shape.height}
         stroke="currentColor"
-        strokeWidth="1"
+        // The decorative width token, not a literal: one variable tunes every mark.
+        style={{ strokeWidth: 'var(--line-w-decor)' }}
         vectorEffect="non-scaling-stroke"
         viewBox={`0 0 ${shape.width} ${shape.height}`}
         width={shape.width}

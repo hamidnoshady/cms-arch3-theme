@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { headers } from 'next/headers'
 
+import { SmoothScroll } from '@/components/motion/SmoothScroll'
 import { getSiteOrNull } from '@/lib/cms/endpoints'
 import { labels } from '@/lib/theme/labels'
 import { fontFaceCss, fontReport } from '@/lib/theme/fonts'
@@ -61,7 +62,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <style dangerouslySetInnerHTML={{ __html: fontFaceCss() }} />
         {site?.theme ? <style dangerouslySetInnerHTML={{ __html: themeCss(site.theme) }} /> : null}
       </head>
-      <body>{children}</body>
+      <body>
+        <SmoothScroll />
+        {children}
+      </body>
     </html>
   )
 }

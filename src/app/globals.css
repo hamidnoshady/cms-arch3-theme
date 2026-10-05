@@ -17,6 +17,7 @@
    ========================================================================== */
 
 @import 'tailwindcss';
+@import 'lenis/dist/lenis.css';
 @import '../styles/tokens.css';
 @import '../styles/base.css';
 @import '../styles/typography.css';
