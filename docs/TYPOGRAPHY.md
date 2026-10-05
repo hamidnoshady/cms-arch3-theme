@@ -33,8 +33,9 @@ was verified against the font's `OS/2.usWeightClass` (see `public/fonts/shazde/R
 | 900 | `Shazde-Black.woff2` | Black | 900 |
 
 **Thin (100) and ExtraLight (200) do not exist in the licensed family.** The loader reports
-them missing (`GET /api/health` → `fonts.missing`, plus one development-only console line)
-and the browser resolves a request below 300 to the nearest installed weight (Light 300).
+them missing through its local diagnostics and one development-only console line; the health
+route is intentionally limited to process readiness and has no font/CMS dependency. The
+browser resolves a request below 300 to the nearest installed weight (Light 300).
 No weight is ever synthesised, and no file is silently mapped onto another weight.
 
 ## Roles and values
@@ -78,8 +79,8 @@ Hierarchy is size + space + colour first, weight second: the working scale only 
 - Browser: every installed `Shazde-*.woff2` loads (HTTP 200) and
   `getComputedStyle(body).fontFamily` starts with `Shazde` on the Persian site
   (2026-10-04, against the live `eshobe-cms` dev server).
-- `GET /api/health` reports `fonts.persian`, `fonts.missing` and a notice whose fallback
-  claim is correct for partial installs.
+- `fontReport()` remains a local diagnostic for partial installs; `/api/health` is kept
+  process-only so deployment health never depends on fonts or the CMS.
 - The scale/screenshots in `docs/QA.md` were captured on Vazirmatn before the licensed
   files were installed; the hero is re-checked after any weight-set change (see
   `docs/LIMITATIONS.md` §1).

@@ -204,8 +204,9 @@ not photographable in a still:
 
 ```
 key arch2-neutral · contractVersion 1 · siteTypes ["portfolio"] · locales ["fa","en"]
-proxiesApi true · build nixpacks · port 3000 · health /api/health
-env 10 × source "platform" (3 secret) · settings 2 · contentSlots 7
+proxiesApi true · build dockerfile · port 3000 · health /api/health
+deployment registry_image → ghcr.io/hamidnoshady/cms-arch3-theme (public)
+env 10 × source "platform" (3 secret) · settings object (2) · contentSlots 7
 ```
 
 `tests/manifest.test.ts` additionally pins the parts a type checker cannot: that every

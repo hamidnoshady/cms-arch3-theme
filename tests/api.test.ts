@@ -44,7 +44,7 @@ afterEach(() => {
 const submit = (body: unknown, headers: Record<string, string> = {}) =>
   new Request('https://studio.example.test/api/form-submissions', {
     body: typeof body === 'string' ? body : JSON.stringify(body),
-    headers: { 'content-type': 'application/json', host: 'studio.example.test', ...headers },
+    headers: { 'content-type': 'application/json', ...headers },
     method: 'POST',
   })
 
@@ -79,13 +79,13 @@ describe('form submissions proxy', () => {
     expect(Object.keys(headers).map((key) => key.toLowerCase())).not.toContain('authorization')
   })
 
-  it('tells the CMS which host the visitor asked for', async () => {
+  it('forwards the declared JSON content type without client credentials', async () => {
     stubFetch()
     await POST(submit(payload))
 
     const headers = captured[0]!.headers
-    expect(headers['x-forwarded-host']).toBe('studio.example.test')
     expect(headers['content-type']).toBe('application/json')
+    expect(headers['x-forwarded-host']).toBeUndefined()
   })
 
   it('is not cacheable', async () => {

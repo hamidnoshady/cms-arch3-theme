@@ -49,8 +49,8 @@ describe('signed revalidation', () => {
   it('signs the raw body, not a re-encoded one', () => {
     const raw = '{"paths":["/blog"]}'
     const signature = revalidateSignature(SECRET, raw)
-    expect(verifyRevalidateSignature(SECRET, raw, signature)).toBe(true)
-    expect(verifyRevalidateSignature(SECRET, '{"paths":["/blog"], "x":1}', signature)).toBe(false)
+    expect(verifyRevalidateSignature(SECRET, raw, signature)).toBe(false)
+    expect(verifyRevalidateSignature(SECRET, '{"paths":["/blog"], "x":1}', `sha256=${signature}`)).toBe(false)
     expect(verifyRevalidateSignature(SECRET, raw, `sha256=${signature}`)).toBe(true)
     expect(verifyRevalidateSignature(SECRET, raw, null)).toBe(false)
     expect(verifyRevalidateSignature(SECRET, raw, 'deadbeef')).toBe(false)

@@ -26,11 +26,13 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - name: Validate Eshobe manifest
+        run: npm run validate:manifest
       - run: npm ci
-      - name: Typecheck
-        run: npm run typecheck
       - name: Lint
         run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
       - name: Tests
         run: npm test
       - name: Production build
@@ -119,6 +121,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64
           push: false
           cache-from: type=gha,scope=image
           cache-to: type=gha,mode=max,scope=image

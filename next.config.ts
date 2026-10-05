@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
-    // The CMS client reads `next/cache` tags; keep the fetch cache explicit rather
-    // than framework-magic so every cached read is visible in `src/lib/cms/client.ts`.
+    // CMS reads use the tenant-partitioned in-process cache in `src/lib/cms/cache.ts`.
+    // Keep route shells short-lived; revalidation explicitly clears rendered paths.
     staleTimes: { dynamic: 0, static: 180 },
   },
   async headers() {

@@ -2,6 +2,7 @@ import 'server-only'
 
 import { createHash } from 'node:crypto'
 
+import { cachedCmsRead, type CachedCmsResponse } from './cache'
 import { fixtureRaw, fixturesEnabled } from './fixtures'
 import type { SiteDescriptor } from './types'
 
@@ -19,10 +20,10 @@ import type { SiteDescriptor } from './types'
  * than forge the customer's `Host`: behind the same proxy, rewriting `Host` sends the
  * request back into the theme's own container. There is a second, verified reason:
  * **Node's `fetch` ignores a `Host` header you set** (undici derives it from the URL),
- * so a Host-based read cannot be expressed with `fetch` at all. Local development
- * against a CMS that only resolves by host therefore uses `requestWithHost()` — a
- * `node:http(s)` request that can set the header — and it is opt-in via
- * `ESHOBE_ALLOW_HOST_TENANT=true`.
+ * so a Host-based read cannot be expressed with `fetch` at all. The direct API proxy
+ * and opt-in local host-tenant development therefore use `requestWithHost()` — a
+ * `node:http(s)` request that can set the header. Server-side content reads use it only
+ * when `ESHOBE_ALLOW_HOST_TENANT=true`.
  */
 
 export class CmsError extends Error {
@@ -120,14 +121,15 @@ export type CmsFetchOptions = {
   tags?: string[]
 }
 
-type RawResponse = { body: string; headers: Headers; status: number }
+export type RawResponse = CachedCmsResponse
 
 /**
- * Host-scoped request for local development. `node:http(s)` is the only place in the
- * theme where a `Host` header is set; it is disabled unless `ESHOBE_ALLOW_HOST_TENANT`
- * is on, and it never carries a key (the two tenant proofs are mutually exclusive).
+ * Host-preserving native request. `node:http(s)` is the only reliable way to set Host:
+ * server-side content reads use it only for opt-in, key-less local development, while
+ * the direct public API proxy uses it to preserve the customer's tenant host. Callers
+ * must never combine a site credential with a visitor-provided Host.
  */
-const requestWithHost = async (
+export const requestWithHost = async (
   url: string,
   host: string,
   init: { method?: string; body?: string; headers?: Record<string, string> } = {},
@@ -144,7 +146,9 @@ const requestWithHost = async (
         path: `${target.pathname}${target.search}`,
         port: target.port || (target.protocol === 'https:' ? 443 : 80),
         protocol: target.protocol,
-        timeout: 8000,
+        // CMS reads fail after a short bound so an older in-process value can keep
+        // rendering instead of tying up a request during an upstream outage.
+        timeout: 5000,
       },
       (response) => {
         const chunks: Buffer[] = []
@@ -174,40 +178,53 @@ export const cmsFetchRaw = async (
   options: CmsFetchOptions = {},
   init: { method?: 'GET' | 'POST'; body?: string; headers?: Record<string, string> } = {},
 ): Promise<RawResponse> => {
-  // Development fixtures come first so the whole theme can render without a CMS. The
-  // guard lives inside `fixturesEnabled()` (never production, never implicit).
-  if (init.method !== 'POST' && fixturesEnabled()) {
-    const fixture = await fixtureRaw(path, options.params)
-    return { body: fixture.body, headers: new Headers({ 'content-type': 'application/json' }), status: fixture.status }
-  }
-
+  const method = init.method ?? 'GET'
   const env = cmsEnv()
-  if (!env.cmsUrl) throw new CmsError(path, 503, 'ESHOBE_CMS_URL is not configured')
-
   const query = options.params ? toQueryString(options.params) : ''
-  const url = `${env.cmsUrl.replace(/\/$/, '')}${path}${query ? `?${query}` : ''}`
-  const headers: Record<string, string> = { accept: 'application/json', ...init.headers }
-  if (env.apiKey) headers.authorization = `Bearer ${env.apiKey}`
+  const cachePath = `${path}${query ? `?${query}` : ''}`
 
-  if (env.allowHostTenant && env.siteDomain) {
-    return requestWithHost(url, env.siteDomain, { body: init.body, headers, method: init.method })
+  const load = async (): Promise<RawResponse> => {
+    // Development fixtures come first so the whole theme can render without a CMS. The
+    // guard lives inside `fixturesEnabled()` (never production, never implicit).
+    if (method === 'GET' && fixturesEnabled()) {
+      const fixture = await fixtureRaw(path, options.params)
+      return { body: fixture.body, headers: new Headers({ 'content-type': 'application/json' }), status: fixture.status }
+    }
+
+    if (!env.cmsUrl) throw new CmsError(path, 503, 'ESHOBE_CMS_URL is not configured')
+
+    const url = `${env.cmsUrl.replace(/\/$/, '')}${cachePath}`
+    const headers: Record<string, string> = { accept: 'application/json', ...init.headers }
+    if (env.apiKey) headers.authorization = `Bearer ${env.apiKey}`
+
+    if (env.allowHostTenant && env.siteDomain) {
+      return requestWithHost(url, env.siteDomain, { body: init.body, headers, method })
+    }
+
+    const response = await fetch(url, {
+      body: init.body,
+      // `GET /api/site` with a site key is explicitly `private, no-store`. The
+      // application cache below is tenant-partitioned and owns expiry/stale fallback;
+      // do not let Next's shared data cache retain a credentialed response.
+      cache: 'no-store',
+      headers,
+      method,
+      signal: AbortSignal.timeout(5000),
+    })
+
+    return { body: await response.text(), headers: response.headers, status: response.status }
   }
 
-  const response = await fetch(url, {
-    body: init.body,
-    cache: options.draft ? 'no-store' : undefined,
-    headers,
-    method: init.method ?? 'GET',
-    next: options.draft
-      ? undefined
-      : {
-          revalidate: options.revalidate ?? 30,
-          tags: options.tags,
-        },
-    signal: AbortSignal.timeout(8000),
+  // Drafts and writes are never shared. All public reads (site/pages/posts/products/
+  // categories and future documented endpoints) share the same bounded in-memory
+  // cache, keyed by complete path/query and the trusted deployment tenant.
+  if (method !== 'GET' || options.draft) return load()
+  return cachedCmsRead({
+    key: `cms:${env.cmsUrl ?? 'fixtures'}:${env.tenantKey}:${env.allowHostTenant ? env.siteDomain ?? '' : 'key'}:${cachePath}`,
+    load,
+    path,
+    tags: options.tags,
   })
-
-  return { body: await response.text(), headers: response.headers, status: response.status }
 }
 
 const parse = <T>(path: string, raw: RawResponse): T => {

@@ -29,7 +29,8 @@
   "build": {
     "baseDirectory": "/",
     "buildCommand": "npm run build",
-    "buildPack": "nixpacks",
+    "buildPack": "dockerfile",
+    "dockerfileLocation": "Dockerfile",
     "healthCheckPath": "/api/health",
     "installCommand": "npm ci",
     "isStatic": false,
@@ -115,17 +116,15 @@
       "source": "platform"
     }
   ],
-  "settings": [
-    {
-      "key": "introAnimation",
+  "settings": {
+    "introAnimation": {
       "type": "boolean",
       "default": true,
       "labelFa": "انیمیشن ورود صفحهٔ خانه",
       "labelEn": "Home entrance animation",
       "help": "با احترام به prefers-reduced-motion؛ در حالت کاهش حرکت، حالت نهایی بی‌درنگ نمایش داده می‌شود."
     },
-    {
-      "key": "introDuration",
+    "introDuration": {
       "type": "number",
       "default": 1200,
       "min": 0,
@@ -133,7 +132,7 @@
       "labelFa": "مدت انیمیشن ورود (میلی‌ثانیه)",
       "labelEn": "Entrance duration (ms)"
     }
-  ],
+  },
   "contentSlots": [
     {
       "key": "home",
@@ -186,5 +185,11 @@
       "labelEn": "Contact form",
       "help": "فیلدها از خود فرم خوانده می‌شوند؛ پوسته فهرست فیلد نمی‌سازد."
     }
-  ]
+  ],
+  "deployment": {
+    "strategy": "registry_image",
+    "registryProvider": "ghcr",
+    "registryImageRepository": "ghcr.io/hamidnoshady/cms-arch3-theme",
+    "registryVisibility": "public"
+  }
 }

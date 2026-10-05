@@ -49,8 +49,8 @@ RUN groupadd --system --gid 1001 nodejs \
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 USER nextjs
 EXPOSE 3000
-# The app's own readiness endpoint, which also checks the CMS contract version. Uses
-# `node` so this stays valid independent of curl (which Coolify's probe needs, above).
+# Process-only readiness endpoint. It performs no CMS request, so startup and Coolify's
+# loopback probe do not depend on CMS availability. Uses node independently of curl.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "server.js"]
