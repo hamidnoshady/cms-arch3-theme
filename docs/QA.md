@@ -58,13 +58,13 @@ no-push container build; `publish-image.yml` pushes `ghcr.io/<owner>/<repo>` on 
 | `tests/contract.test.ts` | `@eshobe/site-runtime` export surface, `contractVersion`, block slugs |
 | `tests/routing.test.ts` | locale split, URL helpers, breadcrumbs (archive vs detail, `aria-current`) |
 | `tests/sections.test.ts` | slot precedence (binding → hint → none), cyclic/parent-child categories |
-| `tests/media.test.ts` | size URLs, `srcSet`, focal points, aspect ratios, origin allowlist |
+| `tests/media.test.ts` | size URLs (relative `/api/media/file/*`, never the production domain on a preview host), `srcSet`, focal points, aspect ratios, origin allowlist |
 | `tests/security.test.ts` | tenant resolution, preview gating, signature checks, draft exclusion |
 | `tests/fixtures.test.ts` | the fixture encoder's query semantics (`exists=false`, `like`, paging) |
 | `tests/content.test.ts` | nav references resolve by **id**; reads are single-locale with `fallbackLocale=false`; the credential travels in a header; the language switch carries a search term |
 | `tests/manifest.test.ts` | manifest ↔ code agreement, neutral identifiers, no unclaimed capability |
 | `tests/components.test.tsx` | server-rendered component output (marks, rules, skeletons) |
-| `tests/api.test.ts` | the public form-submission proxy: no credential/cookie/client-authorization is forwarded, the visitor's host travels as `x-forwarded-host`, the payload is bounded (413), an unconfigured CMS answers 503, and the CMS status is passed through rather than turned into a success |
+| `tests/api.test.ts` | the public form-submission proxy: the site key names the tenant while no cookie/client-authorization is forwarded, a request carrying the theme's own proxy marker is refused (508), the payload is bounded (413), an unconfigured CMS answers 503, and the CMS status is passed through rather than turned into a success |
 | `tests/form.test.tsx` | the CMS-defined form: required fields (incl. consent) block an empty submit with tied `aria-describedby` errors, invalid email is rejected, errors clear on typing, the payload uses CMS field names with booleans stringified, success is announced via `aria-live`, values survive a failure, the control is disabled while in flight, and a filled honeypot is absorbed without a write |
 | `tests/gallery.test.tsx` | gallery counter/title localization, focus restoration, and direction-aware ArrowLeft/ArrowRight stepping (next/previous mapping flips under RTL) |
 

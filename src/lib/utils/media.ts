@@ -18,6 +18,9 @@ export const isSvg = (media: Media): boolean => (media.mimeType ?? '').includes(
  * gadget or a hotlink.
  */
 export const mediaOriginAllowed = (candidate: string, allowed: string[]): boolean => {
+  // A same-deployment path under the media base is served by this theme's own
+  // `/api/media/file/*` relay, whatever host the visitor used.
+  if (isMediaPath(candidate)) return true
   try {
     const url = new URL(candidate)
     if (url.protocol !== 'https:' && url.protocol !== 'http:') return false
@@ -35,12 +38,45 @@ export const mediaOriginAllowed = (candidate: string, allowed: string[]): boolea
 
 export type MediaLike = { height?: null | number; url?: null | string; width?: null | number }
 
+/** Where the CMS serves uploads; the theme relays the same path (`app/api/[...path]`). */
+export const MEDIA_BASE_PATH = '/api/media/file/'
+
+const isMediaPath = (value: string): boolean => value.startsWith(MEDIA_BASE_PATH)
+
+/**
+ * A CMS upload's URL, **relative** whenever it is a `/api/media/file/*` file.
+ *
+ * The descriptor's `media.origin` is the site's *primary* domain. Absolutizing
+ * against it made a preview deployment (`<id>-preview.theme.eshobe.com`) load every
+ * image from production — so a preview depended on the live site, and broke whenever
+ * production pointed somewhere else. A relative path is fetched from whichever host
+ * is rendering, and that host's relay carries the site key. A URL that is absolute
+ * and points at the declared origin's media path is reduced to the same path; an
+ * absolute URL anywhere else is left as is (and refused by `mediaOriginAllowed`
+ * unless allowed). Callers that need an absolute URL (Open Graph) resolve the
+ * result against `ESHOBE_PUBLIC_ORIGIN` — never `ESHOBE_SITE_DOMAIN`.
+ */
 export const mediaUrl = (media: MediaLike | null | undefined, origin: string): null | string => {
   const raw = media?.url
   if (!raw) return null
+  if (isMediaPath(raw)) return raw
   try {
     const resolved = new URL(raw, origin)
+    const declared = new URL(origin).origin
+    if (resolved.origin === declared && isMediaPath(resolved.pathname)) {
+      return `${resolved.pathname}${resolved.search}`
+    }
     return resolved.toString()
+  } catch {
+    return null
+  }
+}
+
+/** An absolute media URL for consumers outside the page (Open Graph, feeds). */
+export const absoluteMediaUrl = (url: null | string, deploymentOrigin: string): null | string => {
+  if (!url) return null
+  try {
+    return new URL(url, deploymentOrigin).toString()
   } catch {
     return null
   }

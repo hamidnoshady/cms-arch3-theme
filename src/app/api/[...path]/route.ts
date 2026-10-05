@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 
 import { cachedCmsRead } from '@/lib/cms/cache'
-import { cmsEnv, requestBinaryWithHost, requestWithHost } from '@/lib/cms/client'
+import { cmsEnv, relayIdentity, requestBinaryWithHost, requestWithHost, THEME_PROXY_MARKER } from '@/lib/cms/client'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * CMS-owned public paths for direct/Coolify deployments. Customer DNS terminates at the
- * theme container, so these routes must be relayed to the CMS with the visitor's
- * original Host intact. Theme-owned `/api/health` and `/api/revalidate` have concrete
+ * theme container, so these routes are relayed to the CMS. The site is named by the
+ * site key when one is configured, else by the visitor's Host (`relayIdentity`).
+ * Theme-owned `/api/health` and `/api/revalidate` have concrete
  * route handlers and therefore never reach this catch-all route.
  */
 const ALLOWED_EXACT = new Set([
@@ -62,7 +63,10 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
 
   const cms = new URL(env.cmsUrl)
   const incoming = new URL(request.url)
-  if (cms.host === incoming.host) {
+  // Our own marker on an incoming request means a proxy routed our CMS request back
+  // here: fail now with a clear error instead of looping until the timeout.
+  if (cms.host === incoming.host || request.headers.get(THEME_PROXY_MARKER)) {
+    console.error(`[cms-proxy] recursion refused for /api/${segments.join('/')}: ESHOBE_CMS_URL routes back to this theme`)
     return NextResponse.json({ error: 'proxy-recursion-refused' }, { status: 508 })
   }
 
@@ -70,13 +74,22 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
   const target = new URL(`${cms.origin}${path}`)
   target.search = incoming.search
   const host = request.headers.get('host')
+  const relay = relayIdentity(env, host)
   // Cache GET only: a HEAD response has no body and must never populate a later GET.
   const isRead = request.method === 'GET'
   const body = isRead ? undefined : await request.text()
   const requestHeaders = {
     accept: request.headers.get('accept') ?? 'application/json',
     ...(request.headers.get('content-type') ? { 'content-type': request.headers.get('content-type') as string } : {}),
-    ...(host ? { 'x-forwarded-host': host } : {}),
+    ...relay.headers,
+  }
+
+  /** Upstream errors keep their status (403/404 …); only a network failure is a 503. */
+  const logStatus = (status: number) => {
+    if (status >= 400) console.warn(`[cms-proxy] CMS answered ${status} for ${request.method} ${path}`)
+  }
+  const unavailable = (error: unknown) => {
+    console.error(`[cms-proxy] CMS unreachable for ${request.method} ${path}: ${error instanceof Error ? error.message : String(error)}`)
   }
 
   /**
@@ -92,10 +105,10 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
         ...(request.headers.get('if-modified-since')
           ? { 'if-modified-since': request.headers.get('if-modified-since') as string }
           : {}),
-        ...(host ? { 'x-forwarded-host': host } : {}),
+        ...relay.headers,
       }
-      const upstream = host
-        ? await requestBinaryWithHost(target.toString(), host, { headers: mediaHeaders, method: request.method })
+      const upstream = relay.host
+        ? await requestBinaryWithHost(target.toString(), relay.host, { headers: mediaHeaders, method: request.method })
         : await fetch(target, {
             cache: 'no-store',
             headers: mediaHeaders,
@@ -107,9 +120,11 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
             headers: response.headers,
             status: response.status,
           }))
+      logStatus(upstream.status)
       const bytes = request.method === 'HEAD' || upstream.status === 304 ? null : new Uint8Array(upstream.body)
       return new NextResponse(bytes, { headers: responseHeaders(upstream.headers, MEDIA_HEADERS), status: upstream.status })
-    } catch {
+    } catch (error) {
+      unavailable(error)
       return NextResponse.json({ error: 'cms-unavailable' }, { status: 503 })
     }
   }
@@ -117,14 +132,15 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
   const load = async () => {
     try {
       // Undici deliberately derives Host from the URL and ignores a `fetch` Host
-      // header. Use node:http(s) when there is an incoming Host so the CMS receives
-      // the customer domain it uses as tenant authority.
-      if (host) {
-        const upstream = await requestWithHost(target.toString(), host, {
+      // header. Use node:http(s) for the key-less mode, where the visitor's Host is the
+      // tenant authority the CMS reads.
+      if (relay.host) {
+        const upstream = await requestWithHost(target.toString(), relay.host, {
           body,
           headers: requestHeaders,
           method: request.method,
         })
+        logStatus(upstream.status)
         return { body: upstream.body, headers: responseHeaders(upstream.headers), status: upstream.status }
       }
 
@@ -136,8 +152,10 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
         redirect: 'manual',
         signal: AbortSignal.timeout(5000),
       })
+      logStatus(upstream.status)
       return { body: await upstream.text(), headers: responseHeaders(upstream.headers), status: upstream.status }
-    } catch {
+    } catch (error) {
+      unavailable(error)
       return {
         body: JSON.stringify({ error: 'cms-unavailable' }),
         headers: new Headers({ 'content-type': 'application/json' }),

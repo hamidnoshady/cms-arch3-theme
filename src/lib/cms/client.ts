@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createHash } from 'node:crypto'
+import { isIP } from 'node:net'
 
 import { cachedCmsRead, type CachedCmsResponse } from './cache'
 import { fixtureRaw, fixturesEnabled } from './fixtures'
@@ -125,11 +126,71 @@ export type RawResponse = CachedCmsResponse
 
 /**
  * Host-preserving native request. `node:http(s)` is the only reliable way to set Host:
- * server-side content reads use it only for opt-in, key-less local development, while
- * the direct public API proxy uses it to preserve the customer's tenant host. Callers
+ * server-side content reads use it only for opt-in, key-less local development, and
+ * the direct public API proxy uses it only when no site key is configured. Callers
  * must never combine a site credential with a visitor-provided Host.
  */
 export type BinaryResponse = { body: Buffer; headers: Headers; status: number }
+
+/**
+ * Added to every request this theme sends to the CMS. A request that *arrives*
+ * carrying it has come back round through a proxy that routed it here instead of to
+ * the CMS, and is refused at once (`proxy-recursion-refused`) instead of looping until
+ * the upstream timeout.
+ */
+export const THEME_PROXY_MARKER = 'x-eshobe-theme-proxy'
+
+/**
+ * How a relayed visitor request names its site to the CMS.
+ *
+ * With a site key the key *is* the tenant: it goes in `Authorization`, and the
+ * visitor's host travels only as `x-forwarded-host` (informational — the CMS does not
+ * trust it). The request keeps the CMS's own `Host`, so a reverse proxy that routes by
+ * Host (Traefik in front of `cms.eshobe.com`) sends it to the CMS rather than back to
+ * this theme, and a preview hostname the CMS has never heard of still resolves.
+ *
+ * Without a key the visitor's host is the only tenant signal the CMS accepts, so it is
+ * sent as `Host` (`host` below) — the key-less host-tenant mode. The browser's own
+ * `Authorization` is never forwarded: these headers are built from scratch.
+ */
+export const relayIdentity = (
+  env: Pick<CmsEnv, 'apiKey'>,
+  visitorHost: null | string,
+): { headers: Record<string, string>; host: null | string } => ({
+  headers: {
+    [THEME_PROXY_MARKER]: '1',
+    ...(visitorHost ? { 'x-forwarded-host': visitorHost } : {}),
+    ...(env.apiKey ? { authorization: `Bearer ${env.apiKey}` } : {}),
+  },
+  host: env.apiKey ? null : visitorHost,
+})
+
+/**
+ * Options for the native request. `servername` is set explicitly: without it Node
+ * derives TLS SNI from the `Host` header, so a visitor host override also became the
+ * SNI, and a proxy that routes by SNI sent the request back to this theme.
+ */
+export const nativeRequestOptions = (
+  url: string,
+  host: null | string,
+  init: { method?: string; headers?: Record<string, string> } = {},
+) => {
+  const target = new URL(url)
+  const https = target.protocol === 'https:'
+  return {
+    headers: { accept: 'application/json', ...init.headers, ...(host ? { host } : {}) },
+    hostname: target.hostname,
+    method: init.method ?? 'GET',
+    path: `${target.pathname}${target.search}`,
+    port: target.port || (https ? 443 : 80),
+    protocol: target.protocol,
+    // RFC 6066 forbids an IP address as SNI (and Node warns on one).
+    ...(https && !isIP(target.hostname) ? { servername: target.hostname } : {}),
+    // CMS reads fail after a short bound so an older in-process value can keep
+    // rendering instead of tying up a request during an upstream outage.
+    timeout: 5000,
+  }
+}
 
 /**
  * Bytes, not text. `/api/media/file/*` relays JPEG/PNG/WebP through this; decoding
@@ -139,41 +200,28 @@ export type BinaryResponse = { body: Buffer; headers: Headers; status: number }
  */
 export const requestBinaryWithHost = async (
   url: string,
-  host: string,
+  host: null | string,
   init: { method?: string; body?: string; headers?: Record<string, string> } = {},
 ): Promise<BinaryResponse> => {
   const target = new URL(url)
   const transport = target.protocol === 'https:' ? await import('node:https') : await import('node:http')
 
   return new Promise<BinaryResponse>((resolve, reject) => {
-    const request = transport.request(
-      {
-        headers: { accept: 'application/json', ...init.headers, host },
-        hostname: target.hostname,
-        method: init.method ?? 'GET',
-        path: `${target.pathname}${target.search}`,
-        port: target.port || (target.protocol === 'https:' ? 443 : 80),
-        protocol: target.protocol,
-        // CMS reads fail after a short bound so an older in-process value can keep
-        // rendering instead of tying up a request during an upstream outage.
-        timeout: 5000,
-      },
-      (response) => {
-        const chunks: Buffer[] = []
-        response.on('data', (chunk: Buffer) => chunks.push(chunk))
-        response.on('end', () =>
-          resolve({
-            body: Buffer.concat(chunks),
-            headers: new Headers(
-              Object.entries(response.headers).flatMap(([key, value]) =>
-                typeof value === 'string' ? [[key, value] as [string, string]] : [],
-              ),
+    const request = transport.request(nativeRequestOptions(url, host, init), (response) => {
+      const chunks: Buffer[] = []
+      response.on('data', (chunk: Buffer) => chunks.push(chunk))
+      response.on('end', () =>
+        resolve({
+          body: Buffer.concat(chunks),
+          headers: new Headers(
+            Object.entries(response.headers).flatMap(([key, value]) =>
+              typeof value === 'string' ? [[key, value] as [string, string]] : [],
             ),
-            status: response.statusCode ?? 500,
-          }),
-        )
-      },
-    )
+          ),
+          status: response.statusCode ?? 500,
+        }),
+      )
+    })
     request.on('timeout', () => request.destroy(new Error('CMS request timed out')))
     request.on('error', reject)
     if (init.body) request.write(init.body)
@@ -184,7 +232,7 @@ export const requestBinaryWithHost = async (
 /** JSON/text reads: the same request, decoded. Never use this for media bytes. */
 export const requestWithHost = async (
   url: string,
-  host: string,
+  host: null | string,
   init: { method?: string; body?: string; headers?: Record<string, string> } = {},
 ): Promise<RawResponse> => {
   const response = await requestBinaryWithHost(url, host, {
@@ -215,7 +263,7 @@ export const cmsFetchRaw = async (
     if (!env.cmsUrl) throw new CmsError(path, 503, 'ESHOBE_CMS_URL is not configured')
 
     const url = `${env.cmsUrl.replace(/\/$/, '')}${cachePath}`
-    const headers: Record<string, string> = { accept: 'application/json', ...init.headers }
+    const headers: Record<string, string> = { accept: 'application/json', ...init.headers, [THEME_PROXY_MARKER]: '1' }
     if (env.apiKey) headers.authorization = `Bearer ${env.apiKey}`
 
     if (env.allowHostTenant && env.siteDomain) {
