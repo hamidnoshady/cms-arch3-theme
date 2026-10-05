@@ -129,18 +129,26 @@ export type RawResponse = CachedCmsResponse
  * the direct public API proxy uses it to preserve the customer's tenant host. Callers
  * must never combine a site credential with a visitor-provided Host.
  */
-export const requestWithHost = async (
+export type BinaryResponse = { body: Buffer; headers: Headers; status: number }
+
+/**
+ * Bytes, not text. `/api/media/file/*` relays JPEG/PNG/WebP through this; decoding
+ * those as UTF-8 replaces every invalid sequence with U+FFFD, so the browser receives
+ * a "JPEG" it cannot decode and every CMS image on a direct deployment rendered as a
+ * broken-image box.
+ */
+export const requestBinaryWithHost = async (
   url: string,
   host: string,
   init: { method?: string; body?: string; headers?: Record<string, string> } = {},
-): Promise<RawResponse> => {
+): Promise<BinaryResponse> => {
   const target = new URL(url)
   const transport = target.protocol === 'https:' ? await import('node:https') : await import('node:http')
 
-  return new Promise<RawResponse>((resolve, reject) => {
+  return new Promise<BinaryResponse>((resolve, reject) => {
     const request = transport.request(
       {
-        headers: { ...init.headers, host, accept: 'application/json' },
+        headers: { accept: 'application/json', ...init.headers, host },
         hostname: target.hostname,
         method: init.method ?? 'GET',
         path: `${target.pathname}${target.search}`,
@@ -155,7 +163,7 @@ export const requestWithHost = async (
         response.on('data', (chunk: Buffer) => chunks.push(chunk))
         response.on('end', () =>
           resolve({
-            body: Buffer.concat(chunks).toString('utf8'),
+            body: Buffer.concat(chunks),
             headers: new Headers(
               Object.entries(response.headers).flatMap(([key, value]) =>
                 typeof value === 'string' ? [[key, value] as [string, string]] : [],
@@ -171,6 +179,19 @@ export const requestWithHost = async (
     if (init.body) request.write(init.body)
     request.end()
   })
+}
+
+/** JSON/text reads: the same request, decoded. Never use this for media bytes. */
+export const requestWithHost = async (
+  url: string,
+  host: string,
+  init: { method?: string; body?: string; headers?: Record<string, string> } = {},
+): Promise<RawResponse> => {
+  const response = await requestBinaryWithHost(url, host, {
+    ...init,
+    headers: { ...init.headers, accept: 'application/json' },
+  })
+  return { ...response, body: response.body.toString('utf8') }
 }
 
 export const cmsFetchRaw = async (

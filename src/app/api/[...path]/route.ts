@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { cachedCmsRead } from '@/lib/cms/cache'
-import { cmsEnv, requestWithHost } from '@/lib/cms/client'
+import { cmsEnv, requestBinaryWithHost, requestWithHost } from '@/lib/cms/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,9 +37,12 @@ const isAllowed = (segments: string[]): boolean => {
   return ALLOWED_PREFIXES.some((prefix) => joined === prefix || joined.startsWith(`${prefix}/`))
 }
 
-const responseHeaders = (upstream: Headers): Headers => {
+const RELAYED_HEADERS = ['cache-control', 'content-type', 'etag', 'last-modified', 'location', 'vary']
+const MEDIA_HEADERS = [...RELAYED_HEADERS, 'accept-ranges', 'content-disposition', 'content-length']
+
+const responseHeaders = (upstream: Headers, names: readonly string[] = RELAYED_HEADERS): Headers => {
   const headers = new Headers()
-  for (const name of ['cache-control', 'content-type', 'etag', 'last-modified', 'location', 'vary']) {
+  for (const name of names) {
     const value = upstream.get(name)
     if (value) headers.set(name, value)
   }
@@ -74,6 +77,41 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
     accept: request.headers.get('accept') ?? 'application/json',
     ...(request.headers.get('content-type') ? { 'content-type': request.headers.get('content-type') as string } : {}),
     ...(host ? { 'x-forwarded-host': host } : {}),
+  }
+
+  /**
+   * Media files are bytes: relayed as a Buffer and never put in the process-local read
+   * cache, which stores text (and 512 photographs would be the whole heap). The CMS's
+   * own `cache-control`/`etag` reach the browser, which is the cache that matters.
+   */
+  if (segments[0] === 'media' && segments[1] === 'file') {
+    try {
+      const mediaHeaders = {
+        accept: request.headers.get('accept') ?? '*/*',
+        ...(request.headers.get('if-none-match') ? { 'if-none-match': request.headers.get('if-none-match') as string } : {}),
+        ...(request.headers.get('if-modified-since')
+          ? { 'if-modified-since': request.headers.get('if-modified-since') as string }
+          : {}),
+        ...(host ? { 'x-forwarded-host': host } : {}),
+      }
+      const upstream = host
+        ? await requestBinaryWithHost(target.toString(), host, { headers: mediaHeaders, method: request.method })
+        : await fetch(target, {
+            cache: 'no-store',
+            headers: mediaHeaders,
+            method: request.method,
+            redirect: 'manual',
+            signal: AbortSignal.timeout(15000),
+          }).then(async (response) => ({
+            body: Buffer.from(await response.arrayBuffer()),
+            headers: response.headers,
+            status: response.status,
+          }))
+      const bytes = request.method === 'HEAD' || upstream.status === 304 ? null : new Uint8Array(upstream.body)
+      return new NextResponse(bytes, { headers: responseHeaders(upstream.headers, MEDIA_HEADERS), status: upstream.status })
+    } catch {
+      return NextResponse.json({ error: 'cms-unavailable' }, { status: 503 })
+    }
   }
 
   const load = async () => {
