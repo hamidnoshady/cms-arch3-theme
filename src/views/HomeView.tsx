@@ -12,6 +12,7 @@ import { labels as dictionary } from '@/lib/theme/labels'
 import type { Locale } from '@/lib/cms/types'
 import { formatNumber } from '@/lib/runtime'
 import { mediaUrl } from '@/lib/utils/media'
+import { brandName } from '@/lib/theme/brand'
 
 /**
  * Home = the entrance stage only: no navbar, no footer, no breadcrumbs, no archive
@@ -26,7 +27,7 @@ export const homeMetadata = async (locale: Locale): Promise<Metadata> => {
     context: ctx,
     description: ctx.site.branding?.tagline ?? null,
     path: '/',
-    title: ctx.site.branding?.displayName ?? ctx.site.name,
+    title: brandName(ctx.site),
   })
 }
 
@@ -66,7 +67,7 @@ export const HomeView = async ({ locale }: { locale: Locale }) => {
       }
       menuLabel={t.menuTitle}
       menuNoScript={t.menuNoScript}
-      name={branding?.displayName ?? ctx.site.name}
+      name={brandName(ctx.site)}
       scrollCue={t.scrollCue}
       switchTargets={switchTargetsForPath(ctx, () => THEME_ROUTES.home)}
     />

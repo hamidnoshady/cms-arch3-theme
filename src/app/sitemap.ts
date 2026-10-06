@@ -2,11 +2,11 @@ import type { MetadataRoute } from 'next'
 
 import { getCategories, getPages, getPosts, getSiteOrNull } from '@/lib/cms/endpoints'
 import { cmsEnv } from '@/lib/cms/client'
-import { blogExclusion } from '@/lib/theme/sections'
+import { categorySubtree, resolveSectionRef } from '@/lib/theme/sections'
 import { href } from '@/lib/routing/locale'
 import { pagePath } from '@/lib/runtime'
-import { THEME_ROUTES } from '@/lib/routing/paths'
-import type { Locale, SiteDescriptor } from '@/lib/cms/types'
+import { articlePath, educationEntryPath, projectPath, THEME_ROUTES } from '@/lib/routing/paths'
+import type { CategoryDoc, Locale, SiteDescriptor } from '@/lib/cms/types'
 
 export const revalidate = 300
 
@@ -61,22 +61,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const [pages, posts, categories] = await Promise.all([
-    readAll('pages', site, locales, ['slug', 'updatedAt']),
-    readAll('posts', site, locales, ['slug', 'categories', 'updatedAt']),
+    readAll('pages', site, locales, ['id', 'slug', 'updatedAt']),
+    readAll('posts', site, locales, ['id', 'slug', 'categories', 'updatedAt']),
     safeCategories(site),
   ])
 
-  const excluded = (() => {
-    const roots = categories.filter((category) => ['projects', 'education'].includes(category.slug))
-    return blogExclusion(
-      categories,
-      roots.map((category) => String(category.id)),
-    )
-  })()
+  // Sections follow the site's bindings (the same rule the routes use), so a post is
+  // listed on the route that actually renders it: a project at `/projects/<slug>`, an
+  // education entry at `/education/<slug>`, everything else at `/blog/<slug>`.
+  const subtreeOf = (section: 'education' | 'projects'): Set<string> => {
+    const ref = resolveSectionRef(section, site.themeRuntime?.bindings)
+    const root =
+      ref.by === 'binding'
+        ? categories.find((category) => String(category.id) === ref.id)
+        : ref.by === 'slug'
+          ? categories.find((category) => category.slug === ref.slug)
+          : undefined
+    if (!root) return new Set()
+    return new Set([String(root.id), ...categorySubtree(root, categories).map((category) => String(category.id))])
+  }
+  const projectIds = subtreeOf('projects')
+  const educationIds = subtreeOf('education')
+  const boundPageIds = new Set(
+    (['home', 'about', 'contact'] as const).flatMap((section) => {
+      const ref = resolveSectionRef(section, site.themeRuntime?.bindings)
+      return ref.by === 'binding' ? [ref.id] : []
+    }),
+  )
 
   for (const locale of locales) {
     for (const page of pages[locale] ?? []) {
-      if (SECTION_SLUGS.has(page.slug) || page.slug === 'home') continue
+      // Section pages live on their fixed routes (listed above), whatever their slug.
+      if (SECTION_SLUGS.has(page.slug) || page.slug === 'home' || (page.id && boundPageIds.has(page.id))) continue
       entries.push({
         changeFrequency: 'monthly',
         lastModified: page.updatedAt ? new Date(page.updatedAt) : undefined,
@@ -85,10 +101,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
     for (const post of posts[locale] ?? []) {
       const categoryIds = (post.categories ?? []).map(idOf).filter((id): id is string => Boolean(id))
-      const inExcluded = categoryIds.some((id) => excluded.includes(id))
-      const path = inExcluded
-        ? `${THEME_ROUTES.blog}/${encodeURIComponent(post.slug)}`
-        : `${THEME_ROUTES.blog}/${encodeURIComponent(post.slug)}`
+      const path = categoryIds.some((id) => projectIds.has(id))
+        ? projectPath(post.slug)
+        : categoryIds.some((id) => educationIds.has(id))
+          ? educationEntryPath(post.slug)
+          : articlePath(post.slug)
       entries.push({
         changeFrequency: 'monthly',
         lastModified: post.updatedAt ? new Date(post.updatedAt) : undefined,
@@ -101,7 +118,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return entries
 }
 
-const safeCategories = async (site: SiteDescriptor) => {
+const safeCategories = async (site: SiteDescriptor): Promise<CategoryDoc[]> => {
   try {
     return await getCategories(site.defaultLocale)
   } catch {
@@ -109,7 +126,7 @@ const safeCategories = async (site: SiteDescriptor) => {
   }
 }
 
-type SlimDoc = { categories?: unknown[]; slug: string; updatedAt?: null | string }
+type SlimDoc = { categories?: unknown[]; id?: string; slug: string; updatedAt?: null | string }
 
 /** Reads every published document of a collection for one locale, capped and documented. */
 const readAll = async (
@@ -125,7 +142,14 @@ const readAll = async (
       const docs = kind === 'pages' ? (await getPages(locale, options)).docs : (await getPosts(locale, options)).docs
       out[locale] = docs.flatMap((doc) =>
         typeof doc.slug === 'string'
-          ? [{ categories: (doc as { categories?: unknown[] }).categories, slug: doc.slug, updatedAt: doc.updatedAt ?? null }]
+          ? [
+              {
+                categories: (doc as { categories?: unknown[] }).categories,
+                id: typeof doc.id === 'string' ? doc.id : undefined,
+                slug: doc.slug,
+                updatedAt: doc.updatedAt ?? null,
+              },
+            ]
           : [],
       )
     } catch {

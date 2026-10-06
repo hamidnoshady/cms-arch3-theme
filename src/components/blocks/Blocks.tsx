@@ -23,10 +23,12 @@ import { getFormById, getPosts, getPostsByIds } from '@/lib/cms/endpoints'
 import type { BlockRow, CmsLink, FormDoc, Media, PostDoc } from '@/lib/cms/types'
 import { parseCenter, mapSource } from '@/lib/maps/mapSource'
 import { formatNumber, toLocaleDigits } from '@/lib/runtime'
-import { postHref } from '@/lib/cms/content'
+import { localizedPostHref } from '@/lib/cms/content'
+import { resolveCmsLink, type LinkInput, type ResolvedLink } from '@/lib/routing/links'
 import { cn } from '@/lib/utils/cn'
 import { dateText } from '@/lib/utils/dates'
 import { isMedia, lightboxItem, mediaPresentation, mediaUrl } from '@/lib/utils/media'
+import { lightboxItems } from '@/lib/utils/lexical'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { warnUnknown } from './node'
 import { RichText } from './RichText'
@@ -129,6 +131,14 @@ const BlockShell = ({
   </ContentContainer>
 )
 
+/**
+ * Anchor scope for a rich-text field inside a block: the row id the CMS assigned
+ * (unique within the page and stable across renders), plus the field's place in the
+ * row. Without a row id the field falls back to its content hash (see `RichText`).
+ */
+const rowScope = (row: BlockRow, part = ''): string | undefined =>
+  typeof row.id === 'string' && row.id ? `${row.id}${part ? `-${part}` : ''}` : undefined
+
 const asMedia = (value: unknown): Media | null => (isMedia(value as never) ? (value as Media) : null)
 
 /* --- blocks --------------------------------------------------------------- */
@@ -159,6 +169,9 @@ const ContentBlock = async ({ context, row }: { context: SiteContext; row: Block
     ? (row.columns as { enableLink?: boolean; link?: CmsLink; richText?: unknown; size?: string }[])
     : []
   if (columns.length === 0) return null
+  const links = await Promise.all(
+    columns.map((column) => (column.enableLink && column.link ? resolveCmsLink(column.link, context) : null)),
+  )
   return (
     <BlockShell>
       <div className="grid grid-cols-1 gap-x-10 gap-y-12 md:grid-cols-6 lg:grid-cols-12">
@@ -166,11 +179,11 @@ const ContentBlock = async ({ context, row }: { context: SiteContext; row: Block
           const size = column.size && COLUMN_SPAN[column.size] ? column.size : 'oneThird'
           return (
             <div className={cn('min-w-0', TABLET_SPAN[size], COLUMN_SPAN[size])} key={`column-${index}`}>
-              <RichText content={column.richText as never} context={context} fallbackDir={context.dir} />
-              {column.enableLink && column.link ? (
-                <Link className="link-inline type-ui mt-4 target-standalone" href={linkHref(column.link)}>
-                  {linkLabel(column.link)}
-                </Link>
+              <RichText anchorScope={rowScope(row, `c${index}`)} content={column.richText as never} context={context} fallbackDir={context.dir} />
+              {column.link && links[index] ? (
+                <CmsLinkAnchor className="link-inline type-ui mt-4 target-standalone" link={links[index]}>
+                  {linkLabel(column.link, links[index])}
+                </CmsLinkAnchor>
               ) : null}
             </div>
           )
@@ -222,24 +235,30 @@ const MediaBlock = ({ context, row }: { context: SiteContext; row: BlockRow }) =
 }
 
 const CtaBlock = async ({ context, row }: { context: SiteContext; row: BlockRow }) => {
-  const links = Array.isArray(row.links) ? (row.links as Record<string, unknown>[]) : []
+  const entries = Array.isArray(row.links) ? (row.links as Record<string, unknown>[]) : []
+  const links = (
+    await Promise.all(
+      entries.map(async (entry) => {
+        const link = entry.link as (LinkInput & Record<string, unknown>) | undefined
+        const resolved = link ? await resolveCmsLink(link, context) : null
+        // A button whose destination does not resolve is left out rather than shown
+        // as a control that goes nowhere.
+        return link && resolved ? { link, resolved } : null
+      }),
+    )
+  ).filter((entry): entry is { link: LinkInput & Record<string, unknown>; resolved: ResolvedLink } => Boolean(entry))
   return (
     <BlockShell tone="tight">
       <Rule className="mb-8" />
       <div className="flex flex-col items-start gap-6">
-        <RichText content={row.richText as never} context={context} fallbackDir={context.dir} />
+        <RichText anchorScope={rowScope(row)} content={row.richText as never} context={context} fallbackDir={context.dir} />
         {links.length > 0 ? (
           <div className="flex flex-wrap gap-3">
-            {links.map((entry, index) => {
-              const link = entry.link as Record<string, unknown> | undefined
-              if (!link) return null
-              const outline = link.appearance === 'outline'
-              return (
-                <Button asChild key={`cta-${index}`} variant={outline ? 'quiet' : 'default'}>
-                  <Link href={linkHref(link)}>{linkLabel(link)}</Link>
-                </Button>
-              )
-            })}
+            {links.map(({ link, resolved }, index) => (
+              <Button asChild key={`cta-${index}`} variant={link.appearance === 'outline' ? 'quiet' : 'default'}>
+                <CmsLinkAnchor link={resolved}>{linkLabel(link, resolved)}</CmsLinkAnchor>
+              </Button>
+            ))}
           </div>
         ) : null}
       </div>
@@ -418,7 +437,7 @@ const FormBlock = async ({ context, row }: { context: SiteContext; row: BlockRow
   return (
     <BlockShell tone="tight">
       {row.enableIntro && row.introContent ? (
-        <RichText className="mb-8" content={row.introContent as never} context={context} fallbackDir={context.dir} />
+        <RichText anchorScope={rowScope(row, 'intro')} className="mb-8" content={row.introContent as never} context={context} fallbackDir={context.dir} />
       ) : null}
       <CmsForm className="max-w-[36rem]" form={form} locale={context.locale} />
     </BlockShell>
@@ -443,10 +462,7 @@ const GalleryBlock = ({ context, row }: { context: SiteContext; row: BlockRow })
   const images = (Array.isArray(row.images) ? row.images : []).map(galleryMedia).filter((media): media is Media => Boolean(media))
   const { heading, intro: introText } = intro(row)
   const t = dictionary(context.locale)
-  const items: GalleryItem[] = images.flatMap((media) => {
-    const item = lightboxItem(media, context.site.media.origin, t.photo)
-    return item ? [item] : []
-  })
+  const items: GalleryItem[] = lightboxItems(images, context.site.media.origin, t.photoAt)
   if (items.length === 0) return null
   return (
     <BlockShell heading={heading} introText={introText} mark="pair">
@@ -581,7 +597,7 @@ const ArchiveBlock = async ({ context, row }: { context: SiteContext; row: Block
 }
 
 const ArchiveRow = async ({ context, post }: { context: SiteContext; post: PostDoc }) => {
-  const href = await postHref(post, context)
+  const href = await localizedPostHref(post, context)
   return (
     <li className="border-b border-line-structural">
       <Link className="card__link flex items-baseline justify-between gap-6 py-5" href={href}>
@@ -596,8 +612,31 @@ const ArchiveRow = async ({ context, post }: { context: SiteContext; post: PostD
 
 /* --- link helpers (blocks store `link` groups like navigation) ------------ */
 
-const linkLabel = (link: Record<string, unknown>): string =>
-  (typeof link.label === 'string' && link.label.trim()) || (typeof link.url === 'string' ? link.url : '')
+const linkLabel = (link: Record<string, unknown>, resolved: ResolvedLink): string =>
+  (typeof link.label === 'string' && link.label.trim()) || resolved.href
 
-const linkHref = (link: Record<string, unknown>): string =>
-  typeof link.url === 'string' && link.url.trim() ? link.url : '#'
+/** A resolved CMS link: client navigation inside the site, a plain anchor outside it. */
+const CmsLinkAnchor = ({
+  children,
+  className,
+  link,
+  ...rest
+}: {
+  children: ReactNode
+  className?: string
+  link: ResolvedLink
+}) => {
+  const target = link.newTab ? '_blank' : undefined
+  if (link.external) {
+    return (
+      <a {...rest} className={className} href={link.href} rel="noopener noreferrer" target={target}>
+        {children}
+      </a>
+    )
+  }
+  return (
+    <Link {...rest} className={className} href={link.href} rel={link.newTab ? 'noopener' : undefined} target={target}>
+      {children}
+    </Link>
+  )
+}

@@ -7,6 +7,7 @@ import type { Media } from '@/lib/cms/types'
 import { href } from '@/lib/routing/locale'
 import { absoluteMediaUrl, mediaUrl } from '@/lib/utils/media'
 import { truncate } from '@/lib/utils/text'
+import { brandName } from '@/lib/theme/brand'
 
 /**
  * Metadata construction.
@@ -38,7 +39,7 @@ export const absoluteUrl = (context: SiteContext, path: string, locale = context
 
 export const metadataFor = (input: MetadataInput): Metadata => {
   const { context, title, description, path, image, type = 'website', languages } = input
-  const siteName = context.site.name
+  const siteName = brandName(context.site)
   // Absolute for crawlers, but from where this deployment answers (ESHOBE_PUBLIC_ORIGIN),
   // so a preview's og:image never points at production.
   const ogImage = absoluteMediaUrl(
@@ -73,8 +74,5 @@ export const metadataFor = (input: MetadataInput): Metadata => {
   }
 }
 
-/** `hreflang` map, built only from locales where the document really exists. */
-export const languageMap = (context: SiteContext, pathForLocale: (locale: string) => string, translated: string[]): Record<string, string> =>
-  Object.fromEntries(
-    translated.map((locale) => [locale === 'fa' ? 'fa-IR' : locale, absoluteUrl(context, pathForLocale(locale), locale as never)]),
-  )
+/** `hreflang` key for a locale (`fa` is published as `fa-IR`). */
+export const hreflangFor = (locale: string): string => (locale === 'fa' ? 'fa-IR' : locale)

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 
 import { cachedCmsRead } from '@/lib/cms/cache'
 import { cmsEnv, relayIdentity, requestBinaryWithHost, requestWithHost, THEME_PROXY_MARKER } from '@/lib/cms/client'
+import { readBoundedText } from '@/lib/http/body'
+import { publicReadSearch } from '@/lib/cms/proxyPolicy'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +32,20 @@ const ALLOWED_EXACT = new Set([
 
 const ALLOWED_PREFIXES = ['checkout', 'media/file', 'payments']
 const FORWARDED_METHODS = new Set(['GET', 'HEAD', 'POST'])
+
+/**
+ * Writes are relayed only where the public contract has a visitor write: checkout and
+ * payments. A POST to a content collection (`/api/pages`, `/api/posts` …) is Payload's
+ * *create*; relayed with the site key it would be the key — not the visitor — asking.
+ * Form submissions have their own bounded route (`/api/form-submissions`).
+ */
+const WRITE_PREFIXES = ['checkout', 'payments']
+const MAX_WRITE_BYTES = 64 * 1024
+
+const isWriteAllowed = (segments: string[]): boolean => {
+  const joined = segments.join('/')
+  return WRITE_PREFIXES.some((prefix) => joined === prefix || joined.startsWith(`${prefix}/`))
+}
 
 const isAllowed = (segments: string[]): boolean => {
   if (segments.length === 0) return false
@@ -60,6 +76,9 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
   if (!isAllowed(segments)) {
     return NextResponse.json({ error: 'path-not-proxied' }, { status: 403 })
   }
+  if (request.method === 'POST' && !isWriteAllowed(segments)) {
+    return NextResponse.json({ error: 'method-not-allowed' }, { headers: { allow: 'GET, HEAD' }, status: 405 })
+  }
 
   const cms = new URL(env.cmsUrl)
   const incoming = new URL(request.url)
@@ -72,12 +91,20 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
 
   const path = `/api/${segments.join('/')}`
   const target = new URL(`${cms.origin}${path}`)
-  target.search = incoming.search
+  // Reads go out with the site key, so their query is the theme's to police; checkout
+  // and payment writes keep the query their public contract defines.
+  const search = request.method === 'POST' ? incoming.search : publicReadSearch(incoming.search, segments[0] ?? '')
+  target.search = search
   const host = request.headers.get('host')
   const relay = relayIdentity(env, host)
   // Cache GET only: a HEAD response has no body and must never populate a later GET.
   const isRead = request.method === 'GET'
-  const body = isRead ? undefined : await request.text()
+  let body: string | undefined
+  if (request.method === 'POST') {
+    const bounded = await readBoundedText(request, MAX_WRITE_BYTES)
+    if (!bounded.ok) return NextResponse.json({ error: 'payload-too-large' }, { status: 413 })
+    body = bounded.text
+  }
   const requestHeaders = {
     accept: request.headers.get('accept') ?? 'application/json',
     ...(request.headers.get('content-type') ? { 'content-type': request.headers.get('content-type') as string } : {}),
@@ -166,7 +193,7 @@ const forward = async (request: Request, segments: string[]): Promise<Response> 
 
   const upstream = isRead
     ? await cachedCmsRead({
-        key: `proxy:${cms.origin}:${host ?? 'no-host'}:${path}${incoming.search}`,
+        key: `proxy:${cms.origin}:${host ?? 'no-host'}:${path}${search}`,
         load,
         path,
         tags: [`proxy:${host ?? 'no-host'}:${segments[0] ?? 'api'}`],

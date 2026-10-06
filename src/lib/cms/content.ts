@@ -3,6 +3,7 @@ import 'server-only'
 import { cache } from 'react'
 
 import { SECTIONS, blogExclusion, categorySubtree, resolveSectionRef, type SectionKey, type SectionRef } from '@/lib/theme/sections'
+import { href } from '@/lib/routing/locale'
 import { articlePath, educationEntryPath, projectPath } from '@/lib/routing/paths'
 
 import type { SiteContext } from './context'
@@ -230,12 +231,26 @@ export const postSection = async (
   return 'blog'
 }
 
+/**
+ * The **locale-neutral** canonical path of a post (`/projects/<slug>`). Route
+ * assembly that needs a link uses `localizedPostHref`; this neutral form is for the
+ * places that add the prefix themselves (metadata, the language switch, sitemap).
+ */
 export const postHref = async (post: PostDoc, ctx: SiteContext): Promise<string> => {
   const section = await postSection(post, ctx)
   if (section === 'projects') return projectPath(post.slug)
   if (section === 'education') return educationEntryPath(post.slug)
   return articlePath(post.slug)
 }
+
+/**
+ * The link to a post in the current locale: section route + the post's slug in this
+ * locale (the post was read in `ctx.locale`) + the locale prefix, applied exactly once.
+ * Every archive, card, related list, menu and rich-text link uses this one function,
+ * so an English archive can no longer send a visitor into the Persian tree.
+ */
+export const localizedPostHref = async (post: PostDoc, ctx: SiteContext): Promise<string> =>
+  href(await postHref(post, ctx), ctx.locale, ctx.site)
 
 export const getPostContext = async (
   slug: string,
@@ -290,7 +305,7 @@ export const searchHrefs = async (
   await Promise.all(
     hits.map(async (hit) => {
       const post = byId.get(documentId(hit)) ?? (await getPostBySlug(hit.slug, ctx.locale, ctx.draft))
-      if (post) resolved.set(hit.id, await postHref(post, ctx))
+      if (post) resolved.set(hit.id, await localizedPostHref(post, ctx))
     }),
   )
   return resolved

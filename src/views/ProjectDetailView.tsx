@@ -7,9 +7,8 @@ import { SectionNav } from '@/components/navigation/SectionNav'
 import { FramedMedia } from '@/components/media/CmsImage'
 import { ProjectCard, ProjectFacts } from '@/components/projects/ProjectCard'
 import { loadPageContext } from '@/lib/cms/pageContext'
-import { getPostContext, postHref } from '@/lib/cms/content'
+import { getPostContext, localizedPostHref } from '@/lib/cms/content'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
-import { href } from '@/lib/routing/locale'
 import { projectPath } from '@/lib/routing/paths'
 import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
@@ -19,6 +18,7 @@ import { isMedia } from '@/lib/utils/media'
 import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
 import type { Locale } from '@/lib/cms/types'
+import { documentLanguages } from '@/lib/seo/translations'
 
 /**
  * Project detail: breadcrumbs, title, **real** facts only, controlled hero ratio,
@@ -44,6 +44,7 @@ export const projectMetadata = async (locale: Locale, slug: string): Promise<Met
     context: outcome.ctx,
     description: post.meta?.description ?? null,
     image: isMedia(post.meta?.image) ? post.meta.image : isMedia(post.heroImage) ? post.heroImage : null,
+    languages: await documentLanguages(outcome.ctx, { id: post.id, kind: 'post', pathFor: projectPath }),
     path: projectPath(slug),
     title: post.title,
     type: 'article',
@@ -63,7 +64,7 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
   // that owns it rather than rendering the project composition around it. Preview keeps
   // the requested URL for editors.
   if (!ctx.draft && data.section !== 'projects') {
-    redirect(href(await postHref(post, ctx), locale, ctx.site))
+    redirect(await localizedPostHref(post, ctx))
   }
 
   // A long project (several parts, named sets of renders) gets in-page navigation.
@@ -84,8 +85,8 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
       crumbs={crumbs}
       currentPath={projectPath(slug)}
       label={t.breadcrumb}
-      locale={locale}
-      switchDoc={{ id: post.id, kind: 'post', pathForLocale: () => projectPath(slug) }}
+     
+      switchDoc={{ id: post.id, kind: 'post', pathFor: projectPath }}
     >
       <ContentContainer>
         <header className="project-head">
@@ -100,7 +101,7 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
 
       <ContentContainer className="mt-12">
         <div className="project-narrative">
-          <RichText content={post.content as never} context={ctx} fallbackDir={ctx.dir} />
+          <RichText anchorScope={null} content={post.content as never} context={ctx} fallbackDir={ctx.dir} />
         </div>
       </ContentContainer>
 
@@ -117,7 +118,7 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
                 related.map(async (entry) => (
                   <ProjectCard
                     context={ctx}
-                    href={href(await postHref(entry, ctx), locale, ctx.site)}
+                    href={await localizedPostHref(entry, ctx)}
                     key={entry.id}
                     post={entry}
                   />

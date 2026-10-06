@@ -3,8 +3,7 @@ import 'server-only'
 import type { SiteContext } from '@/lib/cms/context'
 import { getFooter, getHeader } from '@/lib/cms/endpoints'
 import { navLinks, brandLogo, type NavLink } from '@/lib/routing/nav'
-import { switchTargetsForPath, switchTargets, type SwitchTarget } from '@/lib/seo/translations'
-import type { Locale } from '@/lib/cms/types'
+import { switchTargetsForPath, switchTargets, type SwitchTarget, type TranslatedDoc } from '@/lib/seo/translations'
 
 /**
  * Page chrome (navigation, footer, logo, language switch), assembled once per render.
@@ -21,7 +20,7 @@ export type Chrome = {
 export const getChrome = async (
   ctx: SiteContext,
   currentPath: string,
-  currentDoc?: { id: string; kind: 'page' | 'post'; pathForLocale: (locale: Locale) => string },
+  currentDoc?: TranslatedDoc,
   /** Locale-neutral query (e.g. `?q=…`) kept by a path-based language switch. */
   switchQuery = '',
 ): Promise<Chrome> => {

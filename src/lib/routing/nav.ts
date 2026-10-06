@@ -1,15 +1,11 @@
 import 'server-only'
 
-import { pagePath } from '@/lib/runtime'
-
 import type { SiteContext } from '@/lib/cms/context'
-import { getSectionRef } from '@/lib/cms/content'
-import { getPageById, getPostById } from '@/lib/cms/endpoints'
-import type { CmsLink, NavItem, PageDoc, PostDoc } from '@/lib/cms/types'
+import type { CmsLink, NavItem } from '@/lib/cms/types'
 import { mediaUrl } from '@/lib/utils/media'
 
+import { resolveCmsLink } from './links'
 import { href } from './locale'
-import { THEME_ROUTES } from './paths'
 import { resolveThemeRoute } from './resolve'
 
 /**
@@ -29,63 +25,35 @@ export type NavLink = {
   newTab: boolean
 }
 
-const isExternal = (url: string): boolean => /^(https?:)?\/\//u.test(url) || /^(mailto|tel):/u.test(url)
-
-const normalizeInternal = (url: string): string => (url.startsWith('/') ? url : `/${url}`)
-
-export const linkHref = async (link: CmsLink | null | undefined, ctx: SiteContext): Promise<null | string> => {
-  if (!link) return null
-  if (link.type === 'custom') {
-    const url = (link.url ?? '').trim()
-    if (!url) return null
-    return isExternal(url) ? url : normalizeInternal(url)
-  }
-
-  const reference = link.reference
-  if (!reference) return null
-  const value = reference.value
-  const id = typeof value === 'string' ? value : value?.id
-  if (!id) return null
-
-  if (reference.relationTo === 'pages') {
-    const home = getSectionRef('home', ctx)
-    const about = getSectionRef('about', ctx)
-    const contact = getSectionRef('contact', ctx)
-    if (home.by === 'binding' && home.id === id) return href(THEME_ROUTES.home, ctx.locale, ctx.site)
-    if (about.by === 'binding' && about.id === id) return href(THEME_ROUTES.about, ctx.locale, ctx.site)
-    if (contact.by === 'binding' && contact.id === id) return href(THEME_ROUTES.contact, ctx.locale, ctx.site)
-
-    const page: null | PageDoc = await getPageById(id, ctx.locale, ctx.draft)
-    if (!page) return null
-    return href(pagePath(page.slug), ctx.locale, ctx.site)
-  }
-
-  // A `posts` reference stores an **id**; the archive URL depends on the section the
-  // post belongs to, which is only knowable from the resolved document.
-  const post: null | PostDoc = await getPostById(id, ctx.locale, ctx.draft)
-  if (!post) return null
-  const { postHref } = await import('@/lib/cms/content')
-  return href(await postHref(post, ctx), ctx.locale, ctx.site)
-}
+/**
+ * A menu item's target, through the one link resolver every CMS link uses
+ * (`links.ts`): references by id, section bindings, validated custom URLs, and the
+ * locale prefix applied exactly once.
+ */
+export const linkHref = async (link: CmsLink | null | undefined, ctx: SiteContext): Promise<null | string> =>
+  (await resolveCmsLink(link, ctx))?.href ?? null
 
 export const navLinks = async (
   items: NavItem[] | null | undefined,
   ctx: SiteContext,
   currentPath: string,
 ): Promise<NavLink[]> => {
+  // Views pass their locale-neutral path (`/projects`); links are localized
+  // (`/en/projects`), so "current" is compared in the same, localized form.
+  const first = currentPath.split(/[/?#]/u)[1] ?? ''
+  const here = first === ctx.locale && ctx.locale !== ctx.site.defaultLocale ? currentPath : href(currentPath, ctx.locale, ctx.site)
   const resolved = await Promise.all(
     (items ?? []).map(async (item) => {
       const link = item.link
-      const target = await linkHref(link, ctx)
-      if (!target) return null
-      const label = (link?.label ?? '').trim() || labelFromUrl(target)
-      const external = isExternal(target)
+      const resolved = await resolveCmsLink(link, ctx)
+      if (!resolved) return null
+      const label = (link?.label ?? '').trim() || labelFromUrl(resolved.href)
       return {
-        current: !external && samePath(target, currentPath),
-        external,
-        href: target,
+        current: !resolved.external && samePath(resolved.href, here),
+        external: resolved.external,
+        href: resolved.href,
         label,
-        newTab: Boolean(link?.newTab),
+        newTab: resolved.newTab,
       } satisfies NavLink
     }),
   )

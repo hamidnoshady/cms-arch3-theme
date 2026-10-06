@@ -7,6 +7,7 @@ import type { SiteContext } from '@/lib/cms/context'
 import type { NavLink } from '@/lib/routing/nav'
 import { formatDate } from '@/lib/runtime'
 import { labels as dictionary } from '@/lib/theme/labels'
+import { brandName } from '@/lib/theme/brand'
 
 /**
  * Footer: sparse by design — one structural rule, the footer menu, and the real site
@@ -23,7 +24,7 @@ export const SiteFooter = ({
   // The copyright year is a *date*, not a quantity: on `fa` it must be the Jalali year
   // (۱۴۰۴), never the Gregorian one digit-substituted into Persian numerals.
   const year = formatDate(new Date(), context.locale, { year: 'numeric' })
-  const name = context.site.branding?.displayName ?? context.site.name
+  const name = brandName(context.site)
 
   return (
     <footer className="mt-auto">

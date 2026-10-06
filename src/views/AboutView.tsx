@@ -8,7 +8,7 @@ import { Rule } from '@/components/design/Rule'
 import { FramedMedia } from '@/components/media/CmsImage'
 import { ProjectCard } from '@/components/projects/ProjectCard'
 import { EmptyState } from '@/components/states/States'
-import { getArchive, getSectionPage, postHref } from '@/lib/cms/content'
+import { getArchive, getSectionPage, localizedPostHref } from '@/lib/cms/content'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
@@ -23,6 +23,7 @@ import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
 import type { Locale } from '@/lib/cms/types'
 import type { Media } from '@/lib/cms/types'
+import { documentLanguages } from '@/lib/seo/translations'
 
 /**
  * About — sparse by design: breadcrumbs, a modest title, one short introduction, one
@@ -40,6 +41,9 @@ export const aboutMetadata = async (locale: Locale): Promise<Metadata> => {
     context: outcome.ctx,
     description: page?.meta?.description ?? null,
     image: page && isMedia(page.meta?.image) ? page.meta.image : null,
+    languages: page
+      ? await documentLanguages(outcome.ctx, { id: page.id, kind: 'page', pathFor: () => THEME_ROUTES.about })
+      : undefined,
     path: THEME_ROUTES.about,
     title: page?.title ?? dictionary(locale).about,
   })
@@ -56,7 +60,7 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
 
   if (!page) {
     return (
-      <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.about} label={t.breadcrumb} locale={locale}>
+      <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.about} label={t.breadcrumb}>
         <ContentContainer>
           <EmptyState locale={locale} />
         </ContentContainer>
@@ -80,8 +84,8 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
       crumbs={crumbs}
       currentPath={THEME_ROUTES.about}
       label={t.breadcrumb}
-      locale={locale}
-      switchDoc={{ id: page.id, kind: 'page', pathForLocale: () => THEME_ROUTES.about }}
+     
+      switchDoc={{ id: page.id, kind: 'page', pathFor: () => THEME_ROUTES.about }}
     >
       <ContentContainer>
         <div className="relative">
@@ -93,7 +97,7 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
         <div className="about-composition">
           <div className="min-w-0">
             {page.hero?.richText ? (
-              <RichText content={page.hero.richText} context={ctx} fallbackDir={ctx.dir} />
+              <RichText anchorScope="hero" content={page.hero.richText} context={ctx} fallbackDir={ctx.dir} />
             ) : (
               <p className="type-lede">
                 {page.meta?.description ?? ''}
@@ -122,7 +126,13 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
             <div className="mb-8 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
               <h2 className="type-heading" id="about-work">
                 {t.selectedWork}
-                <span className="type-meta ms-3">{formatNumber(work.totalDocs, locale)}</span>
+                {/* The count describes the cards below: “3 of 12” when the grid is a
+                    selection from a larger archive, the plain number when it is all of it. */}
+                <span className="type-meta ms-3">
+                  {work.totalDocs > work.docs.length
+                    ? t.selectedWorkShown(work.docs.length, work.totalDocs)
+                    : formatNumber(work.docs.length, locale)}
+                </span>
               </h2>
               <a className="link-inline type-ui target-standalone" href={projectsHref}>
                 {t.allProjects}
@@ -133,7 +143,7 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
                 work.docs.map(async (post) => (
                   <ProjectCard
                     context={ctx}
-                    href={href(await postHref(post, ctx), locale, ctx.site)}
+                    href={await localizedPostHref(post, ctx)}
                     key={post.id}
                     post={post}
                   />

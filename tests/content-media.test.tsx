@@ -146,7 +146,7 @@ describe('named media grid', () => {
   it('shows the CMS block name as the grid label with a two-digit count', async () => {
     const { RichText } = await import('@/components/blocks/RichText')
     const content = { root: { children: [grid({}, 'طبقه همکف و لابی')], direction: 'rtl' as const } }
-    const markup = await html(<RichText content={content} context={ctx('fa')} fallbackDir="rtl" />)
+    const markup = await html(<RichText anchorScope={null} content={content} context={ctx('fa')} fallbackDir="rtl" />)
 
     expect(markup).toContain('class="media-grid__head"')
     expect(markup).toContain('طبقه همکف و لابی')
@@ -184,7 +184,7 @@ describe('named single image', () => {
   it('gets the same label row as a set of images, without a count', async () => {
     const { RichText } = await import('@/components/blocks/RichText')
     const content = { root: { children: [single('پلان', { caption: 'زیرنویس' })], direction: 'rtl' as const } }
-    const markup = await html(<RichText content={content} context={ctx('fa')} fallbackDir="rtl" />)
+    const markup = await html(<RichText anchorScope={null} content={content} context={ctx('fa')} fallbackDir="rtl" />)
 
     // A named block is part of the field's outline, so it is also an anchor.
     expect(markup).toContain('<div aria-labelledby="section-1-label" class="media-titled media-titled--content" id="section-1" role="group">')

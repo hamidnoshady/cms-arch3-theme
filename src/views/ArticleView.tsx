@@ -7,11 +7,10 @@ import { DecorativeMark } from '@/components/design/DecorativeMark'
 import { Rule } from '@/components/design/Rule'
 import { FramedMedia } from '@/components/media/CmsImage'
 import { authorLine } from '@/components/blog/PostRows'
-import { getPostContext, postHref } from '@/lib/cms/content'
+import { getPostContext, localizedPostHref } from '@/lib/cms/content'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { dateText } from '@/lib/utils/dates'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
-import { href } from '@/lib/routing/locale'
 import { articlePath, educationEntryPath } from '@/lib/routing/paths'
 import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
@@ -22,6 +21,7 @@ import { readingMinutes, readingTimeLabel } from '@/lib/utils/text'
 import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
 import type { Locale } from '@/lib/cms/types'
+import { documentLanguages } from '@/lib/seo/translations'
 
 /**
  * Article / education-entry detail: comfortable prose measure inside the 1440px
@@ -45,6 +45,11 @@ export const articleMetadata = async (locale: Locale, kind: 'article' | 'educati
     context: outcome.ctx,
     description: post.meta?.description ?? null,
     image: isMedia(post.meta?.image) ? post.meta.image : isMedia(post.heroImage) ? post.heroImage : null,
+    languages: await documentLanguages(outcome.ctx, {
+      id: post.id,
+      kind: 'post',
+      pathFor: kind === 'article' ? articlePath : educationEntryPath,
+    }),
     path: canonical,
     title: post.title,
     type: 'article',
@@ -73,7 +78,7 @@ export const ArticleView = async ({
   // keeps the requested URL so an editor can still open the draft in place.
   const expectedSection = kind === 'article' ? 'blog' : 'education'
   if (!ctx.draft && data.section !== expectedSection) {
-    redirect(href(await postHref(post, ctx), locale, ctx.site))
+    redirect(await localizedPostHref(post, ctx))
   }
 
   const hero = isMedia(post.heroImage) ? post.heroImage : null
@@ -88,8 +93,8 @@ export const ArticleView = async ({
       crumbs={crumbs}
       currentPath={canonical}
       label={t.breadcrumb}
-      locale={locale}
-      switchDoc={{ id: post.id, kind: 'post', pathForLocale: () => canonical }}
+     
+      switchDoc={{ id: post.id, kind: 'post', pathFor: kind === 'article' ? articlePath : educationEntryPath }}
     >
       <ContentContainer>
         <article>
@@ -111,7 +116,7 @@ export const ArticleView = async ({
           ) : null}
 
           <div className="mt-10">
-            <RichText content={post.content as never} context={ctx} fallbackDir={ctx.dir} />
+            <RichText anchorScope={null} content={post.content as never} context={ctx} fallbackDir={ctx.dir} />
           </div>
         </article>
       </ContentContainer>
@@ -124,7 +129,7 @@ export const ArticleView = async ({
             {await Promise.all(
               related.map(async (entry) => (
                 <li className="border-t border-line-structural pt-4" key={entry.id}>
-                  <a className="link-inline type-ui target-standalone" href={href(await postHref(entry, ctx), locale, ctx.site)}>
+                  <a className="link-inline type-ui target-standalone" href={await localizedPostHref(entry, ctx)}>
                     {entry.title}
                   </a>
                 </li>

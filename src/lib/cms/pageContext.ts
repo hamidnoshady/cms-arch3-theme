@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import type { Locale } from './types'
 import { getSiteOrNull } from './endpoints'
 import { getSiteContext, type SiteContext } from './context'
+import { brandName } from '@/lib/theme/brand'
 
 /**
  * One entry point for every view's guards, so the order can never differ between
@@ -25,6 +26,6 @@ export const loadPageContext = async (locale: Locale, pathname: string): Promise
   if (!site.availableLocales.includes(locale)) notFound()
 
   const ctx = await getSiteContext(locale, pathname)
-  if (!ctx.serving) return { name: site.name, ok: false, state: 'holding' }
+  if (!ctx.serving) return { name: brandName(site), ok: false, state: 'holding' }
   return { ctx, ok: true }
 }

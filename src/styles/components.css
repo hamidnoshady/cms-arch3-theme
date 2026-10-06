@@ -2140,17 +2140,12 @@
     gap: var(--grid-gap);
   }
 
-  .about-work > :nth-child(3) {
-    display: none;
-  }
-
+  /* Phones keep the two project columns; every selected card stays visible (the third
+     wraps to a second row) so the count above the grid is never larger than what a
+     phone visitor can reach. */
   @media (min-width: 48rem) {
     .about-work {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .about-work > :nth-child(3) {
-      display: block;
     }
   }
 

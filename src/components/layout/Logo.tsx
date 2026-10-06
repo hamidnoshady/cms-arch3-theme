@@ -6,6 +6,7 @@ import type { Media } from '@/lib/cms/types'
 import { href } from '@/lib/routing/locale'
 import { THEME_ROUTES } from '@/lib/routing/paths'
 import { cn } from '@/lib/utils/cn'
+import { brandName } from '@/lib/theme/brand'
 
 /**
  * Customer identity in the chrome.
@@ -43,7 +44,7 @@ export const Logo = ({
   mark: LogoMark
   wordmark?: boolean
 }) => {
-  const name = context.site.branding?.displayName ?? context.site.name
+  const name = brandName(context.site)
   const primary = mark.primary ?? mark.compact
   const compact = mark.compact ?? mark.primary
   const branding = context.site.branding

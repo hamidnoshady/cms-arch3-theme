@@ -5,7 +5,7 @@ import { Pagination } from '@/components/design/Pagination'
 import { SectionHeader } from '@/components/design/SectionHeader'
 import { EducationFeatured, EducationRow } from '@/components/education/EducationRows'
 import { EmptyState } from '@/components/states/States'
-import { getArchive, getSectionCategories, postHref } from '@/lib/cms/content'
+import { getArchive, getSectionCategories, localizedPostHref } from '@/lib/cms/content'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
@@ -19,6 +19,7 @@ import { readingMinutes } from '@/lib/utils/text'
 import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
 import type { Locale } from '@/lib/cms/types'
+import { brandName } from '@/lib/theme/brand'
 
 /**
  * Education archive: one restrained featured entry, then compact horizontal rows with
@@ -33,7 +34,7 @@ export const educationMetadata = async (locale: Locale, page: number, category?:
     context: outcome.ctx,
     noindex: page > 1 || Boolean(category),
     path: educationPath(page),
-    title: `${t.education} — ${outcome.ctx.site.name}`,
+    title: `${t.education} — ${brandName(outcome.ctx.site)}`,
   })
 }
 
@@ -63,7 +64,7 @@ export const EducationIndexView = async ({
   const basePath = href(THEME_ROUTES.education, locale, ctx.site)
 
   return (
-    <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.education} label={t.breadcrumb} locale={locale}>
+    <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.education} label={t.breadcrumb}>
       <SectionHeader
         actions={
           section.children.length > 0 ? (
@@ -97,7 +98,7 @@ export const EducationIndexView = async ({
             <EducationFeatured
               category={categoryTitle(featured, section.children)}
               context={ctx}
-              href={href(await postHref(featured, ctx), locale, ctx.site)}
+              href={await localizedPostHref(featured, ctx)}
               minutes={readingMinutes(lexicalText(featured.content as never))}
               post={featured}
             />
@@ -116,7 +117,7 @@ export const EducationIndexView = async ({
                       <EducationRow
                         category={categoryTitle(post, section.children)}
                         context={ctx}
-                        href={href(await postHref(post, ctx), locale, ctx.site)}
+                        href={await localizedPostHref(post, ctx)}
                         index={formatNumber((page - 1) * 13 + position + 2, locale, { minimumIntegerDigits: 2, useGrouping: false })}
                         key={post.id}
                         minutes={readingMinutes(lexicalText(post.content as never))}
