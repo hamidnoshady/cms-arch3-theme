@@ -6,7 +6,7 @@ import { LightboxScope } from '@/components/media/Lightbox'
 import type { SiteContext } from '@/lib/cms/context'
 import type { LexicalNode, Media } from '@/lib/cms/types'
 import { cn } from '@/lib/utils/cn'
-import { contentLightbox, type ContentLightbox } from '@/lib/utils/lexical'
+import { contentLightbox, contentOutline, type ContentLightbox } from '@/lib/utils/lexical'
 import { isMedia } from '@/lib/utils/media'
 import { resolveRichTextLinks } from '@/lib/routing/richText'
 import { labels as dictionary } from '@/lib/theme/labels'
@@ -44,7 +44,8 @@ export const RichText = async ({
   const t = dictionary(context.locale)
   const links = await resolveRichTextLinks(content, context)
   const lightbox = contentLightbox(content, context.site.media.origin, t.photo)
-  const scope: NodeScope = { lightbox, links }
+  const anchors = new Map<LexicalNode, string>(contentOutline(content).map((item) => [item.node, item.id]))
+  const scope: NodeScope = { anchors, lightbox, links }
 
   const body = (
     <div className={cn('prose', className)} dir={direction}>
@@ -69,6 +70,8 @@ export const RichText = async ({
 
 /** What every node render needs besides the node: resolved links and the field's lightbox. */
 export type NodeScope = {
+  /** Anchor ids of the headings and named grids the in-page navigation points at. */
+  anchors: Map<LexicalNode, string>
   lightbox: ContentLightbox | null
   links: Map<string, { href: string; newTab: boolean }>
 }
@@ -92,7 +95,7 @@ const Node = ({
     case 'heading': {
       const tag = (node.tag as string | undefined) ?? 'h2'
       const Tag = (['h2', 'h3', 'h4', 'h5', 'h6'].includes(tag) ? tag : 'h2') as 'h2'
-      return <Tag>{childrenOf(node, context, scope)}</Tag>
+      return <Tag id={scope.anchors.get(node)}>{childrenOf(node, context, scope)}</Tag>
     }
 
     case 'list': {
@@ -150,7 +153,7 @@ const Node = ({
 
     case 'block':
     case 'blocknode':
-      return renderBlockNode(node, context, scope.lightbox)
+      return renderBlockNode(node, context, scope.lightbox, scope.anchors.get(node))
 
     case 'text': {
       return <span className="bidi-isolate">{formatText(node)}</span>

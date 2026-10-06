@@ -54,6 +54,7 @@ type Dictionary = {
   relatedProjects: string
   gallery: string
   projectFacts: string
+  sections: string
   photo: string
   map: string
 }
@@ -107,6 +108,7 @@ const fa: Dictionary = {
   relatedProjects: 'پروژه‌های مرتبط',
   gallery: 'تصاویر',
   projectFacts: 'مشخصات پروژه',
+  sections: 'بخش‌های صفحه',
   photo: 'تصویر',
   map: 'نقشه',
 }
@@ -160,6 +162,7 @@ const en: Dictionary = {
   relatedProjects: 'Related projects',
   gallery: 'Gallery',
   projectFacts: 'Project facts',
+  sections: 'On this page',
   photo: 'Photograph',
   map: 'Map',
 }

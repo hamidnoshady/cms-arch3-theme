@@ -68,3 +68,38 @@ export const collectMedia = (
   })
   return found
 }
+
+/**
+ * One entry of a long article's table of contents: a section heading (`level` 1) or a
+ * named media grid / sub-heading inside a section (`level` 2). `id` is the anchor the
+ * renderer puts on the node and the in-page navigation links to — derived from the
+ * entry's position only, so the renderer and the navigation compute the same ids
+ * independently from the same content.
+ */
+export type OutlineItem = { id: string; label: string; level: 1 | 2; node: LexicalNode }
+
+const outlineLevel = (node: LexicalNode): { label: string; level: 1 | 2 } | null => {
+  if (node.type === 'heading') {
+    const label = lexicalText({ root: { children: [node] } })
+    if (!label) return null
+    return { label, level: ['h3', 'h4', 'h5', 'h6'].includes(node.tag as string) ? 2 : 1 }
+  }
+  if (node.type === 'block' || node.type === 'blocknode') {
+    const fields = (node.fields ?? {}) as Record<string, unknown>
+    const name = fields.blockName ?? (node as unknown as Record<string, unknown>).blockName
+    if ((fields.blockType === 'mediaGrid' || fields.blockType === 'mediaBlock') && typeof name === 'string' && name.trim()) {
+      return { label: name.trim(), level: 2 }
+    }
+  }
+  return null
+}
+
+/** Top-level headings and named media grids, in document order, each with its anchor id. */
+export const contentOutline = (content: LexicalContent): OutlineItem[] => {
+  const items: OutlineItem[] = []
+  for (const node of content?.root?.children ?? []) {
+    const entry = outlineLevel(node)
+    if (entry) items.push({ ...entry, id: `section-${items.length + 1}`, node })
+  }
+  return items
+}
