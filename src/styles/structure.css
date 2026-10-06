@@ -56,19 +56,10 @@
     }
   }
 
-  /* With every frame the same height, a quiet rhythm replaces the ragged edge the
-     mixed sizes used to make: the middle column of three, and every second column of
-     four, sits a step lower. Phones and tablets stay a plain two-column grid. */
-  @media (min-width: 64rem) and (max-width: 79.999rem) {
-    .grid-projects > :nth-child(3n + 2) {
-      margin-block-start: var(--space-10);
-    }
-  }
-
-  @media (min-width: 80rem) {
-    .grid-projects > :nth-child(even) {
-      margin-block-start: var(--space-10);
-    }
+  /* Every frame is the same height and every card starts on the row's top line, so
+     a row of projects reads as one level line at every width. */
+  .grid-projects {
+    align-items: start;
   }
 
   /* Content image groups (gallery blocks, inline media grids): TWO columns on mobile

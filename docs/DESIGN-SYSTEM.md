@@ -71,7 +71,7 @@ Tailwind-style rem breakpoints: `30rem` (480), `48rem` (768), `64rem` (1024), `8
 (1280), `90rem` (1440).
 
 - **Projects**: 2 columns on mobile **and tablet**, 3 at `64rem`, 4 at `80rem`
-  (`.grid-projects`), mixed 3:2 / 3:4 / 1:1 frames from real media dimensions.
+  (`.grid-projects`), one 4:5 frame for every card, all cards top-aligned (no stagger).
 - **Media/gallery grids**: 2 columns on mobile **and tablet**, 3 at `64rem`
   (`.grid-media`) — the 2/2/3 contract. A gallery block's `columns` field is applied on
   desktop only (`.grid-media--2`, `.grid-media--4`); phones and tablets never exceed two.
