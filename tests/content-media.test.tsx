@@ -243,3 +243,31 @@ describe('project detail page — in-page navigation', () => {
     expect(markup).not.toContain('secnav')
   })
 })
+
+describe('project detail page — short description', () => {
+  it('shows the post description under the facts, inside the header', async () => {
+    const { ProjectDetailView } = await import('@/views/ProjectDetailView')
+    const { FIXTURE_POSTS } = await import('@/lib/cms/fixtures.data')
+    const project = FIXTURE_POSTS.find((post) => post.slug === 'khaneye-noor')!
+    const markup = await html(await ProjectDetailView({ locale: 'fa', slug: 'khaneye-noor' }))
+
+    const header = markup.slice(markup.indexOf('class="project-head"'), markup.indexOf('class="project-narrative"'))
+    expect(header).toContain(`<p class="project-lede type-body-lg">${project.meta.description}</p>`)
+    // Facts first, then the description.
+    expect(header.indexOf('class="facts"')).toBeLessThan(header.indexOf('project-lede'))
+  })
+
+  it('renders nothing for a project without a description', async () => {
+    const { ProjectDetailView } = await import('@/views/ProjectDetailView')
+    const { FIXTURE_POSTS } = await import('@/lib/cms/fixtures.data')
+    const project = FIXTURE_POSTS.find((post) => post.slug === 'hammam-kohan')!
+    const saved = project.meta.description
+    project.meta.description = '  '
+    try {
+      const markup = await html(await ProjectDetailView({ locale: 'fa', slug: 'hammam-kohan' }))
+      expect(markup).not.toContain('project-lede')
+    } finally {
+      project.meta.description = saved
+    }
+  })
+})

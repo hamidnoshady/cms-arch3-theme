@@ -69,6 +69,10 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
   // A long project (several parts, named sets of renders) gets in-page navigation.
   const outline = contentOutline(post.content as never).map(({ id, label, level }) => ({ id, label, level }))
 
+  // The short description is the post's own localized `meta.description`, the field the
+  // editor already fills in; nothing is invented when it is empty.
+  const summary = post.meta?.description?.trim() || null
+
   const hero = isMedia(post.heroImage) ? post.heroImage : null
 
   const route = resolveLocaleRoute(['projects', slug], locale, ctx.site)
@@ -88,6 +92,7 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
           <div>
             <h1 className="type-title max-w-[24ch]">{post.title}</h1>
             <ProjectFacts context={ctx} post={post} />
+            {summary ? <p className="project-lede type-body-lg">{summary}</p> : null}
           </div>
           {hero ? <FramedMedia cap={78} media={hero} origin={ctx.site.media.origin} priority size="wide" /> : null}
         </header>

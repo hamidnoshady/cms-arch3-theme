@@ -398,6 +398,14 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* The short description under the facts: a lede, set apart by space and a
+     comfortable measure rather than by a box. */
+  .project-lede {
+    max-inline-size: var(--measure-lede);
+    margin-block-start: var(--space-8);
+    color: var(--ink);
+  }
+
   .project-head .media-figure {
     margin-inline: 0;
   }
