@@ -66,6 +66,13 @@ export const centerFromUrl = (value: unknown): LatLng | null => {
   return parseCenter(safeDecode(value))
 }
 
+/** The contact block's own `latitude`/`longitude` fields; numbers or numeric strings. */
+export const centerFromFields = (latitude: unknown, longitude: unknown): LatLng | null => {
+  const num = (value: unknown): number =>
+    typeof value === 'number' ? value : typeof value === 'string' && value.trim() ? Number(value) : Number.NaN
+  return valid(num(latitude), num(longitude))
+}
+
 const safeDecode = (value: string): string => {
   try {
     return decodeURIComponent(value)
