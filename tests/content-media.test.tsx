@@ -139,6 +139,42 @@ describe('rich text media', () => {
   })
 })
 
+describe('named media grid', () => {
+  const grid = (extra: Record<string, unknown> = {}, name?: string) =>
+    block({ blockType: 'mediaGrid', images: [picture('a.jpg'), picture('b.jpg'), picture('c.jpg')], ...(name ? { blockName: name } : {}), ...extra })
+
+  it('shows the CMS block name as the grid label with a two-digit count', async () => {
+    const { RichText } = await import('@/components/blocks/RichText')
+    const content = { root: { children: [grid({}, 'طبقه همکف و لابی')], direction: 'rtl' as const } }
+    const markup = await html(<RichText content={content} context={ctx('fa')} fallbackDir="rtl" />)
+
+    expect(markup).toContain('class="media-grid__head"')
+    expect(markup).toContain('طبقه همکف و لابی')
+    expect(markup).toContain('۰۳')
+    // The figure is named by its label, and there is exactly one figcaption.
+    expect(markup).toMatch(/<figure aria-labelledby="media-grid-[^"]+" class="media-grid">/u)
+    expect(count(markup, /<figcaption/gu)).toBe(1)
+  })
+
+  it('renders no label row for an unnamed grid, and keeps the caption below the cells', async () => {
+    const { RichText } = await import('@/components/blocks/RichText')
+    const content = { root: { children: [grid({ caption: 'زیرنویس' })], direction: 'rtl' as const } }
+    const markup = await html(<RichText content={content} context={ctx('fa')} fallbackDir="rtl" />)
+
+    expect(markup).not.toContain('media-grid__head')
+    expect(markup).not.toContain('aria-labelledby')
+    expect(markup).toContain('زیرنویس')
+  })
+
+  it('keeps the label in Latin digits for an English page', async () => {
+    const { RichText } = await import('@/components/blocks/RichText')
+    const content = { root: { children: [grid({}, 'Ground floor')], direction: 'ltr' as const } }
+    const markup = await html(<RichText content={content} context={ctx('en')} fallbackDir="ltr" />)
+    expect(markup).toContain('Ground floor')
+    expect(markup).toContain('>03<')
+  })
+})
+
 describe('project detail page', () => {
   it('renders the content photographs once — no second gallery built from the same media', async () => {
     const { ProjectDetailView } = await import('@/views/ProjectDetailView')
@@ -158,5 +194,24 @@ describe('project detail page', () => {
     // The facts block is the compact drafting block, built only from real fields.
     expect(markup).toContain('class="facts"')
     expect(markup).not.toContain('md:grid-cols-3')
+  })
+})
+
+describe('project detail page — named media grids', () => {
+  it('lays the narrative out under its own labels with related projects as cards', async () => {
+    const { ProjectDetailView } = await import('@/views/ProjectDetailView')
+    const markup = await html(await ProjectDetailView({ locale: 'fa', slug: 'villa-398' }))
+
+    expect(markup).toContain('class="project-head"')
+    expect(markup).toContain('class="project-narrative"')
+    expect(markup).toContain('طبقه همکف و لابی')
+    expect(markup).toContain('طبقه اول: استخر')
+    expect(count(markup, /class="media-grid__head"/gu)).toBe(2)
+    expect(count(markup, /class="grid-media/gu)).toBe(2)
+    // 6 + 2 grid cells are all triggers of the one lightbox, in order.
+    expect(count(markup, /class="lightbox-trigger/gu)).toBe(8)
+    // Related projects are image cards, not a text list.
+    expect(markup).toContain('class="project-related"')
+    expect(count(markup, /class="card group"/gu)).toBe(2)
   })
 })

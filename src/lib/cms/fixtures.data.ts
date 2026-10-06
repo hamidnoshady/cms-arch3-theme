@@ -42,6 +42,24 @@ const upload = (media: unknown) => ({
   version: 1,
 })
 
+/** A Payload lexical block: `blockName` is the label the editor typed on the block. */
+const lexicalBlock = (blockName: string, fields: Record<string, unknown>) => ({
+  fields: { blockName, ...fields },
+  format: '',
+  type: 'block',
+  version: 2,
+})
+
+const heading = (text: string) => ({
+  children: [{ text, type: 'text', version: 1 }],
+  direction: null,
+  format: '',
+  indent: 0,
+  tag: 'h2',
+  type: 'heading',
+  version: 1,
+})
+
 export const FIXTURE_ORIGIN_FALLBACK = 'http://localhost:3000'
 
 /** Media is same-origin in fixtures: files live in `public/qa/media/*`. */
@@ -208,6 +226,56 @@ export const FIXTURE_POSTS: FixturePost[] = [
     ['متن نمونه برای بررسی صفحهٔ جزئیات پروژه با گالری رسانه.'],
     { area: '۲۴۰۰ مترمربع', date: '۱۴۰۰', location: 'کرج', status: 'ساخته‌شده' },
   ),
+  {
+    // Several named media grids in one narrative — the case the project page has to
+    // lay out: each set of renders under its own label, in the full container width.
+    _status: 'published',
+    categories: ['cat-residential'],
+    content: {
+      root: {
+        children: [
+          paragraph('نمونهٔ پروژه‌ای با چند مجموعه تصویر؛ هر مجموعه نام خودش را دارد.'),
+          heading('رندرها'),
+          lexicalBlock('طبقه همکف و لابی', {
+            aspect: '1/1',
+            blockType: 'mediaGrid',
+            columns: '3',
+            images: [
+              media('gallery-01.jpg', 1600, 1067, 'نمونهٔ رندر ۱'),
+              media('gallery-02.jpg', 1200, 1600, 'نمونهٔ رندر ۲'),
+              media('gallery-03.jpg', 1000, 1000, 'نمونهٔ رندر ۳'),
+              media('project-03.jpg', 1600, 1067, 'نمونهٔ رندر ۴'),
+              media('project-04.jpg', 1000, 1000, 'نمونهٔ رندر ۵'),
+              media('project-06.jpg', 1600, 1067, 'نمونهٔ رندر ۶'),
+            ],
+          }),
+          lexicalBlock('طبقه اول: استخر', {
+            aspect: '3/2',
+            blockType: 'mediaGrid',
+            caption: 'نمونهٔ زیرنویس برای مجموعه',
+            columns: '2',
+            images: [media('block-01.jpg', 1600, 1067, 'نمونهٔ استخر ۱'), media('project-01.jpg', 1600, 1067, 'نمونهٔ استخر ۲')],
+          }),
+          paragraph('طبقه اول و دوم بدنسازی.'),
+        ],
+        direction: 'rtl',
+        format: '',
+        indent: 0,
+        type: 'root',
+        version: 1,
+      },
+    },
+    heroImage: projectMedia.ofogh,
+    id: 'post-p7',
+    meta: { description: 'نمونهٔ پروژه با چند مجموعهٔ تصویر نام‌دار.' },
+    populatedAuthors: [{ id: 'author-1', name: 'دفتر نمونه' }],
+    projectMetadata: { area: '۲۵۰ مترمربع', date: '۱۴۰۵', location: 'رشت', status: 'اتمام' },
+    publishedAt: '2025-12-20T09:00:00.000Z',
+    relatedPosts: ['post-p1', 'post-p3'],
+    slug: 'villa-398',
+    title: 'پروژهٔ مجموعهٔ ورزشی — نمونه',
+    updatedAt: '2025-12-20T09:00:00.000Z',
+  },
   {
     _status: 'published',
     categories: ['cat-workshops'],

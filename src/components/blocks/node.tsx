@@ -6,6 +6,7 @@ import { LightboxTrigger } from '@/components/media/Lightbox'
 import type { SiteContext } from '@/lib/cms/context'
 import type { LexicalNode, Media } from '@/lib/cms/types'
 import type { ContentLightbox } from '@/lib/utils/lexical'
+import { toLocaleDigits } from '@/lib/runtime'
 import { frameRatio, isFrameAspect, isMedia, mediaPresentation } from '@/lib/utils/media'
 
 /**
@@ -17,6 +18,17 @@ import { frameRatio, isFrameAspect, isMedia, mediaPresentation } from '@/lib/uti
  * block or a grid cell looks its own medium up there and becomes a trigger of the
  * shared lightbox, so inline media never has a static implementation of its own.
  */
+/**
+ * The name the editor gave the block in the CMS (Payload's `blockName`), e.g. the floor
+ * a set of renders belongs to. Payload stores it on the block's `fields`; a node-level
+ * copy is read too so either serialisation shows the label.
+ */
+const blockTitle = (node: LexicalNode): null | string => {
+  const fields = (node.fields ?? {}) as Record<string, unknown>
+  const raw = fields.blockName ?? (node as unknown as Record<string, unknown>).blockName
+  return typeof raw === 'string' && raw.trim() ? raw.trim() : null
+}
+
 export const renderBlockNode = (node: LexicalNode, context: SiteContext, lightbox: ContentLightbox | null = null): ReactNode => {
   const fields = (node.fields ?? {}) as Record<string, unknown>
   const blockType = (fields.blockType as string | undefined) ?? ''
@@ -58,8 +70,21 @@ export const renderBlockNode = (node: LexicalNode, context: SiteContext, lightbo
       const aspect = isFrameAspect(fields.aspect) && fields.aspect !== 'original' ? fields.aspect : '4/5'
       const ratio = frameRatio(images[0], aspect)
       const caption = typeof fields.caption === 'string' && fields.caption.trim() ? fields.caption.trim() : null
+      const title = blockTitle(node)
+      const labelId = title ? `media-grid-${images[0]!.id}` : undefined
       return (
-        <figure className="media-grid">
+        <figure aria-labelledby={labelId} className="media-grid">
+          {title ? (
+            <figcaption className="media-grid__head" id={labelId}>
+              <span className="media-grid__title" dir="auto">
+                {title}
+              </span>
+              <span aria-hidden="true" className="media-grid__rule" />
+              <span aria-hidden="true" className="media-grid__count">
+                {toLocaleDigits(String(images.length).padStart(2, '0'), context.locale)}
+              </span>
+            </figcaption>
+          ) : null}
           <ul className={gridMediaClass(columns)}>
             {images.map((image, position) => (
               <li key={`${image.id}-${position}`}>
@@ -79,7 +104,7 @@ export const renderBlockNode = (node: LexicalNode, context: SiteContext, lightbo
               </li>
             ))}
           </ul>
-          {caption ? <figcaption className="media-figure__caption type-caption">{caption}</figcaption> : null}
+          {caption ? <p className="media-figure__caption type-caption">{caption}</p> : null}
         </figure>
       )
     }
