@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { centerFromUrl, mapSource, parseCenter, parseProvider } from '@/lib/maps/mapSource'
+import { centerFromFields, centerFromUrl, mapSource, parseCenter, parseProvider } from '@/lib/maps/mapSource'
 
 const tehran = { lat: 35.6892, lng: 51.389 }
 
@@ -18,6 +18,17 @@ describe('map coordinates', () => {
     expect(centerFromUrl('https://www.openstreetmap.org/?mlat=35.6892&mlon=51.389#map=16/35.6892/51.389')).toEqual(tehran)
     expect(centerFromUrl('https://www.openstreetmap.org/#map=15/35.6892/51.3890')).toEqual(tehran)
     expect(centerFromUrl('https://maps.app.goo.gl/abc123')).toBeNull()
+  })
+})
+
+describe('block coordinate fields', () => {
+  it('reads the contact block latitude/longitude, as numbers or numeric strings', () => {
+    expect(centerFromFields(35.6892, 51.389)).toEqual(tehran)
+    expect(centerFromFields('35.6892', '51.389')).toEqual(tehran)
+    expect(centerFromFields(null, null)).toBeNull()
+    expect(centerFromFields(35.6892, null)).toBeNull()
+    expect(centerFromFields('', '')).toBeNull()
+    expect(centerFromFields(95, 10)).toBeNull()
   })
 })
 

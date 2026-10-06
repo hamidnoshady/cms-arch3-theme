@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button'
 import type { SiteContext } from '@/lib/cms/context'
 import { getFormById, getPosts, getPostsByIds } from '@/lib/cms/endpoints'
 import type { BlockRow, CmsLink, FormDoc, Media, PostDoc } from '@/lib/cms/types'
-import { parseCenter, mapSource } from '@/lib/maps/mapSource'
+import { centerFromFields, parseCenter, mapSource } from '@/lib/maps/mapSource'
 import { formatNumber, toLocaleDigits } from '@/lib/runtime'
 import { localizedPostHref } from '@/lib/cms/content'
 import { resolveCmsLink, type LinkInput, type ResolvedLink } from '@/lib/routing/links'
@@ -335,24 +335,26 @@ const ContactBlock = ({ context, row }: { context: SiteContext; row: BlockRow })
   const address = typeof row.address === 'string' && row.address.trim() ? row.address : null
   const hours = typeof row.hours === 'string' && row.hours.trim() ? row.hours : null
   const mapUrl = typeof row.mapUrl === 'string' && /^https:\/\//u.test(row.mapUrl) ? row.mapUrl : null
+  const blockCenter = centerFromFields(row.latitude, row.longitude)
 
   // The map is opt-in per site through runtime settings (provider, public key, centre);
-  // with none set it is OpenStreetMap, which is free and needs no key. A block that
-  // has no usable coordinates keeps the plain link, as before.
+  // with none set it is OpenStreetMap, which is free and needs no key. Coordinates come
+  // from the site setting, else the block's own latitude/longitude, else its map link.
+  // A block that has no usable coordinates keeps the plain link, as before.
   const settings = context.site.themeRuntime?.settings ?? {}
   const map = mapSource({
     address,
     apiKey: typeof settings.mapApiKey === 'string' ? settings.mapApiKey : null,
-    center: parseCenter(settings.mapCenter),
+    center: parseCenter(settings.mapCenter) ?? blockCenter,
     mapUrl,
     provider: typeof settings.mapProvider === 'string' ? settings.mapProvider : null,
     zoom: typeof settings.mapZoom === 'number' ? settings.mapZoom : null,
   })
 
-  if (!email && phones.length === 0 && !address && !hours && !mapUrl) {
+  if (!email && phones.length === 0 && !address && !hours && !mapUrl && !blockCenter) {
     // A `contact` block whose CMS fields are all empty is a content problem, not a
     // rendering one — say so rather than leaving a silently blank column.
-    warnUnknown('contact block with no address, email, phones, hours or map link')
+    warnUnknown('contact block with no address, email, phones, hours, coordinates or map link')
     return null
   }
 
