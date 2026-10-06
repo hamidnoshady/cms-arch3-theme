@@ -45,17 +45,32 @@ export const walkMedia = (content: LexicalContent, visit: (media: Media) => void
  */
 export type ContentLightbox = { indexOf: WeakMap<object, number>; items: LightboxItem[] }
 
-export const contentLightbox = (content: LexicalContent, origin: string, fallbackAlt: string): ContentLightbox | null => {
-  const items: LightboxItem[] = []
-  const indexOf = new WeakMap<object, number>()
+export type FallbackAlt = string | ((position: number, total: number) => string)
+
+/**
+ * Items for one lightbox sequence. An image the editor described keeps its own alt;
+ * one without gets a *distinct* name from its position (“Photograph 3 of 24”) —
+ * 24 triggers all called “Photograph” cannot be told apart by a screen-reader user.
+ */
+export const lightboxItems = (media: Media[], origin: string, fallbackAlt: FallbackAlt): LightboxItem[] => {
+  const usable = media.filter((entry) => lightboxItem(entry, origin, '') !== null)
+  return usable.map((entry, index) => {
+    const fallback = typeof fallbackAlt === 'string' ? fallbackAlt : fallbackAlt(index + 1, usable.length)
+    return lightboxItem(entry, origin, fallback) as LightboxItem
+  })
+}
+
+export const contentLightbox = (content: LexicalContent, origin: string, fallbackAlt: FallbackAlt): ContentLightbox | null => {
+  const found: Media[] = []
   walkMedia(content, (media) => {
     if (!('url' in media)) return
-    const item = lightboxItem(media, origin, fallbackAlt)
-    if (!item) return
-    indexOf.set(media, items.length)
-    items.push(item)
+    if (lightboxItem(media, origin, '') === null) return
+    found.push(media)
   })
-  return items.length > 0 ? { indexOf, items } : null
+  if (found.length === 0) return null
+  const indexOf = new WeakMap<object, number>()
+  found.forEach((media, index) => indexOf.set(media, index))
+  return { indexOf, items: lightboxItems(found, origin, fallbackAlt) }
 }
 
 /** Media uploaded inside a rich-text field that resolve to a file (have a `url`). */
@@ -73,8 +88,15 @@ export const collectMedia = (
  * One entry of a long article's table of contents: a section heading (`level` 1) or a
  * named media grid / sub-heading inside a section (`level` 2). `id` is the anchor the
  * renderer puts on the node and the in-page navigation links to — derived from the
- * entry's position only, so the renderer and the navigation compute the same ids
- * independently from the same content.
+ * entry's position and the field's anchor scope only, so the renderer and the
+ * navigation compute the same ids independently from the same content.
+ *
+ * A page renders many rich-text fields (hero, every content column, CTA copy …) into
+ * one document, so position alone is not unique: every field used to start at
+ * `section-1`. Each field therefore has a scope — the page's primary narrative keeps
+ * the short `section-n` form (existing deep links stay valid), every other field gets
+ * `section-<scope>-n`, where the scope is the block row id the CMS assigned, or a
+ * stable hash of the field's content when the caller has nothing better.
  */
 export type OutlineItem = { id: string; label: string; level: 1 | 2; node: LexicalNode }
 
@@ -94,12 +116,35 @@ const outlineLevel = (node: LexicalNode): { label: string; level: 1 | 2 } | null
   return null
 }
 
+/** `null` = the page's primary narrative; a string = any other field on the page. */
+export type AnchorScope = null | string
+
+/** FNV-1a, base 36: short, stable across renders and processes, no Node APIs. */
+export const contentHash = (value: unknown): string => {
+  const text = JSON.stringify(value ?? null)
+  let hash = 0x811c9dc5
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(36)
+}
+
+/** An anchor id: `section-3` for the primary field, `section-<scope>-3` otherwise. */
+export const anchorId = (scope: AnchorScope, position: number): string => {
+  const clean = scope === null ? '' : scope.replace(/[^A-Za-z0-9_-]+/gu, '').slice(0, 32)
+  return clean ? `section-${clean}-${position}` : `section-${position}`
+}
+
+/** The scope a field gets when its caller passed none: a hash of its own content. */
+export const defaultAnchorScope = (content: LexicalContent): string => `f${contentHash(content?.root ?? null)}`
+
 /** Top-level headings and named media grids, in document order, each with its anchor id. */
-export const contentOutline = (content: LexicalContent): OutlineItem[] => {
+export const contentOutline = (content: LexicalContent, scope: AnchorScope = null): OutlineItem[] => {
   const items: OutlineItem[] = []
   for (const node of content?.root?.children ?? []) {
     const entry = outlineLevel(node)
-    if (entry) items.push({ ...entry, id: `section-${items.length + 1}`, node })
+    if (entry) items.push({ ...entry, id: anchorId(scope, items.length + 1), node })
   }
   return items
 }

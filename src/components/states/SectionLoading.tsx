@@ -116,7 +116,7 @@ export const SectionLoading = async ({
   const crumbs = breadcrumbsFor(resolveThemeRoute(route, ctx.site), ctx.site)
 
   return (
-    <InteriorPage context={ctx} crumbs={crumbs} currentPath={path} label={t.breadcrumb} locale={locale}>
+    <InteriorPage context={ctx} crumbs={crumbs} currentPath={path} label={t.breadcrumb}>
       {title ? (
         <SectionHeader actions={showsFilters(variant) ? <FilterRowSkeleton /> : null} title={title} />
       ) : null}

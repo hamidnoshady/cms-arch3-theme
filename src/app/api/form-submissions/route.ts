@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { cmsEnv, relayIdentity, requestWithHost, THEME_PROXY_MARKER } from '@/lib/cms/client'
 import { fixturesEnabled } from '@/lib/cms/fixtures'
+import { readBoundedText } from '@/lib/http/body'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,10 +34,12 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ error: 'proxy-recursion-refused' }, { status: 508 })
   }
 
-  const raw = await request.text()
-  if (raw.length > MAX_BODY_BYTES) {
-    return NextResponse.json({ error: 'payload-too-large' }, { status: 413 })
+  // Bytes, not characters, and enforced while reading (see `readBoundedText`).
+  const bounded = await readBoundedText(request, MAX_BODY_BYTES)
+  if (!bounded.ok) {
+    return NextResponse.json({ error: 'payload-too-large' }, { headers: { 'cache-control': 'no-store' }, status: 413 })
   }
+  const raw = bounded.text
 
   const target = `${env.cmsUrl.replace(/\/$/, '')}/api/form-submissions`
   const relay = relayIdentity(env, request.headers.get('host'))

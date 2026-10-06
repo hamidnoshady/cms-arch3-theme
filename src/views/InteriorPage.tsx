@@ -6,7 +6,7 @@ import { InteriorShell } from '@/components/layout/InteriorShell'
 import type { SiteContext } from '@/lib/cms/context'
 import type { Crumb } from '@/lib/routing/breadcrumbs'
 import { getChrome } from '@/lib/theme/chrome'
-import type { Locale } from '@/lib/cms/types'
+import type { TranslatedDoc } from '@/lib/seo/translations'
 
 /**
  * Interior page wrapper: chrome + breadcrumbs + content. Every interior view uses it,
@@ -18,7 +18,6 @@ export const InteriorPage = async ({
   crumbs,
   currentPath,
   label,
-  locale,
   switchDoc,
   switchQuery,
 }: {
@@ -27,8 +26,7 @@ export const InteriorPage = async ({
   crumbs: Crumb[]
   currentPath: string
   label: string
-  locale: Locale
-  switchDoc?: { id: string; kind: 'page' | 'post'; pathForLocale: (locale: Locale) => string }
+  switchDoc?: TranslatedDoc
   /** Locale-neutral query carried by the language switch (`/search?q=…`). */
   switchQuery?: string
 }) => {
@@ -46,7 +44,6 @@ export const InteriorPage = async ({
         <Breadcrumbs crumbs={crumbs} label={label} />
       </ContentContainer>
       {children}
-      <span className="sr-only">{locale}</span>
     </InteriorShell>
   )
 }

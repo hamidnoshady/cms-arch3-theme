@@ -12,11 +12,11 @@ import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
-import { href } from '@/lib/routing/locale'
 import { isMedia } from '@/lib/utils/media'
 import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
 import type { Locale } from '@/lib/cms/types'
+import { documentLanguages } from '@/lib/seo/translations'
 
 /**
  * Generic CMS page (the catch-all). One canonical URL per document: a page whose slug
@@ -33,6 +33,7 @@ export const pageMetadata = async (locale: Locale, slug: string): Promise<Metada
     context: outcome.ctx,
     description: page.meta?.description ?? null,
     image: isMedia(page.meta?.image) ? page.meta.image : null,
+    languages: await documentLanguages(outcome.ctx, { id: page.id, kind: 'page', pathFor: pagePath }),
     path: pagePath(page.slug),
     title: page.title,
   })
@@ -57,14 +58,14 @@ export const PageView = async ({ locale, slug }: { locale: Locale; slug: string 
       crumbs={crumbs}
       currentPath={pagePath(page.slug)}
       label={t.breadcrumb}
-      locale={locale}
-      switchDoc={{ id: page.id, kind: 'page', pathForLocale: (target) => href(pagePath(page.slug), target, ctx.site) }}
+     
+      switchDoc={{ id: page.id, kind: 'page', pathFor: pagePath }}
     >
       <ContentContainer>
         <h1 className="type-title max-w-[30ch]">{page.title}</h1>
         {page.hero?.richText ? (
           <div className="mt-6">
-            <RichText content={page.hero.richText} context={ctx} fallbackDir={ctx.dir} />
+            <RichText anchorScope="hero" content={page.hero.richText} context={ctx} fallbackDir={ctx.dir} />
           </div>
         ) : null}
         {showHero && heroMedia ? (

@@ -9,6 +9,7 @@ import { labels as dictionary } from '@/lib/theme/labels'
 import { NotFoundBody } from '@/components/states/States'
 import { headers } from 'next/headers'
 import type { Locale } from '@/lib/cms/types'
+import { brandName } from '@/lib/theme/brand'
 
 /**
  * The 404 body. `src/proxy.ts` rewrites unknown paths here with an explicit `404`
@@ -27,7 +28,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
   const title = dictionary(locale).notFoundTitle
   return {
     robots: { follow: false, index: false },
-    title: site ? `${title} — ${site.name}` : title,
+    title: site ? `${title} — ${brandName(site)}` : title,
   }
 }
 

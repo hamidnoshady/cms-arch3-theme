@@ -9,6 +9,7 @@ import { THEME_ROUTES } from '@/lib/routing/paths'
 import { labels as dictionary } from '@/lib/theme/labels'
 import type { Locale } from '@/lib/cms/types'
 import { headers } from 'next/headers'
+import { brandName } from '@/lib/theme/brand'
 
 /**
  * 404 inside the root layout. Reached when a document disappears between the proxy's
@@ -22,7 +23,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
   const title = dictionary(locale).notFoundTitle
   return {
     robots: { follow: false, index: false },
-    title: site ? `${title} — ${site.name}` : title,
+    title: site ? `${title} — ${brandName(site)}` : title,
   }
 }
 

@@ -1,21 +1,25 @@
 import type { Metadata, Viewport } from 'next'
 import { headers } from 'next/headers'
 
+import { DocumentLocale } from '@/components/layout/DocumentLocale'
 import { SmoothScroll } from '@/components/motion/SmoothScroll'
 import { getSiteOrNull } from '@/lib/cms/endpoints'
 import { labels } from '@/lib/theme/labels'
 import { fontFaceCss, fontReport } from '@/lib/theme/fonts'
 import { themeCss } from '@/lib/runtime'
 import { dirFor } from '@/lib/runtime'
+import { documentLocaleConfig } from '@/lib/routing/documentLocale'
 
 import './globals.css'
+import { brandName } from '@/lib/theme/brand'
 
 /**
  * Root document.
  *
  * `lang`/`dir` come from the proxy header, never from a hardcoded default, so the
  * Persian tree is genuinely RTL and the English tree genuinely LTR from the first
- * byte. Per-site design tokens (`themeCss(site.theme)`) and the font faces are emitted
+ * byte. Client navigations do not re-render this layout, so `<DocumentLocale>` keeps
+ * the attributes in step with the URL afterwards (FA ⇄ EN without a reload). Per-site design tokens (`themeCss(site.theme)`) and the font faces are emitted
  * here, after the design system, so a tenant's brand colour can only override the raw
  * variables — never the line system, spacing or type scale.
  */
@@ -38,7 +42,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
     // A document without any `<title>` is a defect: an unreachable descriptor is the
     // only case where no customer name is known, and it always renders the same
     // "not connected" state, so that state's own wording is the honest fallback.
-    title: site?.name ?? labels(locale).unreachableTitle,
+    title: site ? brandName(site) : labels(locale).unreachableTitle,
   }
 }
 
@@ -63,6 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {site?.theme ? <style dangerouslySetInnerHTML={{ __html: themeCss(site.theme) }} /> : null}
       </head>
       <body>
+        <DocumentLocale config={documentLocaleConfig()} />
         <SmoothScroll />
         {children}
       </body>

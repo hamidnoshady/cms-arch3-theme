@@ -125,6 +125,27 @@ export type CmsFetchOptions = {
 export type RawResponse = CachedCmsResponse
 
 /**
+ * The one locale policy for every CMS read.
+ *
+ * `options.locale` used to be advisory: only `params` reached the URL, so a call that
+ * set the option but forgot the query (`getHeader`/`getFooter`) silently read the
+ * default language — and cached it under a key that did not mention the locale, so
+ * the English chrome showed Persian menus. A locale now always reaches the upstream
+ * URL (and therefore the cache key, which is the complete path + query), and field
+ * fallback is off unless a caller asks for it explicitly: a missing translation stays
+ * missing instead of being filled with another language's values. A `locale` already
+ * in `params` must agree with the option — a disagreement is a programming error, not
+ * something to resolve by picking one.
+ */
+export const localizedCmsParams = (locale: null | string | undefined, params: QueryParams = {}): QueryParams => {
+  if (!locale) return params
+  if (params.locale !== undefined && params.locale !== locale) {
+    throw new Error(`CMS read asked for locale "${locale}" with a conflicting locale param "${String(params.locale)}"`)
+  }
+  return { ...params, fallbackLocale: params.fallbackLocale ?? false, locale }
+}
+
+/**
  * Host-preserving native request. `node:http(s)` is the only reliable way to set Host:
  * server-side content reads use it only for opt-in, key-less local development, and
  * the direct public API proxy uses it only when no site key is configured. Callers
@@ -249,14 +270,15 @@ export const cmsFetchRaw = async (
 ): Promise<RawResponse> => {
   const method = init.method ?? 'GET'
   const env = cmsEnv()
-  const query = options.params ? toQueryString(options.params) : ''
+  const params = localizedCmsParams(options.locale, options.params)
+  const query = toQueryString(params)
   const cachePath = `${path}${query ? `?${query}` : ''}`
 
   const load = async (): Promise<RawResponse> => {
     // Development fixtures come first so the whole theme can render without a CMS. The
     // guard lives inside `fixturesEnabled()` (never production, never implicit).
     if (method === 'GET' && fixturesEnabled()) {
-      const fixture = await fixtureRaw(path, options.params)
+      const fixture = await fixtureRaw(path, params)
       return { body: fixture.body, headers: new Headers({ 'content-type': 'application/json' }), status: fixture.status }
     }
 

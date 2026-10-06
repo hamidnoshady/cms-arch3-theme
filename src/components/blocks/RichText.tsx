@@ -6,8 +6,9 @@ import { LightboxScope } from '@/components/media/Lightbox'
 import type { SiteContext } from '@/lib/cms/context'
 import type { LexicalNode, Media } from '@/lib/cms/types'
 import { cn } from '@/lib/utils/cn'
-import { contentLightbox, contentOutline, type ContentLightbox } from '@/lib/utils/lexical'
+import { contentLightbox, contentOutline, defaultAnchorScope, type AnchorScope, type ContentLightbox } from '@/lib/utils/lexical'
 import { isMedia } from '@/lib/utils/media'
+import { referenceKey, safeCustomUrl } from '@/lib/routing/links'
 import { resolveRichTextLinks } from '@/lib/routing/richText'
 import { labels as dictionary } from '@/lib/theme/labels'
 
@@ -28,11 +29,18 @@ import { renderBlockNode } from './node'
  * them again into a second gallery.
  */
 export const RichText = async ({
+  anchorScope,
   className,
   content,
   context,
   fallbackDir,
 }: {
+  /**
+   * Namespace for this field's heading anchors. `null` marks the page's primary
+   * narrative (`section-n`, what `SectionNav` links to); a block passes its CMS row
+   * id; omitted, the field's content hash keeps ids unique across fields.
+   */
+  anchorScope?: AnchorScope
   className?: string
   content: null | { root?: { children?: LexicalNode[]; direction?: 'ltr' | 'rtl' | null } }
   context: SiteContext
@@ -43,14 +51,15 @@ export const RichText = async ({
   const direction = content?.root?.direction ?? fallbackDir
   const t = dictionary(context.locale)
   const links = await resolveRichTextLinks(content, context)
-  const lightbox = contentLightbox(content, context.site.media.origin, t.photo)
-  const anchors = new Map<LexicalNode, string>(contentOutline(content).map((item) => [item.node, item.id]))
-  const scope: NodeScope = { anchors, lightbox, links }
+  const lightbox = contentLightbox(content, context.site.media.origin, t.photoAt)
+  const scope = anchorScope === undefined ? defaultAnchorScope(content) : anchorScope
+  const anchors = new Map<LexicalNode, string>(contentOutline(content, scope).map((item) => [item.node, item.id]))
+  const nodeScope: NodeScope = { anchors, lightbox, links }
 
   const body = (
     <div className={cn('prose', className)} dir={direction}>
       {children.map((node, index) => (
-        <Node context={context} key={nodeKey(node, index)} node={node} scope={scope} />
+        <Node context={context} key={nodeKey(node, index)} node={node} scope={nodeScope} />
       ))}
     </div>
   )
@@ -73,7 +82,7 @@ export type NodeScope = {
   /** Anchor ids of the headings and named grids the in-page navigation points at. */
   anchors: Map<LexicalNode, string>
   lightbox: ContentLightbox | null
-  links: Map<string, { href: string; newTab: boolean }>
+  links: Map<string, string>
 }
 
 const nodeKey = (node: LexicalNode, index: number): string =>
@@ -116,18 +125,19 @@ const Node = ({
       return <br />
 
     case 'link': {
+      // Same contract as menus and blocks: a document reference resolves to its
+      // localized URL, a custom URL must pass the scheme/path check, and a link that
+      // resolves to nothing renders its text without a fake `#` target.
       const fields = (node.fields ?? {}) as Record<string, unknown>
-      const doc = fields.doc as { relationTo?: string; value?: string } | undefined
-      const resolved = doc?.value ? scope.links.get(`${doc.relationTo ?? 'pages'}:${doc.value}`) : undefined
-      const url =
-        resolved?.href ??
-        (typeof fields.url === 'string' ? fields.url : undefined) ??
-        '#'
-      const newTab = Boolean(fields.newTab) || resolved?.newTab
-      const external = /^https?:\/\//u.test(url)
-      if (external || newTab) {
+      const key = fields.linkType === 'custom' ? null : referenceKey(fields.doc as never)
+      const internal = key ? scope.links.get(key) : undefined
+      const custom = internal ? null : safeCustomUrl(fields.url, context.locale, context.site)
+      const url = internal ?? custom?.href
+      if (!url) return <>{childrenOf(node, context, scope)}</>
+      const newTab = Boolean(fields.newTab)
+      if (custom?.external || newTab) {
         return (
-          <a href={url} rel="noreferrer" target={newTab ? '_blank' : undefined}>
+          <a href={url} rel={custom?.external ? 'noopener noreferrer' : undefined} target={newTab ? '_blank' : undefined}>
             {childrenOf(node, context, scope)}
           </a>
         )

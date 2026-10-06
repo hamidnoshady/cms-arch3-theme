@@ -15,6 +15,7 @@ import { labels as dictionary } from '@/lib/theme/labels'
 import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
 import type { Locale } from '@/lib/cms/types'
+import { brandName } from '@/lib/theme/brand'
 
 /** `/search` — the CMS search index over posts. Always `noindex`. */
 export const searchMetadata = async (locale: Locale): Promise<Metadata> => {
@@ -25,7 +26,7 @@ export const searchMetadata = async (locale: Locale): Promise<Metadata> => {
     context: outcome.ctx,
     noindex: true,
     path: THEME_ROUTES.search,
-    title: `${t.search} — ${outcome.ctx.site.name}`,
+    title: `${t.search} — ${brandName(outcome.ctx.site)}`,
   })
 }
 
@@ -48,7 +49,7 @@ export const SearchView = async ({ locale, query }: { locale: Locale; query: str
       crumbs={crumbs}
       currentPath={THEME_ROUTES.search}
       label={t.breadcrumb}
-      locale={locale}
+     
       // The term is what the visitor typed, so it survives a language switch.
       switchQuery={query ? `?q=${encodeURIComponent(query)}` : ''}
     >
@@ -82,7 +83,7 @@ export const SearchView = async ({ locale, query }: { locale: Locale; query: str
                 <div className="min-w-0">
                   <a
                     className="link-inline type-subheading target-standalone"
-                    href={href(hrefById.get(hit.id) ?? articlePath(hit.slug), locale, ctx.site)}
+                    href={hrefById.get(hit.id) ?? href(articlePath(hit.slug), locale, ctx.site)}
                   >
                     {hit.title}
                   </a>

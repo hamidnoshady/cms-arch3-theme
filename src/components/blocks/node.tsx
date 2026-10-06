@@ -7,6 +7,7 @@ import type { SiteContext } from '@/lib/cms/context'
 import type { LexicalNode, Media } from '@/lib/cms/types'
 import type { ContentLightbox } from '@/lib/utils/lexical'
 import { toLocaleDigits } from '@/lib/runtime'
+import { safeCustomUrl } from '@/lib/routing/safeUrl'
 import { frameRatio, isFrameAspect, isMedia, mediaPresentation } from '@/lib/utils/media'
 
 /**
@@ -135,12 +136,13 @@ export const renderBlockNode = (
 
     case 'banner': {
       const content = fields.content
-      const url = typeof fields.url === 'string' ? fields.url : null
+      const link = safeCustomUrl(fields.url, context.locale, context.site)
+      const url = link?.href ?? null
       return (
         <aside className="notice">
           <RichTextContent content={content} context={context} />
           {url ? (
-            <a className="link-inline type-ui target-standalone" href={url} rel="noreferrer" target="_blank">
+            <a className="link-inline type-ui target-standalone" href={url} rel="noopener noreferrer" target="_blank">
               {url}
             </a>
           ) : null}

@@ -6,7 +6,7 @@ import { SectionHeader } from '@/components/design/SectionHeader'
 import { ArticleRow, LatestNote, LeadStory } from '@/components/blog/PostRows'
 import { Pagination } from '@/components/design/Pagination'
 import { EmptyState } from '@/components/states/States'
-import { getArchive, getSectionCategories, postHref } from '@/lib/cms/content'
+import { getArchive, getSectionCategories, localizedPostHref } from '@/lib/cms/content'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
@@ -19,6 +19,7 @@ import { readingMinutes } from '@/lib/utils/text'
 import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
 import type { Locale } from '@/lib/cms/types'
+import { brandName } from '@/lib/theme/brand'
 
 /**
  * Blog index — text-led, structurally different from Projects and Education:
@@ -33,7 +34,7 @@ export const blogMetadata = async (locale: Locale, page: number, category?: null
     context: outcome.ctx,
     noindex: page > 1 || Boolean(category),
     path: blogPath(page),
-    title: `${t.blog} — ${outcome.ctx.site.name}`,
+    title: `${t.blog} — ${brandName(outcome.ctx.site)}`,
   })
 }
 
@@ -67,12 +68,12 @@ export const BlogIndexView = async ({
   // so resolving it per list item with a second rule can only ever disagree with itself
   // (the lead story and the rows below it are the same archive).
   const hrefById = new Map(
-    await Promise.all(archive.docs.map(async (post) => [post.id, href(await postHref(post, ctx), locale, ctx.site)] as const)),
+    await Promise.all(archive.docs.map(async (post) => [post.id, await localizedPostHref(post, ctx)] as const)),
   )
   const hrefFor = (post: { id: string }): string => hrefById.get(post.id) ?? basePath
 
   return (
-    <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.blog} label={t.breadcrumb} locale={locale}>
+    <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.blog} label={t.breadcrumb}>
       <SectionHeader
         actions={
           section.children.length > 0 ? (

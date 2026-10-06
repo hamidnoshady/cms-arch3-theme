@@ -7,7 +7,7 @@ import { ProjectCard } from '@/components/projects/ProjectCard'
 import { EmptyState } from '@/components/states/States'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { getArchive, getSectionCategories } from '@/lib/cms/content'
-import { postHref } from '@/lib/cms/content'
+import { localizedPostHref } from '@/lib/cms/content'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
 import { projectsPath, THEME_ROUTES } from '@/lib/routing/paths'
@@ -18,6 +18,7 @@ import { StateView } from '@/views/StateView'
 import { InteriorPage } from '@/views/InteriorPage'
 import type { Locale } from '@/lib/cms/types'
 import { cn } from '@/lib/utils/cn'
+import { brandName } from '@/lib/theme/brand'
 
 /** Projects archive: breadcrumbs, modest title, category controls, framed mixed-ratio cards. */
 export const projectsMetadata = async (locale: Locale, page: number, category?: string): Promise<Metadata> => {
@@ -29,7 +30,7 @@ export const projectsMetadata = async (locale: Locale, page: number, category?: 
     description: null,
     noindex: page > 1 || Boolean(category),
     path: projectsPath(page),
-    title: `${t.projects} — ${outcome.ctx.site.name}`,
+    title: `${t.projects} — ${brandName(outcome.ctx.site)}`,
   })
 }
 
@@ -58,7 +59,7 @@ export const ProjectsIndexView = async ({
   const basePath = href(THEME_ROUTES.projects, locale, ctx.site)
 
   return (
-    <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.projects} label={t.breadcrumb} locale={locale}>
+    <InteriorPage context={ctx} crumbs={crumbs} currentPath={THEME_ROUTES.projects} label={t.breadcrumb}>
       <SectionHeader
         actions={
           section.children.length > 0 ? (
@@ -94,7 +95,7 @@ export const ProjectsIndexView = async ({
                 archive.docs.map(async (post) => (
                   <ProjectCard
                     context={ctx}
-                    href={href(await postHref(post, ctx), locale, ctx.site)}
+                    href={await localizedPostHref(post, ctx)}
                     key={post.id}
                     post={post}
                   />
