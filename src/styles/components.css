@@ -416,12 +416,19 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* The short description under the facts: a lede, set apart by space and a
-     comfortable measure rather than by a box. */
+  /* The short description under the facts (`.type-summary` sets the voice): a short
+     drafting dash opens it, the same mark that opens each fact, then space — no box. */
   .project-lede {
-    max-inline-size: var(--measure-lede);
     margin-block-start: var(--space-8);
-    color: var(--ink);
+  }
+
+  .project-lede::before {
+    content: '';
+    display: block;
+    inline-size: 1.5rem;
+    block-size: var(--line-w-decor);
+    margin-block-end: var(--space-4);
+    background-color: var(--line-decor-color);
   }
 
   .project-head .media-figure {
@@ -1390,6 +1397,78 @@
     text-decoration: underline;
     text-underline-offset: 0.25em;
     text-decoration-thickness: var(--line-w);
+  }
+
+  /* --- project card ---------------------------------------------------------
+     One frame for every project (4:5, cropped to it), then a title block under a
+     hairline: title and year on one line, the location beneath. A solid line draws
+     across the hairline on hover and keyboard focus. */
+  .pcard {
+    min-inline-size: 0;
+  }
+
+  .pcard__link {
+    display: block;
+    color: inherit;
+  }
+
+  .pcard__link:hover {
+    text-decoration: none;
+  }
+
+  .pcard__frame {
+    aspect-ratio: 4 / 5;
+  }
+
+  .pcard__caption {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--space-3);
+    row-gap: var(--space-1);
+    align-items: baseline;
+    margin-block-start: var(--space-3);
+    padding-block-start: var(--space-3);
+    border-block-start: var(--line-w) solid var(--line-structural-color);
+  }
+
+  .pcard__caption::before {
+    content: '';
+    position: absolute;
+    inset-block-start: calc(-1 * var(--line-w));
+    inset-inline-start: 0;
+    inline-size: 0;
+    block-size: var(--line-w);
+    background-color: var(--line-emphasis-color);
+    transition: inline-size var(--motion-slow) var(--ease-out);
+  }
+
+  .pcard__link:hover .pcard__caption::before,
+  .pcard__link:focus-visible .pcard__caption::before {
+    inline-size: 100%;
+  }
+
+  .pcard__title {
+    min-inline-size: 0;
+    font-size: var(--text-ui);
+    font-weight: var(--weight-ui);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .pcard__year {
+    font-family: var(--font-numeral);
+    font-size: var(--text-caption);
+    letter-spacing: var(--tracking-label);
+    color: var(--ink-secondary);
+  }
+
+  .pcard__place {
+    grid-column: 1 / -1;
+    font-size: var(--text-meta);
+    line-height: var(--leading-meta);
+    color: var(--ink-secondary);
+    overflow-wrap: anywhere;
   }
 
   /* --- editorial rows (blog / education) ----------------------------------- */

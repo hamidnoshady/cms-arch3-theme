@@ -468,13 +468,15 @@ const main = async () => {
   await check('projects: long card metadata stays readable at 390px', async (page) => {
     await page.setViewport({ width: 390, height: 844 })
     await page.goto(`${BASE}/projects`, { waitUntil: 'load' })
-    await loaded(page, '.card')
+    await loaded(page, '.pcard')
     const measured = await page.evaluate(() => {
-      const card = document.querySelector('.card')
-      const title = card.querySelector('.card__title')
-      const meta = card.querySelector('.card__meta')
+      const card = document.querySelector('.pcard')
+      const title = card.querySelector('.pcard__title')
+      const year = card.querySelector('.pcard__year')
+      const meta = card.querySelector('.pcard__place')
       title.textContent = 'خانه‌ای با نام بسیار طولانی در منطقه شمال غرب — نمونه'
-      if (meta) meta.textContent = 'تهران، منطقه شمال غرب — ۱۴۰۴'
+      if (year) year.textContent = '۱۴۰۴'
+      meta.textContent = 'تهران، منطقه شمال غرب — خیابان بسیار طولانی'
       const cardRect = card.getBoundingClientRect()
       const titleRect = title.getBoundingClientRect()
       const metaRect = meta.getBoundingClientRect()
@@ -497,7 +499,7 @@ const main = async () => {
   await check('fonts: the licensed Shazde weights are installed and active', async (page) => {
     await page.setViewport({ width: 1440, height: 900 })
     await page.goto(`${BASE}/projects`, { waitUntil: 'load' })
-    await loaded(page, '.card')
+    await loaded(page, '.pcard')
     const fonts = await page.evaluate(async () => {
       await document.fonts.ready
       const faces = [...document.fonts].filter((face) => face.family.includes('Shazde')).map((face) => face.weight)
@@ -518,7 +520,7 @@ const main = async () => {
     const read = async (scale) => {
       await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: scale })
       await page.goto(`${BASE}/projects`, { waitUntil: 'load' })
-      await loaded(page, '.card')
+      await loaded(page, '.pcard')
       return page.evaluate(() => ({
         mark: getComputedStyle(document.querySelector('.mark svg')).strokeWidth,
         rule: getComputedStyle(document.querySelector('.rule-h')).blockSize,

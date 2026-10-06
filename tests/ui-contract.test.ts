@@ -181,3 +181,44 @@ describe('section navigation', () => {
     expect(nav).not.toMatch(/box-shadow|border-radius/u)
   })
 })
+
+describe('short description typography', () => {
+  const typography = read('src/styles/typography.css')
+
+  it('is a supporting voice: smaller than body copy, light, secondary ink, airy', () => {
+    const [summary] = blocks(typography, '.type-summary')
+    expect(summary).toMatch(/font-size:\s*var\(--text-summary\)/u)
+    expect(summary).toMatch(/font-weight:\s*var\(--weight-light\)/u)
+    expect(summary).toMatch(/color:\s*var\(--ink-secondary\)/u)
+    expect(summary).toMatch(/max-inline-size:\s*var\(--measure-lede\)/u)
+    expect(summary).toMatch(/text-wrap:\s*pretty/u)
+    // Smaller than body text, looser than body leading.
+    expect(Number.parseFloat(tokens.match(/--text-summary:\s*([\d.]+)rem/u)![1]!)).toBeLessThan(1)
+    expect(Number(tokens.match(/--leading-summary:\s*([\d.]+)/u)![1])).toBeGreaterThan(Number(tokens.match(/--leading-body:\s*([\d.]+)/u)![1]))
+  })
+
+  it('is opened by the drafting dash, not boxed', () => {
+    const [lede] = blocks(components, '.project-lede::before')
+    expect(lede).toMatch(/background-color:\s*var\(--line-decor-color\)/u)
+    const [box] = blocks(components, '.project-lede')
+    expect(box).not.toMatch(/border|background/u)
+  })
+})
+
+describe('project cards', () => {
+  it('one frame for every card; the grid steps down in a rhythm only from desktop width', () => {
+    const [frame] = blocks(components, '.pcard__frame')
+    expect(frame).toMatch(/aspect-ratio:\s*4 \/ 5/u)
+    const rhythm = [...mediaQueries(structure).entries()]
+      .filter(([, bodies]) => bodies.join('').includes('.grid-projects > :nth-child'))
+      .map(([condition]) => condition)
+    expect(rhythm).toHaveLength(2)
+    for (const condition of rhythm) expect(condition).toMatch(/min-width:\s*(64|80)rem/u)
+  })
+
+  it('draws a solid line over the hairline on hover and keyboard focus only', () => {
+    expect(components).toMatch(/\.pcard__link:hover \.pcard__caption::before,\s*\.pcard__link:focus-visible \.pcard__caption::before\s*\{[^}]*inline-size:\s*100%/u)
+    const [line] = blocks(components, '.pcard__caption::before')
+    expect(line).toMatch(/inline-size:\s*0/u)
+  })
+})

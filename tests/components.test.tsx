@@ -7,7 +7,7 @@ import { Pagination } from '@/components/design/Pagination'
 import { Rule } from '@/components/design/Rule'
 import { LanguageSwitch, oppositeTargets } from '@/components/layout/LanguageSwitch'
 import { Logo } from '@/components/layout/Logo'
-import { ProjectFacts, projectFactPairs } from '@/components/projects/ProjectCard'
+import { ProjectCard, ProjectFacts, projectFactPairs } from '@/components/projects/ProjectCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { SiteContext } from '@/lib/cms/context'
 import type { Locale, PostDoc, SiteDescriptor } from '@/lib/cms/types'
@@ -237,10 +237,57 @@ describe('ProjectFacts', () => {
     expect(render(<ProjectFacts context={siteContext('en')} post={post({ client: ' ', location: '' })} />).container.firstChild).toBeNull()
   })
 
+  it('shows the date as month and year, never the day', () => {
+    const pairs = projectFactPairs(post({ date: '۱ بهمن ۱۴۰۴' }), 'fa')
+    expect(pairs).toEqual([{ label: 'تاریخ', value: 'بهمن ۱۴۰۴' }])
+    expect(projectFactPairs(post({ date: '2024-03-12' }), 'en')).toEqual([{ label: 'Date', value: 'March 2024' }])
+  })
+
   it('labels in the page language', () => {
     expect(projectFactPairs(post({ location: 'Tehran', status: 'Built' }), 'en')).toEqual([
       { label: 'Location', value: 'Tehran' },
       { label: 'Status', value: 'Built' },
     ])
+  })
+})
+
+describe('ProjectCard', () => {
+  const card = (heroImage: unknown, projectMetadata: PostDoc['projectMetadata'] = { date: '۱ بهمن ۱۴۰۴', location: 'رشت' }) =>
+    render(
+      <ProjectCard
+        context={siteContext('fa')}
+        href="/projects/villa"
+        post={{ heroImage, id: 'p1', projectMetadata, slug: 'villa', title: 'ویلا ۳۹۸' } as unknown as PostDoc}
+      />,
+    )
+  const picture = (width: number, height: number) => ({ alt: 'x', height, id: `m${width}`, url: '/qa/media/x.jpg', width })
+
+  it('gives every project the same 4:5 frame, whatever the photograph', () => {
+    for (const [width, height] of [[1600, 1067], [1200, 1600], [1000, 1000], [3000, 900]] as const) {
+      const { container, unmount } = card(picture(width, height))
+      expect(container.querySelector('.pcard__frame')?.getAttribute('style') ?? '').toBe('')
+      expect(container.querySelector('img')?.getAttribute('style')).toContain('aspect-ratio: 4 / 5')
+      unmount()
+    }
+    const { container } = card(null)
+    expect(container.querySelector('.skeleton')?.getAttribute('style')).toContain('aspect-ratio: 4 / 5')
+  })
+
+  it('is a title block: title and year on one line, the location beneath, one link', () => {
+    const { container } = card(picture(1600, 1067))
+    const caption = container.querySelector('.pcard__caption')!
+    expect([...caption.children].map((child) => child.className)).toEqual(['pcard__title', 'pcard__year', 'pcard__place'])
+    expect(caption.querySelector('.pcard__title')?.textContent).toBe('ویلا ۳۹۸')
+    expect(caption.querySelector('.pcard__year')?.textContent).toBe('۱۴۰۴')
+    expect(caption.querySelector('.pcard__place')?.textContent).toBe('رشت')
+    expect(container.querySelectorAll('a')).toHaveLength(1)
+    expect(container.querySelector('a')?.getAttribute('href')).toBe('/projects/villa')
+  })
+
+  it('shows only what the CMS returned', () => {
+    const { container } = card(picture(1600, 1067), { location: '  ' })
+    expect(container.querySelector('.pcard__year')).toBeNull()
+    expect(container.querySelector('.pcard__place')).toBeNull()
+    expect(container.querySelector('.pcard__title')).not.toBeNull()
   })
 })

@@ -30,6 +30,7 @@
   .type-body,
   .type-body-lg,
   .type-lede,
+  .type-summary,
   .type-ui,
   .type-nav,
   .type-button,
@@ -80,6 +81,18 @@
   .type-lede {
     color: var(--ink-secondary);
     max-inline-size: var(--measure-lede);
+  }
+
+  /* The short description of an article or project: a supporting voice, so smaller
+     than body copy, in the light weight, in the secondary ink, with generous leading
+     and balanced line ends. It never competes with the title or the facts above it. */
+  .type-summary {
+    font-size: var(--text-summary);
+    font-weight: var(--weight-light);
+    line-height: var(--leading-summary);
+    color: var(--ink-secondary);
+    max-inline-size: var(--measure-lede);
+    text-wrap: pretty;
   }
 
   .type-ui {
