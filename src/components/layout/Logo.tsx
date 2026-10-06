@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import type { CSSProperties } from 'react'
 
 import type { SiteContext } from '@/lib/cms/context'
+import type { Media } from '@/lib/cms/types'
 import { href } from '@/lib/routing/locale'
 import { THEME_ROUTES } from '@/lib/routing/paths'
 import { cn } from '@/lib/utils/cn'
@@ -12,7 +14,23 @@ import { cn } from '@/lib/utils/cn'
  * scripted SVG that slipped past the CMS allowlist still cannot execute. When the
  * customer has uploaded nothing, the theme falls back to the site's real name as a
  * wordmark; it never ships bundled artwork or an invented brand.
+ *
+ * Scale is the design system's, not the file's: `.navbar__logo` sizes the mark by
+ * height from the chrome tokens (42 → 46 → 52px across the breakpoints) with
+ * `width: auto` and `object-fit: contain`, so there is no hard-coded pixel height in
+ * the markup. The **primary** asset is preferred on desktop; the compact mark serves
+ * phones and tablets, where the centre navigation and the controls need the room.
+ * When the customer uploaded only one asset, `brandLogo` resolves both slots to it
+ * and a single `<img>` is rendered.
  */
+export type LogoMark = { compact: null | string; primary: null | string }
+
+/** The desktop breakpoint of the design system (`64rem`): where the primary mark takes over. */
+const PRIMARY_MEDIA_QUERY = '(min-width: 64rem)'
+
+const ratioOf = (media: Media | null | undefined): CSSProperties | undefined =>
+  media?.width && media?.height ? { aspectRatio: `${media.width} / ${media.height}` } : undefined
+
 export const Logo = ({
   className,
   context,
@@ -22,11 +40,15 @@ export const Logo = ({
   className?: string
   context: SiteContext
   /** Resolved URLs from `brandLogo(context)`. */
-  mark: { compact: null | string; primary: null | string }
+  mark: LogoMark
   wordmark?: boolean
 }) => {
   const name = context.site.branding?.displayName ?? context.site.name
-  const url = mark.compact ?? mark.primary
+  const primary = mark.primary ?? mark.compact
+  const compact = mark.compact ?? mark.primary
+  const branding = context.site.branding
+  const primaryMedia = branding?.primaryLogo ?? branding?.logo ?? null
+  const compactMedia = branding?.compactLogo ?? branding?.logoCompact ?? null
 
   return (
     <Link
@@ -34,10 +56,24 @@ export const Logo = ({
       className={cn('flex items-center gap-3', className)}
       href={href(THEME_ROUTES.home, context.locale, context.site)}
     >
-      {!wordmark && url ? (
+      {!wordmark && primary ? (
         // `data-logo` is a QA hook: the "customer has no logo" case must be provable
         // negatively (no mark element at all), not by eyeballing a screenshot.
-        <img alt={name} className="block h-8 w-auto" data-logo="mark" decoding="async" height={32} src={url} width={120} />
+        compact && compact !== primary ? (
+          <picture>
+            <source media={PRIMARY_MEDIA_QUERY} srcSet={primary} />
+            <img alt={name} className="navbar__logo" data-logo="mark" decoding="async" src={compact} />
+          </picture>
+        ) : (
+          <img
+            alt={name}
+            className="navbar__logo"
+            data-logo="mark"
+            decoding="async"
+            src={primary}
+            style={ratioOf(primary === mark.primary ? primaryMedia : compactMedia)}
+          />
+        )
       ) : (
         <span className="navbar__wordmark" data-logo="wordmark">
           {name}

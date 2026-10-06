@@ -66,30 +66,45 @@ const factLine = (post: PostDoc, context: SiteContext): null | string => {
 
 export const projectMetaLine = factLine
 
-/** The facts table on a project detail page — again, real fields only. */
-export const ProjectFacts = ({ context, post }: { context: SiteContext; post: PostDoc }) => {
+/** The pairs a project's facts block shows — exactly the non-empty CMS fields, in contract order. */
+export const projectFactPairs = (post: PostDoc, locale: SiteContext['locale']): { label: string; value: string }[] => {
   const facts = post.projectMetadata
-  if (!facts) return null
-  const t = context.locale === 'fa' ? 'مشخصات پروژه' : 'Project facts'
+  if (!facts) return []
+  const fa = locale === 'fa'
   const pairs: { label: string; value: string }[] = []
-  if (facts.location?.trim()) pairs.push({ label: context.locale === 'fa' ? 'مکان' : 'Location', value: facts.location.trim() })
-  const date = dateOrText(facts.date, context.locale)
-  if (date) pairs.push({ label: context.locale === 'fa' ? 'تاریخ' : 'Date', value: date })
-  if (facts.area?.trim()) pairs.push({ label: context.locale === 'fa' ? 'مساحت' : 'Area', value: facts.area.trim() })
-  if (facts.status?.trim()) pairs.push({ label: context.locale === 'fa' ? 'وضعیت' : 'Status', value: facts.status.trim() })
-  if (facts.client?.trim()) pairs.push({ label: context.locale === 'fa' ? 'کارفرما' : 'Client', value: facts.client.trim() })
+  if (facts.location?.trim()) pairs.push({ label: fa ? 'مکان' : 'Location', value: facts.location.trim() })
+  const date = dateOrText(facts.date, locale)
+  if (date) pairs.push({ label: fa ? 'تاریخ' : 'Date', value: date })
+  if (facts.area?.trim()) pairs.push({ label: fa ? 'مساحت' : 'Area', value: facts.area.trim() })
+  if (facts.status?.trim()) pairs.push({ label: fa ? 'وضعیت' : 'Status', value: facts.status.trim() })
+  if (facts.client?.trim()) pairs.push({ label: fa ? 'کارفرما' : 'Client', value: facts.client.trim() })
   for (const extra of facts.additionalFacts ?? []) {
     if (extra?.label?.trim() && extra.value?.trim()) pairs.push({ label: extra.label.trim(), value: extra.value.trim() })
   }
+  return pairs
+}
+
+/**
+ * The facts block on a project detail page — real fields only, and not a table.
+ *
+ * A compact drafting-style block (`.facts`): one thin top rule, a tiny tick before
+ * each label, the value set closely beside its label, two columns where the width
+ * allows and one on narrow phones, capped around 900px so a label is never a
+ * screen-width away from its value on a wide display. No cards, no fills, no grid of
+ * borders — spacing and type carry the hierarchy.
+ */
+export const ProjectFacts = ({ className, context, post }: { className?: string; context: SiteContext; post: PostDoc }) => {
+  const pairs = projectFactPairs(post, context.locale)
   if (pairs.length === 0) return null
+  const title = context.locale === 'fa' ? 'مشخصات پروژه' : 'Project facts'
 
   return (
-    <section aria-label={t} className={cn('mt-10')}>
-      <dl className="grid grid-cols-2 gap-x-8 gap-y-4 border-t border-line-structural pt-5 md:grid-cols-3">
+    <section aria-label={title} className={cn('facts', className)}>
+      <dl className="facts__list">
         {pairs.map((pair) => (
-          <div key={`${pair.label}-${pair.value}`}>
-            <dt className="type-label">{pair.label}</dt>
-            <dd className="type-body mt-1" dir="auto">
+          <div className="facts__item" key={`${pair.label}-${pair.value}`}>
+            <dt className="facts__label">{pair.label}</dt>
+            <dd className="facts__value" dir="auto">
               {pair.value}
             </dd>
           </div>

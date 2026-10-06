@@ -2,11 +2,14 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { FramedMedia } from '@/components/media/CmsImage'
+import { LightboxScope } from '@/components/media/Lightbox'
 import type { SiteContext } from '@/lib/cms/context'
 import type { LexicalNode, Media } from '@/lib/cms/types'
 import { cn } from '@/lib/utils/cn'
+import { contentLightbox, type ContentLightbox } from '@/lib/utils/lexical'
 import { isMedia } from '@/lib/utils/media'
 import { resolveRichTextLinks } from '@/lib/routing/richText'
+import { labels as dictionary } from '@/lib/theme/labels'
 
 import { renderBlockNode } from './node'
 
@@ -17,6 +20,12 @@ import { renderBlockNode } from './node'
  * locale — an English quotation inside a Persian page keeps its own direction. Text
  * runs use `unicode-bidi: plaintext` (`.bidi-isolate`) so a Latin product name inside
  * a Persian sentence does not drag the punctuation to the wrong end.
+ *
+ * Images are rendered **once, where the editor put them**, and every one of them —
+ * an `upload` node, an inline `mediaBlock`, each cell of a `mediaGrid` — is a trigger
+ * of one `LightboxScope` per field. So the photographs of a project narrative open as
+ * one sequence with previous/next across all of them, and no view needs to collect
+ * them again into a second gallery.
  */
 export const RichText = async ({
   className,
@@ -32,15 +41,36 @@ export const RichText = async ({
   const children = content?.root?.children ?? []
   if (children.length === 0) return null
   const direction = content?.root?.direction ?? fallbackDir
+  const t = dictionary(context.locale)
   const links = await resolveRichTextLinks(content, context)
+  const lightbox = contentLightbox(content, context.site.media.origin, t.photo)
+  const scope: NodeScope = { lightbox, links }
 
-  return (
+  const body = (
     <div className={cn('prose', className)} dir={direction}>
       {children.map((node, index) => (
-        <Node context={context} key={nodeKey(node, index)} links={links} node={node} />
+        <Node context={context} key={nodeKey(node, index)} node={node} scope={scope} />
       ))}
     </div>
   )
+
+  if (!lightbox) return body
+
+  return (
+    <LightboxScope
+      items={lightbox.items}
+      labels={{ close: t.close, next: t.next, previous: t.previous, title: t.gallery }}
+      locale={context.locale}
+    >
+      {body}
+    </LightboxScope>
+  )
+}
+
+/** What every node render needs besides the node: resolved links and the field's lightbox. */
+export type NodeScope = {
+  lightbox: ContentLightbox | null
+  links: Map<string, { href: string; newTab: boolean }>
 }
 
 const nodeKey = (node: LexicalNode, index: number): string =>
@@ -48,33 +78,33 @@ const nodeKey = (node: LexicalNode, index: number): string =>
 
 const Node = ({
   context,
-  links,
   node,
+  scope,
 }: {
   context: SiteContext
-  links: Map<string, { href: string; newTab: boolean }>
   node: LexicalNode
+  scope: NodeScope
 }): ReactNode => {
   switch (node.type) {
     case 'paragraph':
-      return <p>{childrenOf(node, context, links)}</p>
+      return <p>{childrenOf(node, context, scope)}</p>
 
     case 'heading': {
       const tag = (node.tag as string | undefined) ?? 'h2'
       const Tag = (['h2', 'h3', 'h4', 'h5', 'h6'].includes(tag) ? tag : 'h2') as 'h2'
-      return <Tag>{childrenOf(node, context, links)}</Tag>
+      return <Tag>{childrenOf(node, context, scope)}</Tag>
     }
 
     case 'list': {
       const Tag = node.listType === 'number' ? 'ol' : 'ul'
-      return <Tag>{childrenOf(node, context, links)}</Tag>
+      return <Tag>{childrenOf(node, context, scope)}</Tag>
     }
 
     case 'listitem':
-      return <li>{childrenOf(node, context, links)}</li>
+      return <li>{childrenOf(node, context, scope)}</li>
 
     case 'quote':
-      return <blockquote>{childrenOf(node, context, links)}</blockquote>
+      return <blockquote>{childrenOf(node, context, scope)}</blockquote>
 
     case 'horizontalrule':
       return <hr />
@@ -85,7 +115,7 @@ const Node = ({
     case 'link': {
       const fields = (node.fields ?? {}) as Record<string, unknown>
       const doc = fields.doc as { relationTo?: string; value?: string } | undefined
-      const resolved = doc?.value ? links.get(`${doc.relationTo ?? 'pages'}:${doc.value}`) : undefined
+      const resolved = doc?.value ? scope.links.get(`${doc.relationTo ?? 'pages'}:${doc.value}`) : undefined
       const url =
         resolved?.href ??
         (typeof fields.url === 'string' ? fields.url : undefined) ??
@@ -95,18 +125,24 @@ const Node = ({
       if (external || newTab) {
         return (
           <a href={url} rel="noreferrer" target={newTab ? '_blank' : undefined}>
-            {childrenOf(node, context, links)}
+            {childrenOf(node, context, scope)}
           </a>
         )
       }
-      return <Link href={url}>{childrenOf(node, context, links)}</Link>
+      return <Link href={url}>{childrenOf(node, context, scope)}</Link>
     }
 
     case 'upload': {
       const value = node.value as Media | null | undefined
       if (isMedia(value)) {
         return (
-          <FramedMedia cap={70} media={value} origin={context.site.media.origin} size="content" />
+          <FramedMedia
+            cap={70}
+            lightbox={scope.lightbox?.indexOf.get(value)}
+            media={value}
+            origin={context.site.media.origin}
+            size="content"
+          />
         )
       }
       return null
@@ -114,24 +150,20 @@ const Node = ({
 
     case 'block':
     case 'blocknode':
-      return renderBlockNode(node, context)
+      return renderBlockNode(node, context, scope.lightbox)
 
     case 'text': {
       return <span className="bidi-isolate">{formatText(node)}</span>
     }
 
     default:
-      return node.children ? <>{childrenOf(node, context, links)}</> : null
+      return node.children ? <>{childrenOf(node, context, scope)}</> : null
   }
 }
 
-const childrenOf = (
-  node: LexicalNode,
-  context: SiteContext,
-  links: Map<string, { href: string; newTab: boolean }>,
-): ReactNode =>
+const childrenOf = (node: LexicalNode, context: SiteContext, scope: NodeScope): ReactNode =>
   (node.children ?? []).map((child, index) => (
-    <Node context={context} key={nodeKey(child, index)} links={links} node={child} />
+    <Node context={context} key={nodeKey(child, index)} node={child} scope={scope} />
   ))
 
 /** Lexical stores emphasis as a bitmask on the text node. */

@@ -150,6 +150,27 @@ Consequences and their honest status:
   fixtures serve same-origin files from `public/qa/media/`.
 - Photos keep their colour (the QA placeholders were regenerated as colour precisely so
   this is visible in the screenshots).
+- **The lightbox shows the medium's largest documented size.** It is a plain `<img>` with
+  the same `srcSet` as the thumbnail and `sizes="100vw"`; there is no separate
+  "original" request and no zoom/pan. Captions are not repeated inside the lightbox — the
+  figure's caption stays on the page where the editor wrote it.
+- **The gallery block's rows are read in two shapes.** The contract documents `images` as
+  populated media; a Payload array field delivers `{ image: <Media> }` rows (the fixtures
+  do). Both render; an id-only entry (depth 0) is skipped rather than guessed at.
+- **Logo artwork with internal transparent padding reads smaller than the token.** The
+  mark is sized by height (`--logo-block`, 42/46/52px) with `width: auto`; the theme
+  never crops or scales an asset by its visible bounds, so padding inside the file is the
+  customer's to trim. A very wide wordmark-style asset is capped by `--logo-max-inline`
+  and letterboxed with `object-fit: contain` rather than allowed to push the navigation.
+- **Six long Persian nav labels wrap at 768px.** The fixture header's six labels need
+  ~579px of list width at tablet size, more than the bar can give them next to the mark
+  and the language switch, so the desktop nav list wraps onto a second row by design
+  (`flex-wrap`) and the bar grows instead of overflowing. This was already the case on
+  the previous layout in this environment (513px of room, measured on the base commit);
+  the refactor leaves the list 51px more (564px). The earlier committed `07-projects-768`
+  shot shows the same labels on one line, so label metrics evidently differed on that
+  machine. Not a layout defect — nothing overflows and the rule below the bar stays
+  aligned — but a header with six items this long is at the limit of what 768px holds.
 
 ## 8. Store, payments and e-commerce
 

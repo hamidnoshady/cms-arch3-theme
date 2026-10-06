@@ -109,10 +109,24 @@
   --measure-prose: 68ch;
   --measure-lede: 46ch;
 
+  /* --- chrome: navbar height and brand mark scale -------------------------
+     The navbar and the logo grow together (phone → tablet → desktop) so the
+     mark reads as the site's identity rather than a utility icon, while the
+     bar keeps balanced whitespace above and below it. `--logo-max-inline`
+     caps a wide wordmark-style asset so it can never squeeze the centre
+     navigation, the language switch or the menu control. The logo is sized
+     by *height* with `width: auto` + `object-fit: contain`, never from the
+     file's pixel dimensions.
+  ------------------------------------------------------------------------- */
+  --navbar-block: 82px;        /* brief: 80–84 on phones */
+  --logo-block: 42px;          /* brief: 40–44 on phones */
+  --logo-max-inline: min(44vw, 12rem);
+
   /* --- motion (restrained) --- */
   --motion-fast: 140ms;
   --motion-base: 240ms;
   --motion-drawer: 280ms;   /* mobile drawer travel; brief: 250–350ms */
+  --motion-lightbox: 260ms; /* lightbox open/close; brief: 220–300ms */
   --motion-slow: 420ms;
   --motion-reveal: 560ms;
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -133,6 +147,9 @@
   :root {
     --gutter: 24px;
     --grid-gap: 16px;
+    --navbar-block: 88px;      /* brief: 86–90 on tablets */
+    --logo-block: 46px;        /* brief: 44–48 on tablets */
+    --logo-max-inline: 14rem;
   }
 }
 
@@ -140,6 +157,9 @@
   :root {
     --gutter: 32px;
     --grid-gap: 20px;
+    --navbar-block: 94px;      /* brief: 90–96 on desktop */
+    --logo-block: 52px;        /* brief: 48–54 on desktop */
+    --logo-max-inline: 16rem;
   }
 }
 

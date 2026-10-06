@@ -38,9 +38,9 @@ the resulting screenshots look fine while measuring nothing.
 | Vendored runtime builds | `npm run vendor:build` | passes (8 modules emitted) |
 | TypeScript | `npm run typecheck` | clean, `strict` + `noUncheckedIndexedAccess` + `verbatimModuleSyntax` |
 | ESLint | `npm run lint` | 0 errors, 0 warnings |
-| Unit/integration tests | `npm test` | **12 files, 120 tests, all passing** |
+| Unit/integration tests | `npm test` | **16 files, 171 tests, all passing** |
 | Production build | `npm run build` | Next 16.3.8, compiles, all routes emitted |
-| Browser evidence | `node scripts/screenshots.mjs` | **40 shots, 0 failures**, no page errors, no horizontal overflow |
+| Browser evidence | `node scripts/screenshots.mjs` | **46 shots, 0 failures**, no page errors, no horizontal overflow (re-captured 2026-10-06 after the UI/UX refactor, including six new lightbox / gallery / facts shots) |
 | Interaction behaviour | `node scripts/interaction-audit.mjs` | **21/21 checks pass** — the nine original entrance/drawer/form checks plus locale retention on English archives, canonical search sections, wrong-section redirects, blog category scoping, drawer edge + bounded motion per locale, inline email validation, 390px card-metadata stress, active Shazde weights, decorative stroke tokens at 1x/2x, reduced-motion stillness, and slow-archive loading compositions (see §3) |
 | Structural a11y | `npm run a11y` | **17/17 pages clean** (one `h1`, a `<main>`, no skipped heading levels, no missing/empty `alt`, no duplicate ids, no sub-24px target, no sub-4.5 contrast on body text) |
 | Manifest | `tests/manifest.test.ts` + the CMS's own parser | accepted (§5) |
@@ -63,16 +63,21 @@ no-push container build; `publish-image.yml` pushes `ghcr.io/<owner>/<repo>` on 
 | `tests/fixtures.test.ts` | the fixture encoder's query semantics (`exists=false`, `like`, paging) |
 | `tests/content.test.ts` | nav references resolve by **id**; reads are single-locale with `fallbackLocale=false`; the credential travels in a header; the language switch carries a search term |
 | `tests/manifest.test.ts` | manifest ↔ code agreement, neutral identifiers, no unclaimed capability |
-| `tests/components.test.tsx` | server-rendered component output (marks, rules, skeletons) |
+| `tests/components.test.tsx` | server-rendered component output (marks, rules, skeletons); the language switch names only the other locale and renders a missing translation as non-interactive text, never a fabricated link; the logo is sized by `.navbar__logo` (no hard-coded 32px / `h-8`) and prefers the primary mark at `64rem`; the project facts block renders exactly the CMS fields that are present, as a compact `.facts` block rather than a table |
 | `tests/api.test.ts` | the public form-submission proxy: the site key names the tenant while no cookie/client-authorization is forwarded, a request carrying the theme's own proxy marker is refused (508), the payload is bounded (413), an unconfigured CMS answers 503, and the CMS status is passed through rather than turned into a success |
 | `tests/form.test.tsx` | the CMS-defined form: required fields (incl. consent) block an empty submit with tied `aria-describedby` errors, invalid email is rejected, errors clear on typing, the payload uses CMS field names with booleans stringified, success is announced via `aria-live`, values survive a failure, the control is disabled while in flight, and a filled honeypot is absorbed without a write |
-| `tests/gallery.test.tsx` | gallery counter/title localization, focus restoration, and direction-aware ArrowLeft/ArrowRight stepping (next/previous mapping flips under RTL) |
+| `tests/gallery.test.tsx` | the unified lightbox: a thumbnail opens a real dialog with a localized title over the dedicated `.lightbox__overlay` (never `.drawer__overlay`); close control, Escape and a click on the empty stage dismiss it and focus returns to the thumbnail; in Persian *previous* is the right chevron and *next* the left, ArrowLeft advances and the incoming image slides in from the left (English mirrored); the grid is `.grid-media` with the editor's column choice as a desktop-only modifier |
+| `tests/lightbox-reduced-motion.test.tsx` | under `prefers-reduced-motion` the lightbox still opens, steps and closes, with no slide offset and no lingering exit |
+| `tests/content-media.test.tsx` | server-rendered rich text: every content image (uploads, inline `mediaBlock`, each `mediaGrid` cell) renders once as a trigger of one lightbox in document order; prose without photographs ships no trigger; the project page renders content media once with no second gallery and the compact facts block |
+| `tests/ui-contract.test.ts` | the stylesheet contract: `.grid-media` is 2 columns until `64rem` (nothing changes at `48rem`), no static `.media-grid__list` remains; home-menu labels carry no permanent underline and mark the current page by weight; the lightbox overlay is a fixed full-page rgba(0,0,0,.45–.55) layer below the lightbox while the drawer wash stays 0.25; navbar/logo tokens sit inside the brief's ranges per breakpoint and nothing hard-codes a logo height |
 
 ## 3. Browser evidence
 
 `node scripts/screenshots.mjs --base http://127.0.0.1:3200 --scale 2` →
-`docs/screenshots/report.json`: 40 entries, all `status=200`, `overflowOk=true`, no
-`consoleErrors`, every `expect` assertion satisfied.
+`docs/screenshots/report.json`: 46 entries, all `status=200`, `overflowOk=true`, no
+`consoleErrors`, every `expect` assertion satisfied. (Run the production theme with
+`HOSTNAME=0.0.0.0` as shown in §1: bound to `127.0.0.1` only, the not-found rewrite's
+`localhost` hop never connects and the two 404 pages time out in the a11y audit.)
 
 | # | Shot | What it proves |
 | --- | --- | --- |
@@ -80,7 +85,7 @@ no-push container build; `publish-image.yml` pushes `ghcr.io/<owner>/<repo>` on 
 | 02 | `home-menu-1440` | the entrance → menu transition: shrinking logo, row rules, staggered labels, mirrored elbow mark |
 | 03 | `home-entrance-390` | the same entrance at phone width |
 | 04–09 | `projects-{1920,1440,1024,768,390,320}` | 4/3/2 columns, **2 columns at 390 and 320**, mixed 3:2 / 3:4 / 1:1 frames from real dimensions |
-| 10 | `project-detail-1440` | breadcrumbs, title, only real facts, controlled hero ratio, gallery, related |
+| 10 | `project-detail-1440` | breadcrumbs, title, only real facts (compact `.facts` block), controlled hero ratio, content images rendered once through the lightbox (no duplicate gallery), related |
 | 11 | `education-1440` | one featured entry + compact rows, honest reading time, thin separators |
 | 12 | `blog-1440` | lead story + latest-notes column split by one fine vertical rule + article rows |
 | 13 | `article-1440` | narrower prose measure inside 1440, metadata, rich text, related |
@@ -105,6 +110,11 @@ no-push container build; `publish-image.yml` pushes `ghcr.io/<owner>/<repo>` on 
 | 33 | `reduced-motion-home-1440` | `prefers-reduced-motion` → final state immediately, no entrance animation |
 | 34–38 | interior pages at 390 | education, article, about, contact, and the English mirror |
 | 40 | `no-js-home-1440` | JavaScript disabled: the entrance's `<noscript>` menu offers every CMS destination, and the mark/rule/cue are revealed by the no-script stylesheet instead of staying at `opacity:0` |
+| 41 | `lightbox-fa-1440` | the unified lightbox opened from a gallery thumbnail on a Persian page: dedicated 50% backdrop, image contained in the viewport, *previous* on the right with a right-pointing chevron, *next* pointing left, Persian counter |
+| 42 | `lightbox-en-1440` | the same on an English page: mirrored controls (previous left, next right), Latin counter |
+| 43 | `lightbox-fa-390` | the lightbox at phone width: image and control bar inside the viewport, body scroll locked |
+| 44–45 | `services-blocks-{768,390}` | the gallery block (now actually rendering from array-row fixtures) in two columns at tablet **and** phone width — the 2/2/3 contract's mobile half |
+| 46 | `project-detail-390` | the compact facts block in one column, label beside value, and the content image once |
 
 ### Structural accessibility (`npm run a11y`)
 
@@ -347,6 +357,39 @@ Each was reproduced in a browser or by a failing test before being fixed (37 ite
     intermittently asserted against the resolved page. It now captures through a throttled
     client navigation and waits for the variant's own selector (`.entry-row--compact`,
     `.split`) inside `waitForFunction`.
+38. **The language switch listed both languages.** It compared `entry.label` with the
+    current *locale*, which never matched, so a Persian page offered «فارسی» next to
+    «English» — a status line, not a control. `LanguageSwitch` now filters by locale and
+    renders only the other language; the home stage uses the same component instead of
+    its own inline list, so header, drawer and entrance agree. A missing translation is
+    still quiet text, never a link to the other home page.
+39. **Project content images rendered twice.** `ProjectDetailView` collected every medium
+    in `content` into a second `<Gallery>` under the narrative, so each photograph the
+    editor placed appeared again. The duplicate section is gone; the images open through
+    the one `LightboxScope` the rich-text renderer owns, in document order.
+40. **Three image implementations, one lightbox.** Prose uploads and inline `mediaGrid`s
+    were static images with their own grid class; only gallery blocks had a lightbox.
+    All of them are now `LightboxTrigger`s; `.media-grid__list` is deleted in favour of
+    `.grid-media`, whose third column moves from `48rem` to `64rem` (2/2/3).
+41. **The lightbox borrowed the drawer's overlay.** `ui/dialog` reused `.drawer__overlay`
+    (25% black), so the lightbox had the navigation wash behind a photograph and the two
+    could not be tuned apart. The lightbox has `.lightbox__overlay` (50%), `ui/dialog` has
+    `.dialog__overlay`, and the drawer is untouched.
+42. **Previous/next ignored the reading direction.** The icons were fixed chevrons and the
+    keyboard mapping lived in a comment. Label, icon, click, Arrow key and slide
+    direction are now derived from one `arrowAdvances(key, locale)` rule and pinned per
+    locale in `tests/gallery.test.tsx`.
+43. **The logo was a Tailwind `h-8`.** `Logo.tsx` hard-coded a 32px height and preferred
+    the compact mark everywhere; the navbar was `min-block-size: 68px`. Both now come from
+    the chrome tokens (82/88/94px bar, 42/46/52px logo), the primary asset serves desktop
+    through `<picture>`, and `ui-contract.test.ts` pins the ranges.
+44. **The gallery block never rendered in fixtures.** Its rows are `{ image: <Media> }`
+    (a Payload array field) while the renderer read bare media only, so the services
+    page silently dropped the block — the committed screenshot has no gallery at all.
+    `GalleryBlock` now reads both the documented `[<Media>…]` shape and array rows.
+45. **A digit-only project fact drifted to the far end of its cell.** `dir="auto"` on the
+    value isolates a Latin run inside Persian copy, but a bare year has no strong character
+    and resolves to LTR; `text-align: match-parent` keeps every value on the label column.
 
 ## 7. What is *not* verified
 
@@ -377,7 +420,7 @@ server (Payload 3, the seeded `studio.localhost` portfolio site) on a Windows ho
 | Projects grid | browser computed styles at four widths | 2 columns at 390 and 768, 3 at 1024, 4 at 1440 |
 | Fonts | browser network + `document.fonts` | all seven installed Shazde weights (300–900) load 200; `body` resolves `Shazde` first |
 
-Since this pass the harnesses have grown: `npm test` is now **12 files / 120 tests** and
+Since this pass the harnesses have grown: `npm test` is now **16 files / 171 tests** and
 `interaction-audit.mjs` runs **21 checks** (§2). The figures above are the state of the live
 pass, not today's limits.
 

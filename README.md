@@ -65,7 +65,7 @@ npm run verify        # vendor:build → typecheck → lint → test → build
 ```
 
 `verify` includes lint — it is not skipped. Current state: typecheck clean, 0 lint errors,
-120 tests passing, production build succeeding. See `docs/QA.md` §2.
+171 tests passing, production build succeeding. See `docs/QA.md` §2.
 
 ## Configuration
 
@@ -217,6 +217,6 @@ vendor/           vendored @eshobe/site-runtime (see PROVENANCE.md)
   heading order, image `alt`, duplicate ids, WCAG 2.2 target sizes, text contrast)
 - `interaction-audit.mjs` — keyboard/pointer behaviour: entrance, drawer focus trap and
   Escape, scroll-lock cleanup, single-submit, value preservation on failure
-- `screenshots.mjs` — the browser harness: 40 named shots, overflow and console-error
+- `screenshots.mjs` — the browser harness: 46 named shots, overflow and console-error
   assertions, per-shot expectations, network throttling for skeleton captures.
 - `make-qa-media.sh` — regenerates the synthetic colour placeholders in `public/qa/media/`.

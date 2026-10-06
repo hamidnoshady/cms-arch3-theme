@@ -1,11 +1,26 @@
 import Link from 'next/link'
 
+import type { SwitchTarget } from '@/lib/seo/translations'
+
 /**
- * Language switch. `href` is computed by the caller from the *translated equivalent*
- * document — when a document has no translation in the other locale the caller passes
- * `null` and the switch renders the label without a link rather than fabricating a URL
- * that would 404.
+ * Language switch: names only the **other** language.
+ *
+ * A Persian page offers «English», an English page offers «فارسی» — the current
+ * language is never listed as a second visible option, because a switch that shows
+ * both reads as a status line, not a control. The rule is the same wherever the
+ * switch appears (desktop header, mobile drawer, home entrance), because all three
+ * render this one component.
+ *
+ * `href` is computed by the caller from the *translated equivalent* document — when
+ * a document has no translation in the other locale the caller passes `null` and
+ * the switch renders the label as quiet, non-interactive text rather than
+ * fabricating a URL that would 404 or redirecting to the other home page.
  */
+
+/** The targets a switch shows: every available locale except the one being read. */
+export const oppositeTargets = (targets: SwitchTarget[], current: string): SwitchTarget[] =>
+  targets.filter((entry) => entry.locale !== current)
+
 export const LanguageSwitch = ({
   className,
   current,
@@ -14,29 +29,35 @@ export const LanguageSwitch = ({
 }: {
   className?: string
   current: string
-  hrefs: { href: null | string; label: string; locale: string }[]
+  hrefs: SwitchTarget[]
   label: string
-}) => (
-  <nav aria-label={label} className={className}>
-    <ul className="flex items-center gap-3">
-      {hrefs.map((entry) =>
-        entry.href ? (
+}) => {
+  const targets = oppositeTargets(hrefs, current)
+  if (targets.length === 0) return null
+
+  return (
+    <nav aria-label={label} className={className} data-language-switch={current}>
+      <ul className="flex items-center gap-3">
+        {targets.map((entry) => (
           <li key={entry.locale}>
-            <Link
-              className="type-ui nav-link"
-              href={entry.href}
-              hrefLang={entry.locale}
-              lang={entry.locale}
-            >
-              {entry.label}
-            </Link>
+            {entry.href ? (
+              <Link className="type-ui nav-link" href={entry.href} hrefLang={entry.locale} lang={entry.locale}>
+                {entry.label}
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="type-ui lang-switch__unavailable"
+                data-translation="missing"
+                lang={entry.locale}
+                role="link"
+              >
+                {entry.label}
+              </span>
+            )}
           </li>
-        ) : (
-          <li aria-current={entry.label === current ? 'true' : undefined} className="type-ui text-ink-secondary" key={entry.locale}>
-            {entry.label}
-          </li>
-        ),
-      )}
-    </ul>
-  </nav>
-)
+        ))}
+      </ul>
+    </nav>
+  )
+}

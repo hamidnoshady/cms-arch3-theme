@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 
 import { DecorativeMark } from '@/components/design/DecorativeMark'
+import { LightboxTrigger } from '@/components/media/Lightbox'
 import type { Media } from '@/lib/cms/types'
 import { cn } from '@/lib/utils/cn'
 import {
@@ -112,12 +113,17 @@ export const MediaFrame = ({
  * article): a ratio from the frame rule and a viewport-height cap, so a portrait never
  * outgrows the screen and frames stay a consistent family instead of every image's
  * exact pixel size. `size` sets how wide the figure may run inside its container.
+ *
+ * `lightbox` is the figure's index in the enclosing `LightboxScope`: when set, the
+ * frame becomes a `LightboxTrigger` and the photograph opens in the same lightbox as
+ * every other content image. Heroes leave it unset — they are composition, not content.
  */
 export const FramedMedia = ({
   aspect = 'auto',
   cap = 72,
   caption,
   className,
+  lightbox,
   mark = true,
   media,
   origin,
@@ -130,6 +136,8 @@ export const FramedMedia = ({
   cap?: number
   caption?: ReactNode
   className?: string
+  /** Index inside the enclosing `LightboxScope`; omit for a non-interactive frame. */
+  lightbox?: number
   mark?: boolean
   media: Media
   origin: string
@@ -139,19 +147,22 @@ export const FramedMedia = ({
 }) => {
   const ratio = frameRatio(media, aspect)
   const style = { '--ar': ratioNumber(ratio), '--frame-cap': `${cap}svh`, aspectRatio: ratio } as CSSProperties
+  const frame = (
+    <span className="frame frame--capped" style={style}>
+      {mark ? <DecorativeMark className="top-1 end-1 hidden md:block" variant="corner" /> : null}
+      <CmsImage
+        className="frame__media"
+        media={media}
+        origin={origin}
+        priority={priority}
+        ratio={ratio}
+        sizes={sizes ?? (size === 'full' ? '100vw' : size === 'narrow' ? '(min-width: 768px) 36rem, 100vw' : '(min-width: 1440px) 1360px, 100vw')}
+      />
+    </span>
+  )
   return (
     <figure className={cn('media-figure', `media-figure--${size}`, className)}>
-      <span className="frame frame--capped" style={style}>
-        {mark ? <DecorativeMark className="top-1 end-1 hidden md:block" variant="corner" /> : null}
-        <CmsImage
-          className="frame__media"
-          media={media}
-          origin={origin}
-          priority={priority}
-          ratio={ratio}
-          sizes={sizes ?? (size === 'full' ? '100vw' : size === 'narrow' ? '(min-width: 768px) 36rem, 100vw' : '(min-width: 1440px) 1360px, 100vw')}
-        />
-      </span>
+      {lightbox === undefined ? frame : <LightboxTrigger index={lightbox}>{frame}</LightboxTrigger>}
       {caption ? <figcaption className="media-figure__caption type-caption">{caption}</figcaption> : null}
     </figure>
   )

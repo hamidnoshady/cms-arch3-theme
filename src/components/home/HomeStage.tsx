@@ -4,6 +4,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 
+import { LanguageSwitch } from '@/components/layout/LanguageSwitch'
 import { scrollToElement } from '@/components/motion/SmoothScroll'
 import type { SwitchTarget } from '@/lib/seo/translations'
 
@@ -28,6 +29,9 @@ import type { SwitchTarget } from '@/lib/seo/translations'
  *   drafting frame, which is also the fallback when no logo exists.
  * - `themeRuntime.settings.introAnimation === false` and reduced motion both render
  *   the settled state with no reveal.
+ * - The language switch in the bar is the shared `LanguageSwitch`, so the entrance
+ *   follows the same rule as the interior chrome: only the *other* language is
+ *   offered, never the one being read.
  */
 
 export type HomeLink = {
@@ -46,6 +50,8 @@ export type HomeStageProps = {
   enterLabel: string
   introDuration: number
   introEnabled: boolean
+  /** Accessible name of the language switch (`labels.languageSwitch`). */
+  languageLabel: string
   locale: 'en' | 'fa'
   logo: HomeLogo | null
   menuLabel: string
@@ -104,6 +110,8 @@ export const HomeStage = ({
   enterLabel,
   introDuration,
   introEnabled,
+  languageLabel,
+  locale,
   logo,
   menuLabel,
   menuNoScript,
@@ -193,19 +201,7 @@ export const HomeStage = ({
         >
           {logo ? <img alt="" decoding="async" src={logo.url} style={logoBox} /> : <span className="navbar__wordmark">{name}</span>}
         </motion.a>
-        <nav aria-label="language" className="flex items-center gap-4">
-          {switchTargets.map((target) =>
-            target.href ? (
-              <Link className="type-ui nav-link" href={target.href} hrefLang={target.locale} key={target.locale}>
-                {target.label}
-              </Link>
-            ) : (
-              <span className="type-ui text-ink-secondary" key={target.locale}>
-                {target.label}
-              </span>
-            ),
-          )}
-        </nav>
+        <LanguageSwitch current={locale} hrefs={switchTargets} label={languageLabel} />
       </div>
 
       <section aria-label={name} className="home-intro" ref={introRef}>

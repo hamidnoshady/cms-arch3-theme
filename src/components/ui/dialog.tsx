@@ -10,18 +10,24 @@ import { cn } from '@/lib/utils/cn'
  * shadcn/ui Dialog, themed: white panel, hairline edge, square, no shadow.
  *
  * Compositional on purpose — the parts are exported and the consumer supplies the
- * layout. The gallery lightbox is full-viewport, so it passes its own classes and a
- * visually hidden title; a titled dialog gets the theme's header row for free. Portals
- * render on `document.body`, so the consumer passes `dir` explicitly (the gallery does).
+ * layout; a titled dialog gets the theme's header row for free. The backdrop is the
+ * dialog's own `.dialog__overlay` (a half-opacity black fade), not the navigation
+ * drawer's wash: the two patterns are styled independently.
+ *
+ * The media lightbox is **not** built from `DialogContent`: it composes the Radix
+ * primitives directly in `components/media/Lightbox.tsx` so Motion can animate the
+ * overlay, the layer and the image change (the drawer does the same with CSS in
+ * `sheet.tsx`). Portals render on `document.body`, so consumers pass `dir` explicitly.
  */
 export const Dialog = DialogPrimitive.Root
 export const DialogTrigger = DialogPrimitive.Trigger
 export const DialogClose = DialogPrimitive.Close
 export const DialogTitle = DialogPrimitive.Title
 export const DialogDescription = DialogPrimitive.Description
+export const DialogPortal = DialogPrimitive.Portal
 
 export const DialogOverlay = ({ className, ...props }: ComponentProps<typeof DialogPrimitive.Overlay>) => (
-  <DialogPrimitive.Overlay className={cn('drawer__overlay', className)} {...props} />
+  <DialogPrimitive.Overlay className={cn('dialog__overlay', className)} {...props} />
 )
 
 export const DialogContent = ({

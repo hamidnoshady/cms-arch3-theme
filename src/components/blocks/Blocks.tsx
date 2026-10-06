@@ -7,7 +7,8 @@ import { Rule } from '@/components/design/Rule'
 import { Type } from '@/components/design/Type'
 import { CmsForm } from '@/components/forms/CmsForm'
 import { CmsImage, FramedMedia } from '@/components/media/CmsImage'
-import { Gallery, type GalleryItem } from '@/components/media/Gallery'
+import { Gallery, galleryColumns, type GalleryItem } from '@/components/media/Gallery'
+import { LightboxScope } from '@/components/media/Lightbox'
 import {
   Accordion,
   AccordionContent,
@@ -22,7 +23,7 @@ import { formatNumber, toLocaleDigits } from '@/lib/runtime'
 import { postHref } from '@/lib/cms/content'
 import { cn } from '@/lib/utils/cn'
 import { dateText } from '@/lib/utils/dates'
-import { isMedia, mediaPresentation, mediaSrcSet, mediaUrl } from '@/lib/utils/media'
+import { isMedia, lightboxItem, mediaPresentation, mediaUrl } from '@/lib/utils/media'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { warnUnknown } from './node'
 import { RichText } from './RichText'
@@ -176,6 +177,10 @@ const ContentBlock = async ({ context, row }: { context: SiteContext; row: Block
   )
 }
 
+/**
+ * A standalone photograph is content too, so it opens in the same lightbox as a
+ * gallery — a scope of one, with no previous/next controls.
+ */
 const MediaBlock = ({ context, row }: { context: SiteContext; row: BlockRow }) => {
   const media = asMedia(row.media)
   if (!media) {
@@ -183,9 +188,32 @@ const MediaBlock = ({ context, row }: { context: SiteContext; row: BlockRow }) =
     return null
   }
   const { aspect, caption, size } = mediaPresentation(row as Record<string, unknown>)
+  const t = dictionary(context.locale)
+  const item = lightboxItem(media, context.site.media.origin, t.photo)
+  const figure = (
+    <FramedMedia
+      aspect={aspect}
+      cap={size === 'full' ? 82 : 72}
+      caption={caption}
+      lightbox={item ? 0 : undefined}
+      media={media}
+      origin={context.site.media.origin}
+      size={size}
+    />
+  )
   return (
     <BlockShell tone="tight">
-      <FramedMedia aspect={aspect} cap={size === 'full' ? 82 : 72} caption={caption} media={media} origin={context.site.media.origin} size={size} />
+      {item ? (
+        <LightboxScope
+          items={[item]}
+          labels={{ close: t.close, next: t.next, previous: t.previous, title: t.gallery }}
+          locale={context.locale}
+        >
+          {figure}
+        </LightboxScope>
+      ) : (
+        figure
+      )}
     </BlockShell>
   )
 }
@@ -362,28 +390,33 @@ const FormBlock = async ({ context, row }: { context: SiteContext; row: BlockRow
   )
 }
 
+/**
+ * A gallery row's medium. The contract documents `images` as populated media
+ * (`[<Media>…]`); a Payload *array* field delivers rows instead (`[{ image: <Media> }]`).
+ * Both are real shapes a site can send, so both are read — an id-only entry (depth 0)
+ * is skipped rather than guessed at.
+ */
+const galleryMedia = (entry: unknown): Media | null => {
+  if (!entry || typeof entry === 'string') return null
+  const direct = asMedia(entry)
+  if (direct) return direct
+  const row = entry as { image?: unknown; media?: unknown }
+  return asMedia(row.image) ?? asMedia(row.media)
+}
+
 const GalleryBlock = ({ context, row }: { context: SiteContext; row: BlockRow }) => {
-  const images = (Array.isArray(row.images) ? row.images : []).map((entry) => (typeof entry === 'string' ? null : asMedia(entry))).filter((media): media is Media => Boolean(media))
+  const images = (Array.isArray(row.images) ? row.images : []).map(galleryMedia).filter((media): media is Media => Boolean(media))
   const { heading, intro: introText } = intro(row)
   const t = dictionary(context.locale)
   const items: GalleryItem[] = images.flatMap((media) => {
-    const src = mediaUrl(media, context.site.media.origin)
-    if (!src) return []
-    return [
-      {
-        alt: media.alt ?? t.photo,
-        height: media.height ?? undefined,
-        id: String(media.id),
-        src,
-        srcSet: mediaSrcSet(media, context.site.media.origin),
-        width: media.width ?? undefined,
-      },
-    ]
+    const item = lightboxItem(media, context.site.media.origin, t.photo)
+    return item ? [item] : []
   })
   if (items.length === 0) return null
   return (
     <BlockShell heading={heading} introText={introText} mark="pair">
       <Gallery
+        columns={galleryColumns(row.columns)}
         items={items}
         labels={{ close: t.close, next: t.next, previous: t.previous, title: t.gallery }}
         locale={context.locale}

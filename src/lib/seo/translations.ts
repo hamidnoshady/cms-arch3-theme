@@ -45,14 +45,19 @@ export const translatedInLocales = async (
   return results.filter((entry) => entry.title).map((entry) => entry.locale)
 }
 
+/**
+ * One entry per available locale, the current one included: the data layer answers
+ * "where does this document live in each language", and `LanguageSwitch` decides
+ * what to show (only the *other* language, never the one being read).
+ */
 export type SwitchTarget = { href: null | string; label: string; locale: Locale }
 
 const localeLabel = (locale: Locale): string => (locale === 'fa' ? 'فارسی' : 'English')
 
 /**
  * Language-switch targets for a document. A locale where the document does not exist
- * yields `href: null` (rendered as plain text), never a link to the home page dressed
- * up as a translation.
+ * yields `href: null` (rendered as non-interactive text), never a link to the home
+ * page dressed up as a translation.
  */
 export const switchTargets = async (
   ctx: SiteContext,

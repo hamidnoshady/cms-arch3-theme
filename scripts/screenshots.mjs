@@ -97,8 +97,10 @@ const shots = [
   { name: '37-contact-390', path: '/contact', viewport: phone, fullPage: true },
   { name: '38-en-education-390', path: '/en/education', viewport: phone, fullPage: true },
   // Progressive enhancement: with scripting off the entrance cannot run, so the home
-  // page must still offer the CMS menu. Chromium renders `<noscript>` children exactly
-  // when scripting is disabled, which makes this a real check of the fallback.
+  // page must still offer the CMS menu. Chromium parses `<noscript>` children into the
+  // DOM exactly when scripting is disabled, so a menu that `:has()` the no-JS caption
+  // *and* a real link to the archive is proof the fallback rendered (the links are
+  // siblings of the `<noscript>`, not inside it).
   {
     name: '40-no-js-home-1440',
     javaScriptEnabled: false,
@@ -106,8 +108,19 @@ const shots = [
     viewport: desktop,
     waitMs: 600,
     fullPage: true,
-    expect: { selector: 'noscript a[href="/projects"]', text: 'پروژه‌ها' },
+    expect: { selector: '.home-menu:has(noscript p) a[href="/projects"]', text: 'پروژه‌ها' },
   },
+  // The unified lightbox (issue #9): a gallery-block thumbnail opens the dialog over its
+  // own backdrop. In Persian the *next* control (second step button) points left, in
+  // English it points right; both shots are taken after the open animation has settled.
+  { name: '41-lightbox-fa-1440', path: '/services', viewport: desktop, action: 'open-lightbox', expect: { selector: '.lightbox[data-state="open"][dir="rtl"] [data-step="next"] svg.lucide-chevron-left' } },
+  { name: '42-lightbox-en-1440', path: '/en/services', viewport: desktop, action: 'open-lightbox', expect: { selector: '.lightbox[data-state="open"][dir="ltr"] [data-step="next"] svg.lucide-chevron-right' } },
+  { name: '43-lightbox-fa-390', path: '/services', viewport: phone, action: 'open-lightbox', expect: { selector: '.lightbox__overlay[data-state="open"]' } },
+  // The services page carries the gallery block: two columns at phone and tablet width.
+  { name: '44-services-blocks-768', path: '/services', viewport: tablet, fullPage: true, expect: { selector: '.grid-media .lightbox-trigger' } },
+  { name: '45-services-blocks-390', path: '/services', viewport: phone, fullPage: true, expect: { selector: '.grid-media .lightbox-trigger' } },
+  // Project detail at phone width: the compact facts block and content images rendered once.
+  { name: '46-project-detail-390', path: '/projects/khaneye-noor', viewport: phone, fullPage: true, expect: { selector: '.facts .facts__item' } },
 ]
 
 /** True when something accepts a TCP connection at `origin` (a slow server still does). */
@@ -217,6 +230,18 @@ const main = async () => {
         buttons.at(-1)?.click()
       })
       await new Promise((resolve) => setTimeout(resolve, 900))
+    }
+    if (shot.action === 'open-lightbox') {
+      // The second trigger on the page is the gallery block's first thumbnail (the first
+      // is the standalone media block); open it and let the 260ms entrance finish.
+      await page.waitForSelector('.grid-media .lightbox-trigger', { timeout: 20000 })
+      await page.evaluate(() => {
+        const trigger = document.querySelector('.grid-media .lightbox-trigger')
+        trigger?.scrollIntoView({ block: 'center' })
+        trigger?.click()
+      })
+      await page.waitForSelector('.lightbox[data-state="open"]', { timeout: 10000 })
+      await new Promise((resolve) => setTimeout(resolve, 700))
     }
     if (shot.action === 'submit-valid-form') {
       // The happy path: fill every required field, submit, and wait for the CMS to answer.
