@@ -5,6 +5,8 @@ import { ContentContainer } from '@/components/design/Container'
 import { DecorativeMark, type MarkVariant } from '@/components/design/DecorativeMark'
 import { Rule } from '@/components/design/Rule'
 import { Type } from '@/components/design/Type'
+import { CopyButton } from '@/components/contact/CopyButton'
+import { MapFrame } from '@/components/contact/MapFrame'
 import { CmsForm } from '@/components/forms/CmsForm'
 import { CmsImage, FramedMedia } from '@/components/media/CmsImage'
 import { Gallery, galleryColumns, type GalleryItem } from '@/components/media/Gallery'
@@ -19,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import type { SiteContext } from '@/lib/cms/context'
 import { getFormById, getPosts, getPostsByIds } from '@/lib/cms/endpoints'
 import type { BlockRow, CmsLink, FormDoc, Media, PostDoc } from '@/lib/cms/types'
+import { parseCenter, mapSource } from '@/lib/maps/mapSource'
 import { formatNumber, toLocaleDigits } from '@/lib/runtime'
 import { postHref } from '@/lib/cms/content'
 import { cn } from '@/lib/utils/cn'
@@ -307,66 +310,98 @@ const FaqBlock = ({ row }: { context: SiteContext; row: BlockRow }) => {
 
 const ContactBlock = ({ context, row }: { context: SiteContext; row: BlockRow }) => {
   const { heading, intro: introText } = intro(row)
-  const phones = Array.isArray(row.phones) ? row.phones.filter((phone): phone is string => typeof phone === 'string') : []
-  const entries: { label: string; value: ReactNode }[] = []
   const t = dictionary(context.locale)
+  const phones = Array.isArray(row.phones) ? row.phones.filter((phone): phone is string => typeof phone === 'string' && phone.trim() !== '') : []
+  const email = typeof row.email === 'string' && row.email.trim() ? row.email.trim() : null
+  const address = typeof row.address === 'string' && row.address.trim() ? row.address : null
+  const hours = typeof row.hours === 'string' && row.hours.trim() ? row.hours : null
+  const mapUrl = typeof row.mapUrl === 'string' && /^https:\/\//u.test(row.mapUrl) ? row.mapUrl : null
 
-  if (typeof row.address === 'string' && row.address.trim()) entries.push({ label: t.contact, value: row.address })
-  if (typeof row.email === 'string' && row.email.trim()) {
-    entries.push({
-      label: 'Email',
-      value: (
-        <a className="link-inline target-standalone" dir="ltr" href={`mailto:${row.email}`}>
-          {row.email}
-        </a>
-      ),
-    })
-  }
-  if (phones.length > 0) {
-    entries.push({
-      label: context.locale === 'fa' ? 'تلفن' : 'Phone',
-      value: (
-        <span className="flex flex-wrap gap-x-4 gap-y-1">
-          {phones.map((phone) => (
-            <a className="link-inline target-standalone" dir="ltr" href={`tel:${phone.replace(/\s+/gu, '')}`} key={phone}>
-              {toLocaleDigits(phone, context.locale)}
-            </a>
-          ))}
-        </span>
-      ),
-    })
-  }
-  if (typeof row.hours === 'string' && row.hours.trim()) entries.push({ label: context.locale === 'fa' ? 'ساعات' : 'Hours', value: row.hours })
-  // `mapUrl` is real CMS data; the theme links to it instead of embedding a third-party
-  // frame (which would ship the visitor's IP to the map provider on load).
-  if (typeof row.mapUrl === 'string' && /^https:\/\//u.test(row.mapUrl)) {
-    entries.push({
-      label: t.map,
-      value: (
-        <a className="link-inline target-standalone" href={row.mapUrl} rel="noreferrer" target="_blank">
-          {t.map}
-        </a>
-      ),
-    })
-  }
+  // The map is opt-in per site through runtime settings (provider, public key, centre);
+  // with none set it is OpenStreetMap, which is free and needs no key. A block that
+  // has no usable coordinates keeps the plain link, as before.
+  const settings = context.site.themeRuntime?.settings ?? {}
+  const map = mapSource({
+    address,
+    apiKey: typeof settings.mapApiKey === 'string' ? settings.mapApiKey : null,
+    center: parseCenter(settings.mapCenter),
+    mapUrl,
+    provider: typeof settings.mapProvider === 'string' ? settings.mapProvider : null,
+    zoom: typeof settings.mapZoom === 'number' ? settings.mapZoom : null,
+  })
 
-  if (entries.length === 0) {
+  if (!email && phones.length === 0 && !address && !hours && !mapUrl) {
     // A `contact` block whose CMS fields are all empty is a content problem, not a
     // rendering one — say so rather than leaving a silently blank column.
     warnUnknown('contact block with no address, email, phones, hours or map link')
     return null
   }
 
+  const copyLabels = { copied: t.copied, label: t.copy }
+  const plain: { label: string; value: ReactNode }[] = []
+  if (address) plain.push({ label: t.contact, value: address })
+  if (hours) plain.push({ label: t.hours, value: hours })
+  if (mapUrl && !map) {
+    plain.push({
+      label: t.map,
+      value: (
+        <a className="link-inline target-standalone" href={mapUrl} rel="noreferrer" target="_blank">
+          {t.map}
+        </a>
+      ),
+    })
+  }
+
   return (
     <BlockShell heading={heading} introText={introText} mark="offset-l">
-      <dl className="grid gap-x-10 gap-y-5 md:grid-cols-2">
-        {entries.map((entry) => (
-          <div className="border-t border-line-structural pt-4" key={entry.label}>
-            <dt className="type-label">{entry.label}</dt>
-            <dd className="type-body mt-1">{entry.value}</dd>
-          </div>
-        ))}
-      </dl>
+      {/* Email and phone are why most visitors come: set large, one per row, with a
+          copy control beside the link. Numbers keep their own left-to-right order. */}
+      {email || phones.length > 0 ? (
+        <dl className="reach">
+          {email ? (
+            <div className="reach__row">
+              <dt className="type-label">{t.email}</dt>
+              <dd className="reach__value">
+                <a className="reach__link target-standalone" dir="ltr" href={`mailto:${email}`}>
+                  {email}
+                </a>
+                <CopyButton copiedLabel={copyLabels.copied} label={copyLabels.label} value={email} />
+              </dd>
+            </div>
+          ) : null}
+          {phones.map((phone) => (
+            <div className="reach__row" key={phone}>
+              <dt className="type-label">{t.phone}</dt>
+              <dd className="reach__value">
+                <a className="reach__link target-standalone" dir="ltr" href={`tel:${phone.replace(/\s+/gu, '')}`}>
+                  {toLocaleDigits(phone, context.locale)}
+                </a>
+                <CopyButton copiedLabel={copyLabels.copied} label={copyLabels.label} value={phone.replace(/\s+/gu, '')} />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      {plain.length > 0 ? (
+        <dl className="grid gap-x-10 md:grid-cols-2">
+          {plain.map((entry) => (
+            <div className="border-t border-line-structural py-4" key={entry.label}>
+              <dt className="type-label">{entry.label}</dt>
+              <dd className="type-body mt-1">{entry.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      {map ? (
+        <MapFrame
+          href={map.href}
+          kind={map.kind}
+          labels={{ open: t.openMap, show: t.showMap, title: t.map }}
+          src={map.src}
+        />
+      ) : null}
     </BlockShell>
   )
 }

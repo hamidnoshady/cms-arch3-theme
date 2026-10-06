@@ -156,3 +156,22 @@ Tailwind-style rem breakpoints: `30rem` (480), `48rem` (768), `64rem` (1024), `8
 - Hairlines are checked at 1x and 2x; hiding the decorative marks must leave the layout
   coherent, and hiding the structural rules must leave logical order and accessibility
   intact (see `docs/QA.md`).
+
+## Contact, About and Education additions
+
+- **Contact block** — email and phones are set large, one per row, each with a copy control; the
+  link stays `mailto:`/`tel:`. Address and hours stay as small entries.
+- **Map** — shown under the details when a map can be placed. Providers (runtime settings
+  `mapProvider`, `mapApiKey`, `mapCenter`, `mapZoom`): `osm` (free, no key, the default),
+  `google` (Embed API key, can search by address), `mapbox` (static light style, `pk.` token),
+  `off`. A keyed provider without a key falls back to OpenStreetMap. Coordinates come from
+  `mapCenter`, else from the block's own `mapUrl`. Keys are public by design — restrict them to the
+  site's domain at the provider. Nothing is requested from the provider until the visitor presses
+  "Show map" (the frame is a drafting-grid placeholder until then), and the map is desaturated to
+  keep the page black and white. Logic: `src/lib/maps/mapSource.ts`.
+- **About** — a "Selected work" row (the three newest projects, from the projects archive; omitted
+  when there are none) and the page closes on one large "Start a conversation" line instead of a
+  small link.
+- **Education list** — one hairline above the list and one under each row but the last (the old
+  featured border + rule + row borders stacked three lines together). Rows are numbered, one
+  target each, and a solid line draws across the hairline on hover/focus.

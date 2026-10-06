@@ -52,7 +52,7 @@ const COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
 /* --- the slots and settings the code actually reads ----------------------- */
 
 const SLOTS_READ_BY_CODE = new Set([...Object.values(SECTIONS).map((section) => section.slot), 'contactForm'])
-const SETTINGS_READ_BY_CODE = new Set(['introAnimation', 'introDuration'])
+const SETTINGS_READ_BY_CODE = new Set(['introAnimation', 'introDuration', 'mapApiKey', 'mapCenter', 'mapProvider', 'mapZoom'])
 const CAPABILITIES_IMPLEMENTED = new Set(['blog', 'contactForm', 'education', 'projects', 'search'])
 /** `source: "platform"` is the only honest source for anything the platform injects. */
 const PLATFORM_OWNED = new Set([
