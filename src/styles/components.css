@@ -376,6 +376,24 @@
     color: var(--ink-secondary);
   }
 
+  /* A single named image: the label row is as wide as the frame may be, and the
+     frame sits directly under it, on the same edge as a set of images. */
+  .media-titled--narrow > .media-grid__head {
+    max-inline-size: 36rem;
+  }
+
+  .media-titled--content > .media-grid__head {
+    max-inline-size: 60rem;
+  }
+
+  .media-titled > .media-figure {
+    margin-block: 0;
+  }
+
+  .project-narrative .prose > .media-titled {
+    margin-block-start: var(--space-12);
+  }
+
   .media-grid > .media-figure__caption {
     margin-block-start: var(--space-3);
   }
@@ -472,6 +490,10 @@
   }
 
   .project-narrative .prose > h2 + .media-grid {
+    margin-block-start: var(--space-8);
+  }
+
+  .project-narrative .prose > h2 + .media-titled {
     margin-block-start: var(--space-8);
   }
 

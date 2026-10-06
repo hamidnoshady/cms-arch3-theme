@@ -258,7 +258,12 @@ export const FIXTURE_POSTS: FixturePost[] = [
           }),
           paragraph('طبقه اول و دوم بدنسازی.'),
           heading('پلان'),
-          upload(media('about-studio.jpg', 1000, 1300, 'نمونهٔ پلان')),
+          lexicalBlock('پلان طبقه همکف', {
+            aspect: '4/3',
+            blockType: 'mediaBlock',
+            media: media('about-studio.jpg', 1000, 1300, 'نمونهٔ پلان'),
+            size: 'content',
+          }),
           heading('اجرا'),
           lexicalBlock('پیشرفت کار', {
             aspect: '4/3',

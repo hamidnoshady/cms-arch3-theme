@@ -153,6 +153,11 @@ describe('prose media grids', () => {
     expect(prose ?? '').not.toContain('max-inline-size')
   })
 
+  it('a single named image uses the same label row, as wide as its frame may be', () => {
+    expect(components).toContain('.media-titled--content > .media-grid__head {')
+    expect(components).toContain('.media-titled--narrow > .media-grid__head {')
+  })
+
   it('the named-grid label has a title, a rule and a count', () => {
     for (const part of ['.media-grid__head', '.media-grid__title', '.media-grid__rule', '.media-grid__count']) {
       expect(components).toContain(`${part} {`)

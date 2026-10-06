@@ -87,7 +87,7 @@ const outlineLevel = (node: LexicalNode): { label: string; level: 1 | 2 } | null
   if (node.type === 'block' || node.type === 'blocknode') {
     const fields = (node.fields ?? {}) as Record<string, unknown>
     const name = fields.blockName ?? (node as unknown as Record<string, unknown>).blockName
-    if (fields.blockType === 'mediaGrid' && typeof name === 'string' && name.trim()) {
+    if ((fields.blockType === 'mediaGrid' || fields.blockType === 'mediaBlock') && typeof name === 'string' && name.trim()) {
       return { label: name.trim(), level: 2 }
     }
   }

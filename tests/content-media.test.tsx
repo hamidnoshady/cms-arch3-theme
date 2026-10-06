@@ -151,11 +151,11 @@ describe('named media grid', () => {
     expect(markup).toContain('class="media-grid__head"')
     expect(markup).toContain('طبقه همکف و لابی')
     expect(markup).toContain('۰۳')
-    // The figure is named by its label, and there is exactly one figcaption.
+    // The figure is named by its label, and there is exactly one label row.
     // A named grid is part of the field's outline, so it is also the navigation's anchor.
     expect(markup).toContain('<figure aria-labelledby="section-1-label" class="media-grid" id="section-1">')
     expect(markup).toContain('id="section-1-label"')
-    expect(count(markup, /<figcaption/gu)).toBe(1)
+    expect(count(markup, /class="media-grid__head"/gu)).toBe(1)
   })
 
   it('renders no label row for an unnamed grid, and keeps the caption below the cells', async () => {
@@ -174,6 +174,34 @@ describe('named media grid', () => {
     const markup = await html(<RichText content={content} context={ctx('en')} fallbackDir="ltr" />)
     expect(markup).toContain('Ground floor')
     expect(markup).toContain('>03<')
+  })
+})
+
+describe('named single image', () => {
+  const single = (blockName?: string, extra: Record<string, unknown> = {}) =>
+    block({ blockType: 'mediaBlock', media: picture('plan.jpg', 1542, 1080), ...(blockName ? { blockName } : {}), ...extra })
+
+  it('gets the same label row as a set of images, without a count', async () => {
+    const { RichText } = await import('@/components/blocks/RichText')
+    const content = { root: { children: [single('پلان', { caption: 'زیرنویس' })], direction: 'rtl' as const } }
+    const markup = await html(<RichText content={content} context={ctx('fa')} fallbackDir="rtl" />)
+
+    // A named block is part of the field's outline, so it is also an anchor.
+    expect(markup).toContain('<div aria-labelledby="section-1-label" class="media-titled media-titled--content" id="section-1" role="group">')
+    expect(markup).toContain('<span class="media-grid__title" dir="auto">پلان</span>')
+    expect(markup).not.toContain('media-grid__count')
+    // The frame is still a lightbox trigger and keeps its caption.
+    expect(count(markup, /class="lightbox-trigger/gu)).toBe(1)
+    expect(markup).toContain('زیرنویس')
+    expect(markup.indexOf('media-grid__head')).toBeLessThan(markup.indexOf('lightbox-trigger'))
+  })
+
+  it('stays a bare figure when the block has no name', async () => {
+    const { RichText } = await import('@/components/blocks/RichText')
+    const content = { root: { children: [single()], direction: 'rtl' as const } }
+    const markup = await html(<RichText content={content} context={ctx('fa')} fallbackDir="rtl" />)
+    expect(markup).not.toContain('media-grid__head')
+    expect(markup).not.toContain('media-titled')
   })
 })
 
@@ -208,7 +236,7 @@ describe('project detail page — named media grids', () => {
     expect(markup).toContain('class="project-narrative"')
     expect(markup).toContain('طبقه همکف و لابی')
     expect(markup).toContain('طبقه اول: استخر')
-    expect(count(markup, /class="media-grid__head"/gu)).toBe(3)
+    expect(count(markup, /class="media-grid__head"/gu)).toBe(4)
     expect(count(markup, /class="grid-media/gu)).toBe(3)
     // 6 + 2 + 3 grid cells and the plan are all triggers of the one lightbox, in order.
     expect(count(markup, /class="lightbox-trigger/gu)).toBe(12)
@@ -223,18 +251,18 @@ describe('project detail page — in-page navigation', () => {
     const { ProjectDetailView } = await import('@/views/ProjectDetailView')
     const markup = await html(await ProjectDetailView({ locale: 'fa', slug: 'villa-398' }))
 
-    // رندرها, two named sets, پلان, اجرا, one named set — in reading order.
-    const labels = ['رندرها', 'طبقه همکف و لابی', 'طبقه اول: استخر', 'پلان', 'اجرا', 'پیشرفت کار']
+    // رندرها, two named sets, پلان with its named image, اجرا with a named set — in reading order.
+    const labels = ['رندرها', 'طبقه همکف و لابی', 'طبقه اول: استخر', 'پلان', 'پلان طبقه همکف', 'اجرا', 'پیشرفت کار']
     expect(markup).toContain('<nav aria-label="بخش‌های صفحه" class="secnav"')
     for (const [index, label] of labels.entries()) {
       const id = `section-${index + 1}`
       expect(markup).toMatch(new RegExp(`<a[^>]*class="secnav__link"[^>]*href="#${id}"`, 'u'))
-      expect(markup).toMatch(new RegExp(`<(h2|figure)[^>]*id="${id}"`, 'u'))
+      expect(markup).toMatch(new RegExp(`<(h2|figure|div)[^>]*id="${id}"`, 'u'))
       expect(markup).toContain(`>${label}</span>`)
     }
-    expect(count(markup, /class="secnav__item"/gu)).toBe(6)
+    expect(count(markup, /class="secnav__item"/gu)).toBe(7)
     // Main sections are level 1, the named sets inside them level 2.
-    expect([...markup.matchAll(/data-level="(\d)"/gu)].map((match) => match[1]).join('')).toBe('122112')
+    expect([...markup.matchAll(/data-level="(\d)"/gu)].map((match) => match[1]).join('')).toBe('1221212')
   })
 
   it('leaves a short project without navigation', async () => {

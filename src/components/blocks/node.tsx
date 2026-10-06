@@ -29,6 +29,25 @@ const blockTitle = (node: LexicalNode): null | string => {
   return typeof raw === 'string' && raw.trim() ? raw.trim() : null
 }
 
+/**
+ * The label row above a named media block: the editor's block name, a hairline to the
+ * far edge and, for a set of several images, a two-digit count. A single image gets no
+ * count — "01" would say nothing.
+ */
+const MediaLabel = ({ count, id, locale, title }: { count?: number; id: string; locale: string; title: string }) => (
+  <div className="media-grid__head" id={id}>
+    <span className="media-grid__title" dir="auto">
+      {title}
+    </span>
+    <span aria-hidden="true" className="media-grid__rule" />
+    {count ? (
+      <span aria-hidden="true" className="media-grid__count">
+        {toLocaleDigits(String(count).padStart(2, '0'), locale)}
+      </span>
+    ) : null}
+  </div>
+)
+
 export const renderBlockNode = (
   node: LexicalNode,
   context: SiteContext,
@@ -46,7 +65,7 @@ export const renderBlockNode = (
         return null
       }
       const { aspect, caption, size } = mediaPresentation(fields)
-      return (
+      const figure = (
         <FramedMedia
           aspect={aspect}
           cap={size === 'full' ? 82 : 70}
@@ -56,6 +75,16 @@ export const renderBlockNode = (
           origin={context.site.media.origin}
           size={size}
         />
+      )
+      const title = blockTitle(node)
+      if (!title) return figure
+      // Named like a set of images: the same label row, then the one frame under it.
+      const labelId = anchorId ? `${anchorId}-label` : `media-block-${(media as Media).id}`
+      return (
+        <div aria-labelledby={labelId} className={`media-titled media-titled--${size}`} id={anchorId} role="group">
+          <MediaLabel id={labelId} locale={context.locale} title={title} />
+          {figure}
+        </div>
       )
     }
 
@@ -79,17 +108,7 @@ export const renderBlockNode = (
       const labelId = title ? (anchorId ? `${anchorId}-label` : `media-grid-${images[0]!.id}`) : undefined
       return (
         <figure aria-labelledby={labelId} className="media-grid" id={anchorId}>
-          {title ? (
-            <figcaption className="media-grid__head" id={labelId}>
-              <span className="media-grid__title" dir="auto">
-                {title}
-              </span>
-              <span aria-hidden="true" className="media-grid__rule" />
-              <span aria-hidden="true" className="media-grid__count">
-                {toLocaleDigits(String(images.length).padStart(2, '0'), context.locale)}
-              </span>
-            </figcaption>
-          ) : null}
+          {title && labelId ? <MediaLabel count={images.length} id={labelId} locale={context.locale} title={title} /> : null}
           <ul className={gridMediaClass(columns)}>
             {images.map((image, position) => (
               <li key={`${image.id}-${position}`}>
