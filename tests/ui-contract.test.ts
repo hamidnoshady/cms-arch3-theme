@@ -206,14 +206,11 @@ describe('short description typography', () => {
 })
 
 describe('project cards', () => {
-  it('one frame for every card; the grid steps down in a rhythm only from desktop width', () => {
+  it('one frame for every card, and every card in a row starts on the same line', () => {
     const [frame] = blocks(components, '.pcard__frame')
     expect(frame).toMatch(/aspect-ratio:\s*4 \/ 5/u)
-    const rhythm = [...mediaQueries(structure).entries()]
-      .filter(([, bodies]) => bodies.join('').includes('.grid-projects > :nth-child'))
-      .map(([condition]) => condition)
-    expect(rhythm).toHaveLength(2)
-    for (const condition of rhythm) expect(condition).toMatch(/min-width:\s*(64|80)rem/u)
+    expect(structure).not.toMatch(/\.grid-projects\s*>\s*:nth-child/u)
+    expect(blocks(structure, '.grid-projects').join('')).toMatch(/align-items:\s*start/u)
   })
 
   it('draws a solid line over the hairline on hover and keyboard focus only', () => {

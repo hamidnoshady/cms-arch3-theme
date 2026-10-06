@@ -18,8 +18,8 @@ import { isMedia } from '@/lib/utils/media'
  * - The caption is a drawing's title block: a hairline, the title with the year at the
  *   far end, the location beneath. On hover or focus a solid line draws across the
  *   hairline from the start, and the photograph settles in.
- * - Two cards per row on mobile by design (`grid-projects`); from desktop width the
- *   columns step down in a quiet rhythm (see `.grid-projects` in structure.css).
+ * - Two cards per row on mobile by design (`grid-projects`); every card in a row is
+ *   top-aligned, so the frames line up at every width.
  * - Only real data is shown: the location and year when the CMS has them.
  */
 export const ProjectCard = ({

@@ -110,7 +110,7 @@ export const ProjectGridSkeleton = ({ count = 8, label = '' }: { count?: number;
     <LoadingLabel label={label} />
     {Array.from({ length: count }).map((_, index) => (
       <div className="flex flex-col gap-3" key={index}>
-        <Skeleton className="w-full" style={{ aspectRatio: index % 3 === 1 ? '3 / 4' : index % 3 === 2 ? '1 / 1' : '3 / 2' }} />
+        <Skeleton className="w-full" style={{ aspectRatio: '4 / 5' }} />
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-3 w-1/3" />
       </div>
