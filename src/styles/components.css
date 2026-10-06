@@ -1505,6 +1505,129 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* --- education list ---------------------------------------------------------
+     One hairline above the list, one under each row except the last: the earlier
+     featured border + rule + row borders stacked three lines in a few pixels. A row is
+     one target (the title link stretches over it); on hover or focus a solid line draws
+     across its hairline from the start, the thumbnail settles and the arrow appears. */
+  .edu-list__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-block: var(--space-4);
+    border-block-start: var(--line-w) solid var(--line-structural-color);
+  }
+
+  .edu-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .edu-row {
+    position: relative;
+    grid-template-columns: 88px minmax(0, 1fr) auto;
+    align-items: center;
+    padding-block: var(--space-4);
+    border-block-end: 0;
+    border-block-start: var(--line-w) solid var(--line-decor-color);
+  }
+
+  .edu-row::before {
+    content: '';
+    position: absolute;
+    inset-block-start: calc(-1 * var(--line-w));
+    inset-inline-start: 0;
+    inline-size: 0;
+    block-size: var(--line-w);
+    background: var(--line-emphasis-color);
+    transition: inline-size var(--motion-slow) var(--ease-out);
+  }
+
+  .edu-row:first-child {
+    border-block-start: 0;
+  }
+
+  .edu-row:hover::before,
+  .edu-row:focus-within::before {
+    inline-size: 100%;
+  }
+
+  .edu-row__index {
+    display: none;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (min-width: 48rem) {
+    .edu-row {
+      grid-template-columns: 2.5rem 160px minmax(0, 1fr) auto;
+      padding-block: var(--space-5);
+    }
+
+    .edu-row__index {
+      display: block;
+    }
+  }
+
+  /* The thumbnail is a small picture, not a framed print: no inset line on it. */
+  .edu-row__thumb::after {
+    display: none;
+  }
+
+  .edu-row__thumb .frame__media {
+    transition: transform var(--motion-slow) var(--ease-out);
+  }
+
+  .edu-row:hover .edu-row__thumb .frame__media {
+    transform: scale(1.04);
+  }
+
+  .edu-row__link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .edu-row__link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .edu-row:hover .edu-row__link,
+  .edu-row__link:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    text-decoration-thickness: var(--line-w);
+  }
+
+  .edu-row__arrow {
+    opacity: 0;
+    padding-inline: var(--space-3);
+    transition: opacity var(--motion-fast) var(--ease-out);
+  }
+
+  .edu-row:hover .edu-row__arrow,
+  .edu-row:focus-within .edu-row__arrow {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    .edu-row__arrow {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .edu-row::before,
+    .edu-row__thumb .frame__media {
+      transition: none;
+    }
+
+    .edu-row:hover .edu-row__thumb .frame__media {
+      transform: none;
+    }
+  }
+
   /* --- skip link ----------------------------------------------------------- */
 
   /* Hidden until focused, then a plain square black-on-white control sitting over the
@@ -1910,6 +2033,166 @@
     line-height: var(--leading-ui);
     overflow-wrap: anywhere;
     text-align: match-parent;
+  }
+
+  /* --- contact: email and phone ----------------------------------------------
+     One row each, hairline above, label over a large value with a copy control at the
+     far end. The value stays left-to-right (`dir="ltr"` on the link) in both locales. */
+  .reach {
+    margin: 0 0 var(--space-8);
+  }
+
+  .reach__row {
+    padding-block: var(--space-4) var(--space-3);
+    border-block-start: var(--line-w) solid var(--line-structural-color);
+  }
+
+  .reach__row dt {
+    color: var(--ink-secondary);
+  }
+
+  .reach__value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    column-gap: var(--space-4);
+    margin: 0;
+  }
+
+  .reach__link {
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: var(--text-heading);
+    font-weight: var(--weight-heading);
+    line-height: 1.4;
+    min-block-size: 2.75rem;
+    overflow-wrap: anywhere;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 0.25em;
+    text-decoration-thickness: var(--line-w);
+    transition: text-decoration-color var(--motion-fast) var(--ease-out);
+  }
+
+  .reach__link:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .reach__copy {
+    min-block-size: 44px;
+    padding-inline: var(--space-2);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .reach__copy:hover {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  /* --- contact: map ----------------------------------------------------------
+     Until asked for, a drafting-grid field with the button on it — nothing is
+     requested from the map provider. Once loaded the map is desaturated so the page
+     stays black and white. */
+  .map {
+    margin: var(--space-8) 0 0;
+  }
+
+  .map__frame {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: var(--line-w) solid var(--line-structural-color);
+    background-color: var(--surface);
+    background-image:
+      linear-gradient(var(--line-decor-color) var(--line-w), transparent var(--line-w)),
+      linear-gradient(90deg, var(--line-decor-color) var(--line-w), transparent var(--line-w));
+    background-size: 1.5rem 1.5rem;
+  }
+
+  .map__show {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    translate: -50% -50%;
+  }
+
+  [dir='rtl'] .map__show {
+    translate: 50% -50%;
+  }
+
+  .map__media {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    border: 0;
+    object-fit: cover;
+    filter: grayscale(1) contrast(1.05);
+  }
+
+  /* --- about: selected work and the closing line --------------------------- */
+  .about-work {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--grid-gap);
+  }
+
+  .about-work > :nth-child(3) {
+    display: none;
+  }
+
+  @media (min-width: 48rem) {
+    .about-work {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .about-work > :nth-child(3) {
+      display: block;
+    }
+  }
+
+  .about-talk {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    color: var(--ink);
+    font-size: var(--text-title);
+    font-weight: var(--weight-title);
+    line-height: var(--leading-title);
+    font-family: var(--font-ui);
+    border-block-end: var(--line-w) solid var(--line-structural-color);
+    padding-block-end: var(--space-2);
+    transition: border-color var(--motion-fast) var(--ease-out);
+  }
+
+  .about-talk:hover {
+    border-color: var(--line-emphasis-color);
+  }
+
+  .about-talk__arrow {
+    display: inline-block;
+    transition: transform var(--motion-base, 240ms) var(--ease-out);
+  }
+
+  .about-talk:hover .about-talk__arrow {
+    transform: translateX(var(--space-2));
+  }
+
+  [dir='rtl'] .about-talk:hover .about-talk__arrow {
+    transform: translateX(calc(-1 * var(--space-2)));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .about-talk__arrow {
+      transition: none;
+    }
+
+    .about-talk:hover .about-talk__arrow {
+      transform: none;
+    }
   }
 
   /* --- long URLs / latin runs inside Persian copy --------------------------- */

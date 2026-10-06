@@ -131,6 +131,57 @@
       "max": 4000,
       "labelFa": "مدت انیمیشن ورود (میلی‌ثانیه)",
       "labelEn": "Entrance duration (ms)"
+    },
+    "mapProvider": {
+      "type": "select",
+      "default": "osm",
+      "labelFa": "سرویس نقشه",
+      "labelEn": "Map provider",
+      "help": "OpenStreetMap رایگان است و کلید نمی‌خواهد. Google و Mapbox به کلید عمومیِ محدود‌شده به دامنهٔ سایت نیاز دارند؛ بدون کلید، OpenStreetMap نمایش داده می‌شود.",
+      "options": [
+        {
+          "value": "osm",
+          "labelFa": "OpenStreetMap (رایگان)",
+          "labelEn": "OpenStreetMap (free)"
+        },
+        {
+          "value": "google",
+          "labelFa": "Google Maps (کلید)",
+          "labelEn": "Google Maps (key)"
+        },
+        {
+          "value": "mapbox",
+          "labelFa": "Mapbox (کلید)",
+          "labelEn": "Mapbox (key)"
+        },
+        {
+          "value": "off",
+          "labelFa": "بدون نقشه",
+          "labelEn": "No map"
+        }
+      ]
+    },
+    "mapApiKey": {
+      "type": "text",
+      "default": "",
+      "labelFa": "کلید نقشه",
+      "labelEn": "Map key",
+      "help": "فقط کلید عمومی (Google Maps Embed یا Mapbox pk.). این مقدار در صفحه دیده می‌شود؛ آن را در سرویس نقشه به دامنهٔ سایت محدود کنید."
+    },
+    "mapCenter": {
+      "type": "text",
+      "default": "",
+      "labelFa": "مختصات دفتر",
+      "labelEn": "Studio coordinates",
+      "help": "به‌صورت «عرض, طول»، مثلاً 35.6892, 51.3890. اگر خالی باشد، مختصات از پیوند نقشهٔ بلوک تماس خوانده می‌شود."
+    },
+    "mapZoom": {
+      "type": "number",
+      "default": 16,
+      "min": 3,
+      "max": 19,
+      "labelFa": "بزرگنمایی نقشه",
+      "labelEn": "Map zoom"
     }
   },
   "contentSlots": [

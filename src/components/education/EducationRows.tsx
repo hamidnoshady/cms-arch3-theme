@@ -33,11 +33,13 @@ export const EducationFeatured = ({
 }) => {
   const media = isMedia(post.heroImage) ? post.heroImage : null
   return (
-    <article className="relative border-b border-line-structural pb-10">
-      <DecorativeMark className="top-0 -start-1 hidden md:block" variant="pair" />
+    <article className="relative">
       <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] md:items-start">
         <div>
-          <p className="type-label">{context.locale === 'fa' ? 'شاخص' : 'Featured'}</p>
+          <p className="type-label flex items-center gap-3">
+            <DecorativeMark className="relative hidden md:inline-block" variant="dash" />
+            {context.locale === 'fa' ? 'شاخص' : 'Featured'}
+          </p>
           <h2 className="type-heading mt-3 max-w-[26ch]">
             <Link className="link-inline target-standalone" href={href}>
               {post.title}
@@ -69,40 +71,48 @@ export const EducationRow = ({
   category,
   context,
   href,
+  index,
   minutes,
   post,
 }: {
   category?: null | string
   context: SiteContext
   href: string
+  /** Drafting-style sequence number, already formatted for the locale ("۰۲" / "02"). */
+  index: string
   minutes: number
   post: PostDoc
 }) => {
   const media = isMedia(post.heroImage) ? post.heroImage : null
+  const date = dateText(post.publishedAt, context.locale)
   return (
-    <li className="entry-row entry-row--compact">
-      <span className="frame block" style={{ aspectRatio: '4 / 3' }}>
+    <li className="entry-row entry-row--compact edu-row">
+      <span aria-hidden="true" className="edu-row__index type-meta">
+        {index}
+      </span>
+      <span className="frame edu-row__thumb block" style={{ aspectRatio: '4 / 3' }}>
         <CmsImage
           className="frame__media"
           media={media}
           origin={context.site.media.origin}
-          sizes="120px"
+          sizes="160px"
         />
-        <DecorativeMark className="bottom-1 end-1" variant="tick" />
       </span>
       <div className="min-w-0">
-        <h3 className="type-ui">
-          <Link className="link-inline target-standalone" href={href}>
+        <h3 className="type-subheading">
+          <Link className="edu-row__link" href={href}>
             {post.title}
           </Link>
         </h3>
         <p className={cn('type-meta mt-2 flex flex-wrap items-center gap-x-4 gap-y-1')}>
           {category ? <span>{category}</span> : null}
-          {dateText(post.publishedAt, context.locale) ? <span>{dateText(post.publishedAt, context.locale)}</span> : null}
+          {date ? <span>{date}</span> : null}
           {minutes > 0 ? <span>{readingTimeLabel(minutes, context.locale)}</span> : null}
         </p>
       </div>
+      <span aria-hidden="true" className="edu-row__arrow">
+        {context.locale === 'fa' ? '←' : '→'}
+      </span>
     </li>
   )
 }
-

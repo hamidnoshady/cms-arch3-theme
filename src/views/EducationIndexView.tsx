@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 
 import { ContentContainer } from '@/components/design/Container'
 import { Pagination } from '@/components/design/Pagination'
-import { Rule } from '@/components/design/Rule'
 import { SectionHeader } from '@/components/design/SectionHeader'
 import { EducationFeatured, EducationRow } from '@/components/education/EducationRows'
 import { EmptyState } from '@/components/states/States'
@@ -13,6 +12,7 @@ import { href } from '@/lib/routing/locale'
 import { educationPath, THEME_ROUTES } from '@/lib/routing/paths'
 import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
+import { formatNumber } from '@/lib/runtime'
 import { labels as dictionary } from '@/lib/theme/labels'
 import { lexicalText } from '@/lib/utils/lexical'
 import { readingMinutes } from '@/lib/utils/text'
@@ -102,15 +102,22 @@ export const EducationIndexView = async ({
               post={featured}
             />
             {rest.length > 0 ? (
-              <>
-                <Rule className="mt-10" />
-                <ul className="mt-2">
+              <section aria-labelledby="education-all" className="mt-14">
+                {/* One hairline opens the list and one closes each row — nothing doubles up. */}
+                <div className="edu-list__head">
+                  <h2 className="type-label" id="education-all">
+                    {t.allEducation}
+                  </h2>
+                  <span className="type-meta">{formatNumber(archive.totalDocs, locale)}</span>
+                </div>
+                <ul className="edu-list">
                   {await Promise.all(
-                    rest.map(async (post) => (
+                    rest.map(async (post, position) => (
                       <EducationRow
                         category={categoryTitle(post, section.children)}
                         context={ctx}
                         href={href(await postHref(post, ctx), locale, ctx.site)}
+                        index={formatNumber((page - 1) * 13 + position + 2, locale, { minimumIntegerDigits: 2, useGrouping: false })}
                         key={post.id}
                         minutes={readingMinutes(lexicalText(post.content as never))}
                         post={post}
@@ -118,7 +125,7 @@ export const EducationIndexView = async ({
                     )),
                   )}
                 </ul>
-              </>
+              </section>
             ) : null}
           </>
         )}

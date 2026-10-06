@@ -57,6 +57,16 @@ type Dictionary = {
   sections: string
   photo: string
   map: string
+  email: string
+  phone: string
+  hours: string
+  copy: string
+  copied: string
+  showMap: string
+  openMap: string
+  selectedWork: string
+  startConversation: string
+  allEducation: string
 }
 
 const fa: Dictionary = {
@@ -111,6 +121,16 @@ const fa: Dictionary = {
   sections: 'بخش‌های صفحه',
   photo: 'تصویر',
   map: 'نقشه',
+  email: 'ایمیل',
+  phone: 'تلفن',
+  hours: 'ساعات کاری',
+  copy: 'کپی',
+  copied: 'کپی شد',
+  showMap: 'نمایش نقشه',
+  openMap: 'باز کردن در نقشه',
+  selectedWork: 'نمونه کارها',
+  startConversation: 'گفتگو را شروع کنیم',
+  allEducation: 'همهٔ آموزش‌ها',
 }
 
 const en: Dictionary = {
@@ -165,6 +185,16 @@ const en: Dictionary = {
   sections: 'On this page',
   photo: 'Photograph',
   map: 'Map',
+  email: 'Email',
+  phone: 'Phone',
+  hours: 'Hours',
+  copy: 'Copy',
+  copied: 'Copied',
+  showMap: 'Show map',
+  openMap: 'Open in maps',
+  selectedWork: 'Selected work',
+  startConversation: 'Start a conversation',
+  allEducation: 'All education',
 }
 
 const dictionaries: Record<Locale, Dictionary> = { en, fa }

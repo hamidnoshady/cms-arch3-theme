@@ -6,8 +6,9 @@ import { ContentContainer } from '@/components/design/Container'
 import { DecorativeMark } from '@/components/design/DecorativeMark'
 import { Rule } from '@/components/design/Rule'
 import { FramedMedia } from '@/components/media/CmsImage'
+import { ProjectCard } from '@/components/projects/ProjectCard'
 import { EmptyState } from '@/components/states/States'
-import { getSectionPage } from '@/lib/cms/content'
+import { getArchive, getSectionPage, postHref } from '@/lib/cms/content'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
@@ -15,6 +16,7 @@ import { THEME_ROUTES } from '@/lib/routing/paths'
 import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
+import { formatNumber } from '@/lib/runtime'
 import { collectMedia } from '@/lib/utils/lexical'
 import { isMedia } from '@/lib/utils/media'
 import { InteriorPage } from '@/views/InteriorPage'
@@ -62,6 +64,12 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
     )
   }
 
+  // Selected work: the three newest projects, from the same archive the Projects page
+  // reads. Nothing is invented — no projects, no section.
+  const work = await getArchive(ctx, { limit: 3, section: 'projects' })
+  const projectsHref = href(THEME_ROUTES.projects, locale, ctx.site)
+  const contactHref = href(THEME_ROUTES.contact, locale, ctx.site)
+
   const heroMedia = isMedia(page.hero?.media) ? page.hero.media : null
   const inlineMedia = (collectMedia(page.hero?.richText as never)[0] ?? null) as Media | null
   const image = heroMedia ?? inlineMedia
@@ -91,11 +99,6 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
                 {page.meta?.description ?? ''}
               </p>
             )}
-            <p className="mt-10">
-              <a className="link-inline type-ui target-standalone" href={href(THEME_ROUTES.contact, locale, ctx.site)}>
-                {t.contact}
-              </a>
-            </p>
           </div>
 
           <div className="relative">
@@ -112,6 +115,44 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
             )}
           </div>
         </div>
+
+        {work.docs.length > 0 ? (
+          <section aria-labelledby="about-work" className="mt-20">
+            <Rule className="mb-8" />
+            <div className="mb-8 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+              <h2 className="type-heading" id="about-work">
+                {t.selectedWork}
+                <span className="type-meta ms-3">{formatNumber(work.totalDocs, locale)}</span>
+              </h2>
+              <a className="link-inline type-ui target-standalone" href={projectsHref}>
+                {t.allProjects}
+              </a>
+            </div>
+            <div className="about-work">
+              {await Promise.all(
+                work.docs.map(async (post) => (
+                  <ProjectCard
+                    context={ctx}
+                    href={href(await postHref(post, ctx), locale, ctx.site)}
+                    key={post.id}
+                    post={post}
+                  />
+                )),
+              )}
+            </div>
+          </section>
+        ) : null}
+
+        {/* The page ends on one large line rather than a small link: the next step is
+            the point of the page. The arrow follows the reading direction. */}
+        <p className="mt-20">
+          <a className="about-talk target-standalone" href={contactHref}>
+            {t.startConversation}
+            <span aria-hidden="true" className="about-talk__arrow">
+              {locale === 'fa' ? '←' : '→'}
+            </span>
+          </a>
+        </p>
       </ContentContainer>
 
       {page.layout && page.layout.length > 0 ? <Blocks blocks={page.layout} context={ctx} /> : null}
