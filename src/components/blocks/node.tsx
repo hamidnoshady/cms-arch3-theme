@@ -1,16 +1,23 @@
 import type { ReactNode } from 'react'
 
 import { CmsImage, FramedMedia } from '@/components/media/CmsImage'
+import { galleryColumns, gridMediaClass } from '@/components/media/Gallery'
+import { LightboxTrigger } from '@/components/media/Lightbox'
 import type { SiteContext } from '@/lib/cms/context'
 import type { LexicalNode, Media } from '@/lib/cms/types'
+import type { ContentLightbox } from '@/lib/utils/lexical'
 import { frameRatio, isFrameAspect, isMedia, mediaPresentation } from '@/lib/utils/media'
 
 /**
  * Inline lexical blocks (the `BlocksFeature` inside `posts.content`): `mediaBlock`,
  * `mediaGrid`, `banner` and `code`. Page-level blocks live in `Blocks.tsx`; splitting the two keeps
  * the rich-text renderer free of a circular import.
+ *
+ * `lightbox` is the enclosing field's lightbox sequence (see `RichText`): a media
+ * block or a grid cell looks its own medium up there and becomes a trigger of the
+ * shared lightbox, so inline media never has a static implementation of its own.
  */
-export const renderBlockNode = (node: LexicalNode, context: SiteContext): ReactNode => {
+export const renderBlockNode = (node: LexicalNode, context: SiteContext, lightbox: ContentLightbox | null = null): ReactNode => {
   const fields = (node.fields ?? {}) as Record<string, unknown>
   const blockType = (fields.blockType as string | undefined) ?? ''
 
@@ -27,6 +34,7 @@ export const renderBlockNode = (node: LexicalNode, context: SiteContext): ReactN
           aspect={aspect}
           cap={size === 'full' ? 82 : 70}
           caption={caption}
+          lightbox={lightbox?.indexOf.get(media as Media)}
           media={media as Media}
           origin={context.site.media.origin}
           size={size}
@@ -36,7 +44,9 @@ export const renderBlockNode = (node: LexicalNode, context: SiteContext): ReactN
 
     case 'mediaGrid': {
       // Several photographs side by side inside an article: one shared ratio so the
-      // row reads as a composed set, never a ragged strip of exact image sizes.
+      // row reads as a composed set, never a ragged strip of exact image sizes. The
+      // grid is the same `.grid-media` as a gallery block (2 columns on phones and
+      // tablets); the editor's `columns` only applies on desktop and defaults to 3.
       const images = (Array.isArray(fields.images) ? fields.images : []).filter((item): item is Media =>
         isMedia(item as never),
       )
@@ -44,22 +54,28 @@ export const renderBlockNode = (node: LexicalNode, context: SiteContext): ReactN
         warnUnknown('mediaGrid without populated images')
         return null
       }
-      const columns = fields.columns === '3' ? 3 : fields.columns === '4' ? 4 : 2
+      const columns = galleryColumns(fields.columns)
       const aspect = isFrameAspect(fields.aspect) && fields.aspect !== 'original' ? fields.aspect : '4/5'
       const ratio = frameRatio(images[0], aspect)
       const caption = typeof fields.caption === 'string' && fields.caption.trim() ? fields.caption.trim() : null
       return (
         <figure className="media-grid">
-          <ul className={`media-grid__list media-grid__list--${columns}`}>
-            {images.map((image) => (
-              <li className="frame" key={image.id} style={{ aspectRatio: ratio }}>
-                <CmsImage
-                  className="frame__media"
-                  media={image}
-                  origin={context.site.media.origin}
-                  ratio={ratio}
-                  sizes={`(min-width: 1024px) ${Math.round(60 / columns)}rem, 50vw`}
-                />
+          <ul className={gridMediaClass(columns)}>
+            {images.map((image, position) => (
+              <li key={`${image.id}-${position}`}>
+                <LightboxTrigger
+                  className="gallery-item frame"
+                  index={lightbox?.indexOf.get(image)}
+                  style={{ aspectRatio: ratio }}
+                >
+                  <CmsImage
+                    className="frame__media"
+                    media={image}
+                    origin={context.site.media.origin}
+                    ratio={ratio}
+                    sizes={`(min-width: 64rem) ${Math.round(60 / columns)}rem, 50vw`}
+                  />
+                </LightboxTrigger>
               </li>
             ))}
           </ul>

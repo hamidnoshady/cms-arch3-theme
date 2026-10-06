@@ -111,6 +111,38 @@ export const mediaSrcSet = (
   return entries.length > 1 ? entries.join(', ') : undefined
 }
 
+/**
+ * What the lightbox needs to know about one image: a resolved `src`, the size ladder,
+ * the real dimensions (for a stable frame before the file arrives) and a non-empty
+ * accessible name. Plain data — it crosses the server/client boundary as props.
+ */
+export type LightboxItem = {
+  alt: string
+  height?: number
+  id: string
+  src: string
+  srcSet?: string
+  width?: number
+}
+
+/**
+ * A CMS medium as a lightbox item, or `null` when it has no resolvable URL. The alt
+ * text falls back to the locale's generic «تصویر»/«Photograph» so a trigger button is
+ * never nameless.
+ */
+export const lightboxItem = (media: Media, origin: string, fallbackAlt: string): LightboxItem | null => {
+  const src = mediaUrl(media, origin)
+  if (!src) return null
+  return {
+    alt: mediaAlt(media, fallbackAlt),
+    height: media.height ?? undefined,
+    id: String(media.id),
+    src,
+    srcSet: mediaSrcSet(media, origin),
+    width: media.width ?? undefined,
+  }
+}
+
 export const aspectRatio = (media: Media | null | undefined): string => {
   const width = media?.width ?? 4
   const height = media?.height ?? 3

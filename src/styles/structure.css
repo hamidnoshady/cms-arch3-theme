@@ -56,15 +56,31 @@
     }
   }
 
+  /* Content image groups (gallery blocks, inline media grids): TWO columns on mobile
+     AND tablet, three on desktop — the 2/2/3 contract. The third column arrives at
+     64rem, not 48rem: at tablet width three frames leave each photograph too small to
+     read. `--2` / `--4` carry an editor's explicit column choice on desktop only;
+     phones and tablets never exceed two. */
   .grid-media {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--grid-gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  @media (min-width: 48rem) {
+  @media (min-width: 64rem) {
     .grid-media {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid-media--2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-media--4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 

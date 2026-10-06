@@ -4,7 +4,6 @@ import { notFound, redirect } from 'next/navigation'
 import { ContentContainer } from '@/components/design/Container'
 import { Rule } from '@/components/design/Rule'
 import { RichText } from '@/components/blocks/RichText'
-import { Gallery, type GalleryItem } from '@/components/media/Gallery'
 import { FramedMedia } from '@/components/media/CmsImage'
 import { ProjectFacts } from '@/components/projects/ProjectCard'
 import { loadPageContext } from '@/lib/cms/pageContext'
@@ -15,18 +14,25 @@ import { projectPath } from '@/lib/routing/paths'
 import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
-import { collectMedia, lexicalText } from '@/lib/utils/lexical'
-import { isMedia, mediaSrcSet, mediaUrl } from '@/lib/utils/media'
+import { lexicalText } from '@/lib/utils/lexical'
+import { isMedia } from '@/lib/utils/media'
 import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
 import type { Locale } from '@/lib/cms/types'
 
 /**
  * Project detail: breadcrumbs, title, **real** facts only, controlled hero ratio,
- * rich-text narrative, gallery and related projects.
+ * the rich-text narrative and related projects.
  *
- * The facts table renders solely from `posts.projectMetadata` fields the CMS returned.
+ * The facts block renders solely from `posts.projectMetadata` fields the CMS returned.
  * There is no fallback that guesses a location or a year from the prose.
+ *
+ * The photographs of a project are the ones the editor placed in `content`, rendered
+ * **once** by `<RichText>` — each as a trigger of the field's shared lightbox, with
+ * previous/next across all of them. The view deliberately does not collect the same
+ * media again into a second "Gallery" section below the narrative: that duplicated
+ * every image. A separate gallery is only warranted by a separate CMS source (a
+ * dedicated project-gallery field), which the contract does not have today.
  */
 export const projectMetadata = async (locale: Locale, slug: string): Promise<Metadata> => {
   const outcome = await loadPageContext(locale, projectPath(slug))
@@ -61,21 +67,6 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
   }
 
   const hero = isMedia(post.heroImage) ? post.heroImage : null
-  const galleryMedia = collectMedia(post.content as never)
-  const galleryItems: GalleryItem[] = galleryMedia.flatMap((media) => {
-    const src = mediaUrl(media as never, ctx.site.media.origin)
-    if (!src) return []
-    return [
-      {
-        alt: media.alt ?? t.photo,
-        height: media.height ?? undefined,
-        id: media.id,
-        src,
-        srcSet: mediaSrcSet(media as never, ctx.site.media.origin),
-        width: media.width ?? undefined,
-      },
-    ]
-  })
 
   const route = resolveLocaleRoute(['projects', slug], locale, ctx.site)
   const crumbs = breadcrumbsFor(route, ctx.site, post.title)
@@ -105,18 +96,6 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
           <RichText content={post.content as never} context={ctx} fallbackDir={ctx.dir} />
         </div>
       </ContentContainer>
-
-      {galleryItems.length > 0 ? (
-        <ContentContainer className="pb-12">
-          <Rule className="mb-8" />
-          <h2 className="type-heading mb-6">{t.gallery}</h2>
-          <Gallery
-            items={galleryItems}
-            labels={{ close: t.close, next: t.next, previous: t.previous, title: t.gallery }}
-            locale={locale}
-          />
-        </ContentContainer>
-      ) : null}
 
       {related.length > 0 ? (
         <ContentContainer className="pb-16">

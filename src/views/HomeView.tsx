@@ -56,6 +56,7 @@ export const HomeView = async ({ locale }: { locale: Locale }) => {
       enterLabel={t.enter}
       introDuration={typeof settings.introDuration === 'number' ? settings.introDuration : 1200}
       introEnabled={settings.introAnimation !== false}
+      languageLabel={t.languageSwitch}
       links={indexed}
       locale={locale}
       logo={

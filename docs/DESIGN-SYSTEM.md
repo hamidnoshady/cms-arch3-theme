@@ -53,6 +53,11 @@ boundary, and a structural rule is never random ornament.
 
 - `NavbarShell` — full viewport width with its own edge gutters (approximately 32–40px on
   desktop, smaller on mobile); its content does not align with the 1440px container.
+  Its height and the logo scale come from the chrome tokens in `tokens.css`:
+  `--navbar-block` 82 → 88 → 94px and `--logo-block` 42 → 46 → 52px across phone,
+  tablet (`48rem`) and desktop (`64rem`). The uploaded mark is sized by height only
+  (`.navbar__logo`: width auto, `object-fit: contain`, capped by `--logo-max-inline`);
+  the primary asset serves desktop via `<picture>`, the compact one smaller screens.
 - `ContentContainer` — fluid, centered, `max-width: 1440px`, safe gutters.
 - Both use padding, never `100vw`, so a scrollbar cannot create overflow. Breadcrumbs,
   headings, filters, archives and the footer all sit in the same container.
@@ -67,7 +72,10 @@ Tailwind-style rem breakpoints: `30rem` (480), `48rem` (768), `64rem` (1024), `8
 
 - **Projects**: 2 columns on mobile **and tablet**, 3 at `64rem`, 4 at `80rem`
   (`.grid-projects`), mixed 3:2 / 3:4 / 1:1 frames from real media dimensions.
-- **Media/gallery grids**: 2 columns, 3 at `48rem` (`.grid-media`).
+- **Media/gallery grids**: 2 columns on mobile **and tablet**, 3 at `64rem`
+  (`.grid-media`) — the 2/2/3 contract. A gallery block's `columns` field is applied on
+  desktop only (`.grid-media--2`, `.grid-media--4`); phones and tablets never exceed two.
+  Gallery blocks, inline `mediaGrid`s and prose uploads all share it.
 - **Blog and Contact**: one column, split into two at `64rem` with a real `rule-v`
   divider.
 - Skeletons reuse the same grid classes, so loading geometry matches the settled layout.
@@ -83,7 +91,24 @@ Tailwind-style rem breakpoints: `30rem` (480), `48rem` (768), `64rem` (1024), `8
   (`.filter-chip`, works without JS) and the CMS form's `select` field stays a native
   control for platform semantics; there is no actual dropdown filter to justify it.
 - Breadcrumb and Pagination are the shadcn component shape with route-aware wrappers in
-  `src/components/design/`; gallery lightboxes use `ui/dialog`.
+  `src/components/design/`.
+- **One lightbox** (`src/components/media/Lightbox.tsx`): every CMS content image — a
+  gallery block, an inline `mediaGrid`, an `upload` in the prose, the standalone media
+  block — is a `LightboxTrigger` inside a `LightboxScope`, so a project's content images
+  open as one previous/next sequence and no view builds a second gallery from the same
+  media. It composes the Radix dialog primitives directly (focus trap, Escape, scroll
+  lock, focus returned to the thumbnail) and has its own backdrop, `.lightbox__overlay`
+  (black at 50%), distinct from the navigation drawer's 25% wash and `ui/dialog`'s
+  `.dialog__overlay`. Direction is logical: *next* advances along the reading
+  direction, so in Persian the next arrow points left, ArrowLeft advances and the
+  incoming image arrives from the left.
+- **Project facts** (`.facts`): a compact drafting block capped at `56rem` — one thin
+  top rule, a tiny tick before each label, label and value on one line, one column on
+  narrow phones and two from `30rem`. No cards, fills, table grid or borders between
+  items, and only fields the CMS actually returned.
+- **Language switch** names only the *other* language (a Persian page offers
+  «English»); a document without a translation shows that label as quiet
+  non-interactive text (`.lang-switch__unavailable`) rather than a fabricated link.
 
 `src/components/design/` — theme primitives: `Container` (the two shells), `Rule`,
 `DecorativeMark`, `Type` (the semantic text roles), `SectionHeader`, `Breadcrumbs`,
@@ -93,12 +118,18 @@ Tailwind-style rem breakpoints: `30rem` (480), `48rem` (768), `64rem` (1024), `8
 
 - Skeletons use the 5% black surface, sharp corners and one 1.6s opacity pulse per
   region — static under `prefers-reduced-motion`.
-- Motion is restrained and single-engine: Motion for React only in the home entrance;
+- Motion is restrained and single-engine: Motion for React in the home entrance and the
+  lightbox (a 260ms fade with a barely-there scale on open, reversed on close; a 300ms
+  directional slide/fade of 14px between images, with the outgoing and incoming image
+  centred in one fixed stage so a portrait after a landscape cannot move the controls);
   CSS transitions for drawers, hovers and reveals. No per-line animation, no parallax,
-  no scroll theatre. Reduced-motion renders final states (or a short fade).
+  no scroll theatre. Reduced motion renders final states: the lightbox mounts settled
+  and the image simply changes.
 - Focus is a visible 2px outline; active navigation keeps both a solid 1px underline and
   `aria-current`; structural lines remain decorative (`aria-hidden`) and text contrast
-  never relies on them.
+  never relies on them. The home menu's labels carry **no** permanent underline — the
+  label shifts, the leader extends and the arrow arrives on hover/focus, and the current
+  page is set in a heavier weight with a solid index (plus `aria-current`).
 - WCAG 2.2 target-size floor: 24×24 for navigational targets, 40px for pagination and
   44px for primary controls; labels count as part of their control.
 

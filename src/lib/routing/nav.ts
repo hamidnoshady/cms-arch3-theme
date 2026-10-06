@@ -114,7 +114,11 @@ export const samePath = (a: string, b: string): boolean => {
   return path(a) === path(b)
 }
 
-/** Logo for the chrome: compact mark first, then primary; never bundled artwork. */
+/**
+ * Logo URLs for the chrome, both slots resolved: `primary` for the desktop header,
+ * `compact` for phones/tablets (each falls back to the other when only one asset was
+ * uploaded — `Logo` then renders a single image). Never bundled artwork.
+ */
 export const brandLogo = (ctx: SiteContext) => {
   const branding = ctx.site.branding
   const origin = ctx.site.media.origin

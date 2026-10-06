@@ -185,12 +185,15 @@
     background-color: var(--surface);
   }
 
+  /* Height and logo scale come from the chrome tokens (82 → 88 → 94px, see
+     tokens.css), so the bar and the mark grow together per breakpoint. */
   .navbar__inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
-    min-block-size: 68px;
+    min-block-size: var(--navbar-block);
+    padding-block: var(--space-2);
   }
 
   /* Long CMS labels must never widen the page: the nav column shrinks and the list
@@ -220,6 +223,19 @@
     min-inline-size: 0;
   }
 
+  /* The uploaded mark: sized by height from the token, width follows the artwork's
+     own ratio, and a wide asset is capped rather than allowed to push the navigation.
+     `object-fit: contain` keeps the ratio when the cap applies. Artwork that carries
+     internal transparent padding reads smaller than the box — that is an asset
+     concern; the theme never guesses from file dimensions. */
+  .navbar__logo {
+    display: block;
+    block-size: var(--logo-block);
+    inline-size: auto;
+    max-inline-size: var(--logo-max-inline);
+    object-fit: contain;
+  }
+
   .navbar__wordmark {
     font-family: var(--font-brand);
     font-size: var(--text-body-lg);
@@ -228,6 +244,17 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* The language switch names only the *other* locale. When that translation does not
+     exist the label stays as quiet text (secondary ink keeps 6.4:1), never a link to a
+     page that would 404. */
+  .lang-switch__unavailable {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 1.5rem;
+    color: var(--ink-secondary);
+    cursor: default;
   }
 
   .nav-link {
@@ -311,27 +338,10 @@
     padding-inline: var(--gutter);
   }
 
+  /* An inline media grid inside rich text is a figure around the shared `.grid-media`
+     (structure.css) — the same 2/2/3 grid and the same lightbox as a gallery block. */
   .media-grid {
     margin: 0;
-  }
-
-  .media-grid__list {
-    display: grid;
-    gap: var(--grid-gap);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @media (min-width: 48rem) {
-    .media-grid__list--3 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .media-grid__list--4 {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
   }
 
   /* --- home ---------------------------------------------------------------
@@ -339,8 +349,10 @@
      with end ticks (an architectural dimension line), numbered in drafting
      style. Hover is three coordinated, compositor-only moves: the label steps
      forward, a leader line extends from it to an arrow, and the other rows
-     recede. The underline on the label stays, so the affordance never depends
-     on the faint linework alone.
+     recede. There is no underline under the label — the row's own linework,
+     the label's movement and the arrow carry the affordance, and keyboard focus
+     drives the same states as hover. The current page is marked by weight and a
+     solid index, plus `aria-current`.
   ------------------------------------------------------------------------- */
 
   .home {
@@ -352,6 +364,9 @@
     --dir-sign: -1;
   }
 
+  /* The home bar follows the same chrome tokens as the interior navbar, so the mark
+     that settles here after the entrance is the same size the visitor meets on every
+     interior page. */
   .home-bar {
     position: sticky;
     inset-block-start: 0;
@@ -360,7 +375,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
-    min-block-size: 4rem;
+    min-block-size: var(--navbar-block);
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     backdrop-filter: blur(6px);
   }
@@ -368,13 +383,13 @@
   .home-bar__mark {
     display: flex;
     align-items: center;
-    block-size: 2rem;
+    block-size: var(--logo-block);
   }
 
   .home-bar__mark img {
-    block-size: 2rem;
+    block-size: var(--logo-block);
     inline-size: auto;
-    max-inline-size: 9rem;
+    max-inline-size: var(--logo-max-inline);
     object-fit: contain;
   }
 
@@ -384,7 +399,7 @@
     place-items: center;
     align-content: center;
     gap: var(--space-12);
-    min-block-size: calc(100svh - 4rem);
+    min-block-size: calc(100svh - var(--navbar-block));
     padding-block: var(--space-8) var(--space-16);
   }
 
@@ -533,9 +548,9 @@
 
   .home-menu {
     position: relative;
-    min-block-size: calc(100svh - 4rem);
+    min-block-size: calc(100svh - var(--navbar-block));
     padding-block: var(--space-16) var(--space-24);
-    scroll-margin-block-start: 4rem;
+    scroll-margin-block-start: var(--navbar-block);
   }
 
   .home-menu__head {
@@ -626,20 +641,20 @@
     letter-spacing: 0;
   }
 
+  /* No `text-decoration` here, on purpose: a line under every menu label made the
+     dimension-sheet composition busier than it needs to be. The label moves, the
+     leader extends and the arrow arrives instead. */
   .home-row__label {
     font-family: var(--font-brand);
     font-size: clamp(1.5rem, 3.4vw, 2.75rem);
     font-weight: var(--weight-light);
     line-height: var(--leading-title);
     overflow-wrap: anywhere;
-    text-decoration-color: transparent;
-    text-decoration-line: underline;
-    text-decoration-thickness: var(--line-w);
-    text-underline-offset: 0.3em;
+    text-decoration: none;
     transition:
       translate var(--motion-slow) var(--ease-out),
       opacity var(--motion-slow) var(--ease-out),
-      text-decoration-color var(--motion-base) var(--ease-out);
+      font-weight var(--motion-base) var(--ease-out);
   }
 
   .home-row__leader {
@@ -680,13 +695,18 @@
   .home-row__link:hover .home-row__label,
   .home-row__link:focus-visible .home-row__label {
     translate: calc(var(--dir-sign) * 0.75rem) 0;
-    text-decoration-color: currentColor;
   }
 
   .home-row__link:hover .home-row__index,
   .home-row__link:focus-visible .home-row__index,
   .home-row__link[aria-current='page'] .home-row__index {
     color: var(--ink);
+  }
+
+  /* Current page: a heavier cut of the label and a solid index — never an underline
+     alone, and `aria-current` carries the meaning for assistive technology. */
+  .home-row__link[aria-current='page'] .home-row__label {
+    font-weight: var(--weight-regular);
   }
 
   .home-row__link:hover .home-row__leader,
@@ -1199,6 +1219,31 @@
     color: var(--ink);
   }
 
+  /* The generic (titled, centred) dialog's own backdrop. It is deliberately *not*
+     `.drawer__overlay`: the drawer's light wash belongs to the navigation drawer, and
+     coupling two patterns to one class meant neither could change alone. */
+  .dialog__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .dialog__overlay[data-state='open'] {
+    animation: drawer-fade-in var(--motion-base) var(--ease-out);
+  }
+
+  .dialog__overlay[data-state='closed'] {
+    animation: drawer-fade-out var(--motion-base) var(--ease-out);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dialog__overlay[data-state='open'],
+    .dialog__overlay[data-state='closed'] {
+      animation: none;
+    }
+  }
+
   .accordion__item {
     border-block-end: var(--line-w) solid var(--line-structural-color);
   }
@@ -1222,18 +1267,173 @@
     color: var(--ink-secondary);
   }
 
-  /* --- media gallery ------------------------------------------------------- */
+  /* --- media gallery + lightbox ---------------------------------------------
+     Every CMS content image — a gallery block, an inline media grid, an upload in
+     the prose — is a `.lightbox-trigger` inside one `LightboxScope`, so one
+     component owns click, previous/next, Arrow keys, Escape, focus return and the
+     animations. Motion (the home stage's engine) drives the open/close fade and
+     the directional image change; this file only lays the pieces out.
+  ------------------------------------------------------------------------- */
 
   .gallery-item {
     position: relative;
     inline-size: 100%;
   }
 
-  .gallery-item--button {
-    cursor: zoom-in;
+  /* A button that is only an image: no chrome of its own, the frame inside it is the
+     visible boundary, and the focus ring is the document's 2px outline. */
+  .lightbox-trigger {
+    display: block;
+    inline-size: 100%;
     padding: 0;
     border: 0;
     background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    cursor: zoom-in;
+  }
+
+  /* Dedicated full-page backdrop: black at half opacity, so the page stays legible
+     behind the image for spatial context while the image clearly dominates. */
+  .lightbox__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    padding-block-end: calc(var(--space-4) + env(safe-area-inset-bottom));
+    outline: none;
+  }
+
+  @media (min-width: 48rem) {
+    .lightbox {
+      gap: var(--space-5);
+      padding: var(--space-10);
+    }
+  }
+
+  /* The stage is a fixed box (the viewport minus the control bar) and the image is
+     absolutely centred inside it, so a portrait following a landscape never moves
+     the controls, and the outgoing and incoming images overlap during the change
+     instead of stacking. */
+  .lightbox__stage {
+    position: relative;
+    flex: 1 1 auto;
+    inline-size: 100%;
+    min-block-size: 0;
+  }
+
+  .lightbox__image {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    inline-size: auto;
+    block-size: auto;
+    max-inline-size: 100%;
+    max-block-size: 100%;
+    object-fit: contain;
+    background-color: var(--surface);
+    user-select: none;
+  }
+
+  .lightbox__bar {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1);
+    background-color: var(--surface);
+  }
+
+  .lightbox__counter {
+    min-inline-size: 4.5rem;
+    padding-inline: var(--space-2);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* --- project facts ----------------------------------------------------------
+     A compact drafting-style facts block, not a table: one thin top rule, a tiny
+     tick before each label, label and value set closely side by side, two columns
+     where the width allows and one on narrow phones. Capped well inside the 1440px
+     container so a label is never a screen-width away from its value. No cards, no
+     fills, no grid of borders.
+  ------------------------------------------------------------------------- */
+
+  .facts {
+    position: relative;
+    max-inline-size: 56rem;              /* ≈ 896px */
+    margin-block-start: var(--space-10);
+    padding-block-start: var(--space-5);
+    border-block-start: var(--line-w) solid var(--line-structural-color);
+  }
+
+  .facts__list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: var(--space-10);
+    row-gap: var(--space-4);
+    margin: 0;
+  }
+
+  @media (min-width: 30rem) {
+    .facts__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .facts__item {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(5.5rem, 8.5rem) minmax(0, 1fr);
+    column-gap: var(--space-4);
+    align-items: baseline;
+    padding-inline-start: var(--space-4);
+    min-inline-size: 0;
+  }
+
+  /* The drafting tick: a short decorative dash at the item's start. */
+  .facts__item::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-start: 0.8em;
+    inline-size: 0.5rem;
+    block-size: var(--line-w-decor);
+    background-color: var(--line-decor-color);
+  }
+
+  .facts__label {
+    font-size: var(--text-label);
+    font-weight: var(--weight-label);
+    letter-spacing: var(--tracking-label);
+    line-height: var(--leading-ui);
+    color: var(--ink-secondary);
+    overflow-wrap: anywhere;
+  }
+
+  /* `dir="auto"` isolates a Latin value inside a Persian page (and vice versa) so its
+     punctuation stays put — but a digit-only value such as a year has no strong
+     character and resolves to LTR, which would park it at the far end of the cell.
+     `match-parent` keeps every value aligned to the label column regardless. */
+  .facts__value {
+    margin: 0;
+    font-size: var(--text-body);
+    line-height: var(--leading-ui);
+    overflow-wrap: anywhere;
+    text-align: match-parent;
   }
 
   /* --- long URLs / latin runs inside Persian copy --------------------------- */

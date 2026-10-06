@@ -5,7 +5,13 @@ import { describe, expect, it } from 'vitest'
 import { DecorativeMark } from '@/components/design/DecorativeMark'
 import { Pagination } from '@/components/design/Pagination'
 import { Rule } from '@/components/design/Rule'
+import { LanguageSwitch, oppositeTargets } from '@/components/layout/LanguageSwitch'
+import { Logo } from '@/components/layout/Logo'
+import { ProjectFacts, projectFactPairs } from '@/components/projects/ProjectCard'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { SiteContext } from '@/lib/cms/context'
+import type { Locale, PostDoc, SiteDescriptor } from '@/lib/cms/types'
+import type { SwitchTarget } from '@/lib/seo/translations'
 
 /**
  * The line system's accessibility contract: decorations are never interactive, never
@@ -86,5 +92,155 @@ describe('Pagination', () => {
     const next = container.querySelector('a[href="/projects?category=residential&page=2"]')
     expect(next?.textContent).toBe('۲')
     expect(container.querySelector('nav')?.getAttribute('aria-label')).toBe('صفحه‌بندی')
+  })
+})
+
+/**
+ * Chrome components that the UI/UX refactor pinned down: the language switch names
+ * only the other language and never fabricates a link; the logo is sized by the
+ * design system, not by a hard-coded pixel height; the project facts block renders
+ * exactly the fields the CMS returned.
+ */
+const siteContext = (locale: Locale, branding?: Record<string, unknown>): SiteContext =>
+  ({
+    canonicalOrigin: 'https://example.test',
+    deploymentOrigin: 'https://example.test',
+    dir: locale === 'fa' ? 'rtl' : 'ltr',
+    draft: false,
+    locale,
+    serving: true,
+    site: {
+      availableLocales: ['fa', 'en'] as Locale[],
+      branding: branding ?? null,
+      defaultLocale: 'fa' as Locale,
+      id: 'site-fixture',
+      locales: ['fa', 'en'] as Locale[],
+      media: { origin: 'https://example.test' },
+      name: 'استودیوی نمونه',
+      themeRuntime: { bindings: {}, settings: {} },
+    } as unknown as SiteDescriptor,
+  }) satisfies SiteContext
+
+describe('LanguageSwitch', () => {
+  const targets: SwitchTarget[] = [
+    { href: '/projects/villa', label: 'فارسی', locale: 'fa' },
+    { href: '/en/projects/villa', label: 'English', locale: 'en' },
+  ]
+
+  it('offers only the other language on a Persian page', () => {
+    const { container } = render(<LanguageSwitch current="fa" hrefs={targets} label="زبان" />)
+    const links = [...container.querySelectorAll('a')]
+    expect(links.map((link) => link.textContent)).toEqual(['English'])
+    expect(links[0]?.getAttribute('href')).toBe('/en/projects/villa')
+    expect(links[0]?.getAttribute('hreflang')).toBe('en')
+    expect(container.textContent).not.toContain('فارسی')
+    expect(container.querySelector('nav')?.getAttribute('aria-label')).toBe('زبان')
+  })
+
+  it('offers only Persian on an English page', () => {
+    const { container } = render(<LanguageSwitch current="en" hrefs={targets} label="Language" />)
+    expect([...container.querySelectorAll('a')].map((link) => link.textContent)).toEqual(['فارسی'])
+    expect(container.textContent).not.toContain('English')
+  })
+
+  it('shows a missing translation as quiet text, never as a link or a redirect home', () => {
+    const { container } = render(
+      <LanguageSwitch
+        current="fa"
+        hrefs={[
+          { href: '/projects/villa', label: 'فارسی', locale: 'fa' },
+          { href: null, label: 'English', locale: 'en' },
+        ]}
+        label="زبان"
+      />,
+    )
+    expect(container.querySelector('a')).toBeNull()
+    const unavailable = container.querySelector('[data-translation="missing"]')
+    expect(unavailable?.textContent).toBe('English')
+    expect(unavailable?.getAttribute('aria-disabled')).toBe('true')
+    expect(unavailable?.getAttribute('lang')).toBe('en')
+    expect(container.textContent).not.toContain('/en')
+  })
+
+  it('renders nothing when the site serves a single language', () => {
+    const { container } = render(<LanguageSwitch current="fa" hrefs={[targets[0]!]} label="زبان" />)
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('filters by locale, not by label', () => {
+    // The old implementation compared `entry.label === current`, which never matched.
+    expect(oppositeTargets(targets, 'fa').map((entry) => entry.locale)).toEqual(['en'])
+    expect(oppositeTargets(targets, 'en').map((entry) => entry.locale)).toEqual(['fa'])
+  })
+})
+
+describe('Logo', () => {
+  const media = (id: string) => ({ height: 64, id, mimeType: 'image/svg+xml', url: `/media/${id}.svg`, width: 64 })
+
+  it('is sized by the design system class, not a hard-coded 32px height', () => {
+    const context = siteContext('fa', { logo: media('logo') })
+    const { container } = render(<Logo context={context} mark={{ compact: 'https://example.test/media/logo.svg', primary: 'https://example.test/media/logo.svg' }} />)
+    const img = container.querySelector('img[data-logo="mark"]')
+    expect(img).not.toBeNull()
+    expect(img?.classList.contains('navbar__logo')).toBe(true)
+    expect(img?.className).not.toMatch(/\bh-8\b/u)
+    expect(img?.getAttribute('height')).toBeNull()
+    expect(img?.getAttribute('width')).toBeNull()
+    // One asset → one image; no `<picture>` pretending there are two.
+    expect(container.querySelector('picture')).toBeNull()
+  })
+
+  it('prefers the primary mark on desktop and the compact mark where space is limited', () => {
+    const context = siteContext('en', { compactLogo: media('compact'), primaryLogo: media('primary') })
+    const { container } = render(
+      <Logo context={context} mark={{ compact: 'https://example.test/media/compact.svg', primary: 'https://example.test/media/primary.svg' }} />,
+    )
+    const source = container.querySelector('picture > source')
+    expect(source?.getAttribute('media')).toBe('(min-width: 64rem)')
+    expect(source?.getAttribute('srcset')).toBe('https://example.test/media/primary.svg')
+    expect(container.querySelector('picture > img')?.getAttribute('src')).toBe('https://example.test/media/compact.svg')
+    expect(container.querySelector('picture > img')?.classList.contains('navbar__logo')).toBe(true)
+  })
+
+  it('falls back to the site name as a wordmark with no mark element at all', () => {
+    const { container } = render(<Logo context={siteContext('fa')} mark={{ compact: null, primary: null }} />)
+    expect(container.querySelector('[data-logo="mark"]')).toBeNull()
+    expect(container.querySelector('[data-logo="wordmark"]')?.textContent).toBe('استودیوی نمونه')
+  })
+})
+
+describe('ProjectFacts', () => {
+  const post = (projectMetadata: PostDoc['projectMetadata']): PostDoc =>
+    ({ content: null, id: 'post-1', projectMetadata, slug: 'villa', title: 'ویلا' }) as unknown as PostDoc
+
+  it('renders only the fields the CMS returned, as a compact facts block rather than a table', () => {
+    const { container } = render(
+      <ProjectFacts
+        context={siteContext('fa')}
+        post={post({ additionalFacts: [{ label: 'معمار', value: 'استودیو' }, { label: '', value: 'x' }], area: '۳۲۰ متر مربع', client: '  ', location: 'تهران', status: null })}
+      />,
+    )
+    const labels = [...container.querySelectorAll('dt')].map((dt) => dt.textContent)
+    expect(labels).toEqual(['مکان', 'مساحت', 'معمار'])
+    const values = [...container.querySelectorAll('dd')].map((dd) => dd.textContent)
+    expect(values).toEqual(['تهران', '۳۲۰ متر مربع', 'استودیو'])
+    expect(container.querySelector('section')?.classList.contains('facts')).toBe(true)
+    expect(container.querySelector('section')?.getAttribute('aria-label')).toBe('مشخصات پروژه')
+    expect(container.querySelector('dl')?.classList.contains('facts__list')).toBe(true)
+    expect(container.querySelector('table')).toBeNull()
+    expect(container.innerHTML).not.toContain('md:grid-cols-3')
+    expect(container.querySelector('dd')?.getAttribute('dir')).toBe('auto')
+  })
+
+  it('renders nothing when the CMS returned no usable facts', () => {
+    expect(render(<ProjectFacts context={siteContext('en')} post={post(null)} />).container.firstChild).toBeNull()
+    expect(render(<ProjectFacts context={siteContext('en')} post={post({ client: ' ', location: '' })} />).container.firstChild).toBeNull()
+  })
+
+  it('labels in the page language', () => {
+    expect(projectFactPairs(post({ location: 'Tehran', status: 'Built' }), 'en')).toEqual([
+      { label: 'Location', value: 'Tehran' },
+      { label: 'Status', value: 'Built' },
+    ])
   })
 })
