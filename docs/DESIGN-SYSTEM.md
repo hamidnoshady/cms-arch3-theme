@@ -137,8 +137,9 @@ Tailwind-style rem breakpoints: `30rem` (480), `48rem` (768), `64rem` (1024), `8
 
 - `node scripts/a11y-audit.mjs` — one `h1`, a `<main>`, heading order, image alt text,
   duplicate ids, 24px targets and body-text contrast (`docs/screenshots/a11y-report.json`).
-- `node scripts/screenshots.mjs` — 40 named shots at 320–1920px, 200% zoom, reduced
-  motion and no-JS; per-shot overflow and console-error assertions.
+- `node scripts/screenshots.mjs` — 46 named shots at 320–1920px, 200% zoom, reduced
+  motion, no-JS and the lightbox in both directions; per-shot overflow and console-error
+  assertions.
 - Hairlines are checked at 1x and 2x; hiding the decorative marks must leave the layout
   coherent, and hiding the structural rules must leave logical order and accessibility
   intact (see `docs/QA.md`).

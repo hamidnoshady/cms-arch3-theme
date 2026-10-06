@@ -217,6 +217,6 @@ vendor/           vendored @eshobe/site-runtime (see PROVENANCE.md)
   heading order, image `alt`, duplicate ids, WCAG 2.2 target sizes, text contrast)
 - `interaction-audit.mjs` — keyboard/pointer behaviour: entrance, drawer focus trap and
   Escape, scroll-lock cleanup, single-submit, value preservation on failure
-- `screenshots.mjs` — the browser harness: 40 named shots, overflow and console-error
+- `screenshots.mjs` — the browser harness: 46 named shots, overflow and console-error
   assertions, per-shot expectations, network throttling for skeleton captures.
 - `make-qa-media.sh` — regenerates the synthetic colour placeholders in `public/qa/media/`.

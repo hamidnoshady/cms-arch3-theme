@@ -40,7 +40,7 @@ the resulting screenshots look fine while measuring nothing.
 | ESLint | `npm run lint` | 0 errors, 0 warnings |
 | Unit/integration tests | `npm test` | **16 files, 171 tests, all passing** |
 | Production build | `npm run build` | Next 16.3.8, compiles, all routes emitted |
-| Browser evidence | `node scripts/screenshots.mjs` | **40 shots, 0 failures**, no page errors, no horizontal overflow |
+| Browser evidence | `node scripts/screenshots.mjs` | **46 shots, 0 failures**, no page errors, no horizontal overflow (re-captured 2026-10-06 after the UI/UX refactor, including six new lightbox / gallery / facts shots) |
 | Interaction behaviour | `node scripts/interaction-audit.mjs` | **21/21 checks pass** — the nine original entrance/drawer/form checks plus locale retention on English archives, canonical search sections, wrong-section redirects, blog category scoping, drawer edge + bounded motion per locale, inline email validation, 390px card-metadata stress, active Shazde weights, decorative stroke tokens at 1x/2x, reduced-motion stillness, and slow-archive loading compositions (see §3) |
 | Structural a11y | `npm run a11y` | **17/17 pages clean** (one `h1`, a `<main>`, no skipped heading levels, no missing/empty `alt`, no duplicate ids, no sub-24px target, no sub-4.5 contrast on body text) |
 | Manifest | `tests/manifest.test.ts` + the CMS's own parser | accepted (§5) |
@@ -74,8 +74,10 @@ no-push container build; `publish-image.yml` pushes `ghcr.io/<owner>/<repo>` on 
 ## 3. Browser evidence
 
 `node scripts/screenshots.mjs --base http://127.0.0.1:3200 --scale 2` →
-`docs/screenshots/report.json`: 40 entries, all `status=200`, `overflowOk=true`, no
-`consoleErrors`, every `expect` assertion satisfied.
+`docs/screenshots/report.json`: 46 entries, all `status=200`, `overflowOk=true`, no
+`consoleErrors`, every `expect` assertion satisfied. (Run the production theme with
+`HOSTNAME=0.0.0.0` as shown in §1: bound to `127.0.0.1` only, the not-found rewrite's
+`localhost` hop never connects and the two 404 pages time out in the a11y audit.)
 
 | # | Shot | What it proves |
 | --- | --- | --- |
@@ -108,6 +110,11 @@ no-push container build; `publish-image.yml` pushes `ghcr.io/<owner>/<repo>` on 
 | 33 | `reduced-motion-home-1440` | `prefers-reduced-motion` → final state immediately, no entrance animation |
 | 34–38 | interior pages at 390 | education, article, about, contact, and the English mirror |
 | 40 | `no-js-home-1440` | JavaScript disabled: the entrance's `<noscript>` menu offers every CMS destination, and the mark/rule/cue are revealed by the no-script stylesheet instead of staying at `opacity:0` |
+| 41 | `lightbox-fa-1440` | the unified lightbox opened from a gallery thumbnail on a Persian page: dedicated 50% backdrop, image contained in the viewport, *previous* on the right with a right-pointing chevron, *next* pointing left, Persian counter |
+| 42 | `lightbox-en-1440` | the same on an English page: mirrored controls (previous left, next right), Latin counter |
+| 43 | `lightbox-fa-390` | the lightbox at phone width: image and control bar inside the viewport, body scroll locked |
+| 44–45 | `services-blocks-{768,390}` | the gallery block (now actually rendering from array-row fixtures) in two columns at tablet **and** phone width — the 2/2/3 contract's mobile half |
+| 46 | `project-detail-390` | the compact facts block in one column, label beside value, and the content image once |
 
 ### Structural accessibility (`npm run a11y`)
 

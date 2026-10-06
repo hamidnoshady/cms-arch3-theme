@@ -1,5 +1,5 @@
 {
-  "base": "http://127.0.0.1:3100",
+  "base": "http://127.0.0.1:3200",
   "results": [
     {
       "detail": "Enter control 44px tall",
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "detail": "skipped — no slow-CMS theme at http://127.0.0.1:3300",
+      "detail": "education header + featured + 4 rows; blog lead/latest split + 3 rows",
       "name": "loading: slow archive navigation keeps the real header and its own composition",
       "ok": true
     }
