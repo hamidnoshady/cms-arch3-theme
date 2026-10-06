@@ -280,7 +280,7 @@ describe('project detail page — short description', () => {
     const markup = await html(await ProjectDetailView({ locale: 'fa', slug: 'khaneye-noor' }))
 
     const header = markup.slice(markup.indexOf('class="project-head"'), markup.indexOf('class="project-narrative"'))
-    expect(header).toContain(`<p class="project-lede type-body-lg">${project.meta.description}</p>`)
+    expect(header).toContain(`<p class="project-lede type-summary">${project.meta.description}</p>`)
     // Facts first, then the description.
     expect(header.indexOf('class="facts"')).toBeLessThan(header.indexOf('project-lede'))
   })

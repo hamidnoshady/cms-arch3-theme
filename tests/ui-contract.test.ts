@@ -181,3 +181,26 @@ describe('section navigation', () => {
     expect(nav).not.toMatch(/box-shadow|border-radius/u)
   })
 })
+
+describe('short description typography', () => {
+  const typography = read('src/styles/typography.css')
+
+  it('is a supporting voice: smaller than body copy, light, secondary ink, airy', () => {
+    const [summary] = blocks(typography, '.type-summary')
+    expect(summary).toMatch(/font-size:\s*var\(--text-summary\)/u)
+    expect(summary).toMatch(/font-weight:\s*var\(--weight-light\)/u)
+    expect(summary).toMatch(/color:\s*var\(--ink-secondary\)/u)
+    expect(summary).toMatch(/max-inline-size:\s*var\(--measure-lede\)/u)
+    expect(summary).toMatch(/text-wrap:\s*pretty/u)
+    // Smaller than body text, looser than body leading.
+    expect(Number.parseFloat(tokens.match(/--text-summary:\s*([\d.]+)rem/u)![1]!)).toBeLessThan(1)
+    expect(Number(tokens.match(/--leading-summary:\s*([\d.]+)/u)![1])).toBeGreaterThan(Number(tokens.match(/--leading-body:\s*([\d.]+)/u)![1]))
+  })
+
+  it('is opened by the drafting dash, not boxed', () => {
+    const [lede] = blocks(components, '.project-lede::before')
+    expect(lede).toMatch(/background-color:\s*var\(--line-decor-color\)/u)
+    const [box] = blocks(components, '.project-lede')
+    expect(box).not.toMatch(/border|background/u)
+  })
+})

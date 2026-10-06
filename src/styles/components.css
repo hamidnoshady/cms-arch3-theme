@@ -416,12 +416,19 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* The short description under the facts: a lede, set apart by space and a
-     comfortable measure rather than by a box. */
+  /* The short description under the facts (`.type-summary` sets the voice): a short
+     drafting dash opens it, the same mark that opens each fact, then space — no box. */
   .project-lede {
-    max-inline-size: var(--measure-lede);
     margin-block-start: var(--space-8);
-    color: var(--ink);
+  }
+
+  .project-lede::before {
+    content: '';
+    display: block;
+    inline-size: 1.5rem;
+    block-size: var(--line-w-decor);
+    margin-block-end: var(--space-4);
+    background-color: var(--line-decor-color);
   }
 
   .project-head .media-figure {

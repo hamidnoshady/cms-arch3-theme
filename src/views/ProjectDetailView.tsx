@@ -92,7 +92,7 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
           <div>
             <h1 className="type-title max-w-[24ch]">{post.title}</h1>
             <ProjectFacts context={ctx} post={post} />
-            {summary ? <p className="project-lede type-body-lg">{summary}</p> : null}
+            {summary ? <p className="project-lede type-summary">{summary}</p> : null}
           </div>
           {hero ? <FramedMedia cap={78} media={hero} origin={ctx.site.media.origin} priority size="wide" /> : null}
         </header>

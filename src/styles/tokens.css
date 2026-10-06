@@ -75,6 +75,7 @@
   --text-label: 0.8125rem;
   --text-meta: 0.8125rem;
   --text-caption: 0.75rem;
+  --text-summary: 0.9375rem;  /* the short description under a project's facts */
 
   --weight-thin: 100;
   --weight-extralight: 200;
@@ -103,6 +104,7 @@
   --leading-body-lg: 1.85;
   --leading-ui: 1.6;
   --leading-meta: 1.7;
+  --leading-summary: 2;       /* airy: light Persian strokes need the room */
 
   --tracking-label: 0.04em;   /* Latin label tracking; zeroed on fa */
   --tracking-ui: 0.02em;
