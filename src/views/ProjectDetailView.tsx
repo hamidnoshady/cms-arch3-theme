@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 
 import { ContentContainer } from '@/components/design/Container'
 import { RichText } from '@/components/blocks/RichText'
+import { SectionNav } from '@/components/navigation/SectionNav'
 import { FramedMedia } from '@/components/media/CmsImage'
 import { ProjectCard, ProjectFacts } from '@/components/projects/ProjectCard'
 import { loadPageContext } from '@/lib/cms/pageContext'
@@ -13,6 +14,7 @@ import { projectPath } from '@/lib/routing/paths'
 import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
+import { contentOutline } from '@/lib/utils/lexical'
 import { isMedia } from '@/lib/utils/media'
 import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
@@ -64,6 +66,9 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
     redirect(href(await postHref(post, ctx), locale, ctx.site))
   }
 
+  // A long project (several parts, named sets of renders) gets in-page navigation.
+  const outline = contentOutline(post.content as never).map(({ id, label, level }) => ({ id, label, level }))
+
   const hero = isMedia(post.heroImage) ? post.heroImage : null
 
   const route = resolveLocaleRoute(['projects', slug], locale, ctx.site)
@@ -93,6 +98,8 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
           <RichText content={post.content as never} context={ctx} fallbackDir={ctx.dir} />
         </div>
       </ContentContainer>
+
+      {outline.length >= 3 ? <SectionNav items={outline} label={t.sections} locale={locale} /> : null}
 
       {related.length > 0 ? (
         <ContentContainer>

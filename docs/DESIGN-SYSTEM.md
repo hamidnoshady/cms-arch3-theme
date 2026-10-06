@@ -76,6 +76,19 @@ Tailwind-style rem breakpoints: `30rem` (480), `48rem` (768), `64rem` (1024), `8
   (`.grid-media`) — the 2/2/3 contract. A gallery block's `columns` field is applied on
   desktop only (`.grid-media--2`, `.grid-media--4`); phones and tablets never exceed two.
   Gallery blocks, inline `mediaGrid`s and prose uploads all share it.
+  Inside `.prose` the grid is reset to plain layout (no list markers, indent or list
+  spacing). An inline `mediaGrid` shows the block's CMS name (`blockName`) as a quiet
+  label row — title, hairline, two-digit count — and the figure is named by it.
+- **Project page.** A header (title + facts beside the hero) over a narrative whose
+  text keeps the reading measure while grids use the full container width; related
+  projects are image cards. In the narrative a main section (`h2`) opens with a solid
+  rule and a running number, and a named set inside it keeps the hairline label.
+- **In-page navigation (`SectionNav`).** Shown when the narrative has three or more
+  section headings / named grids. A rail of ticks on the right edge for hover-capable
+  desktops (≥ 64rem) that opens into the full list on hover or keyboard focus; on touch
+  and narrower screens a button showing the current section (`2/6 · name`) that opens a
+  panel. Links are real `#section-n` anchors (ids come from position, see
+  `contentOutline`); a click scrolls once, clear of the sticky navbar.
 - **Blog and Contact**: one column, split into two at `64rem` with a real `rule-v`
   divider.
 - Skeletons reuse the same grid classes, so loading geometry matches the settled layout.

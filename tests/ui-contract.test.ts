@@ -159,3 +159,20 @@ describe('prose media grids', () => {
     }
   })
 })
+
+describe('section navigation', () => {
+  it('is a rail only for hover-capable desktops, a button + panel everywhere else', () => {
+    const queries = [...mediaQueries(components).entries()].filter(([condition]) => condition.includes('hover: hover'))
+    expect(queries.map(([condition]) => condition)).toEqual(['(min-width: 64rem) and (hover: hover)'])
+    const rail = queries[0]![1].join('\n')
+    expect(rail).toMatch(/\.secnav__toggle\s*\{[^}]*display:\s*none/u)
+    // Opens on hover and on keyboard focus only — a mouse click must not pin it open.
+    expect(rail).toMatch(/\.secnav:hover,\s*\.secnav:has\(:focus-visible\)\s*\{/u)
+  })
+
+  it('has no shadows or rounded corners', () => {
+    const start = components.indexOf('/* --- in-page navigation (SectionNav)')
+    const nav = components.slice(start, components.indexOf('.project-related {'))
+    expect(nav).not.toMatch(/box-shadow|border-radius/u)
+  })
+})

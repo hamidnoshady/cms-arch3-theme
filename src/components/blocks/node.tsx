@@ -29,7 +29,12 @@ const blockTitle = (node: LexicalNode): null | string => {
   return typeof raw === 'string' && raw.trim() ? raw.trim() : null
 }
 
-export const renderBlockNode = (node: LexicalNode, context: SiteContext, lightbox: ContentLightbox | null = null): ReactNode => {
+export const renderBlockNode = (
+  node: LexicalNode,
+  context: SiteContext,
+  lightbox: ContentLightbox | null = null,
+  anchorId?: string,
+): ReactNode => {
   const fields = (node.fields ?? {}) as Record<string, unknown>
   const blockType = (fields.blockType as string | undefined) ?? ''
 
@@ -71,9 +76,9 @@ export const renderBlockNode = (node: LexicalNode, context: SiteContext, lightbo
       const ratio = frameRatio(images[0], aspect)
       const caption = typeof fields.caption === 'string' && fields.caption.trim() ? fields.caption.trim() : null
       const title = blockTitle(node)
-      const labelId = title ? `media-grid-${images[0]!.id}` : undefined
+      const labelId = title ? (anchorId ? `${anchorId}-label` : `media-grid-${images[0]!.id}`) : undefined
       return (
-        <figure aria-labelledby={labelId} className="media-grid">
+        <figure aria-labelledby={labelId} className="media-grid" id={anchorId}>
           {title ? (
             <figcaption className="media-grid__head" id={labelId}>
               <span className="media-grid__title" dir="auto">

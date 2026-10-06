@@ -152,7 +152,9 @@ describe('named media grid', () => {
     expect(markup).toContain('طبقه همکف و لابی')
     expect(markup).toContain('۰۳')
     // The figure is named by its label, and there is exactly one figcaption.
-    expect(markup).toMatch(/<figure aria-labelledby="media-grid-[^"]+" class="media-grid">/u)
+    // A named grid is part of the field's outline, so it is also the navigation's anchor.
+    expect(markup).toContain('<figure aria-labelledby="section-1-label" class="media-grid" id="section-1">')
+    expect(markup).toContain('id="section-1-label"')
     expect(count(markup, /<figcaption/gu)).toBe(1)
   })
 
@@ -206,12 +208,38 @@ describe('project detail page — named media grids', () => {
     expect(markup).toContain('class="project-narrative"')
     expect(markup).toContain('طبقه همکف و لابی')
     expect(markup).toContain('طبقه اول: استخر')
-    expect(count(markup, /class="media-grid__head"/gu)).toBe(2)
-    expect(count(markup, /class="grid-media/gu)).toBe(2)
-    // 6 + 2 grid cells are all triggers of the one lightbox, in order.
-    expect(count(markup, /class="lightbox-trigger/gu)).toBe(8)
+    expect(count(markup, /class="media-grid__head"/gu)).toBe(3)
+    expect(count(markup, /class="grid-media/gu)).toBe(3)
+    // 6 + 2 + 3 grid cells and the plan are all triggers of the one lightbox, in order.
+    expect(count(markup, /class="lightbox-trigger/gu)).toBe(12)
     // Related projects are image cards, not a text list.
     expect(markup).toContain('class="project-related"')
     expect(count(markup, /class="card group"/gu)).toBe(2)
+  })
+})
+
+describe('project detail page — in-page navigation', () => {
+  it('anchors every section and links the navigation to the same ids', async () => {
+    const { ProjectDetailView } = await import('@/views/ProjectDetailView')
+    const markup = await html(await ProjectDetailView({ locale: 'fa', slug: 'villa-398' }))
+
+    // رندرها, two named sets, پلان, اجرا, one named set — in reading order.
+    const labels = ['رندرها', 'طبقه همکف و لابی', 'طبقه اول: استخر', 'پلان', 'اجرا', 'پیشرفت کار']
+    expect(markup).toContain('<nav aria-label="بخش‌های صفحه" class="secnav"')
+    for (const [index, label] of labels.entries()) {
+      const id = `section-${index + 1}`
+      expect(markup).toMatch(new RegExp(`<a[^>]*class="secnav__link"[^>]*href="#${id}"`, 'u'))
+      expect(markup).toMatch(new RegExp(`<(h2|figure)[^>]*id="${id}"`, 'u'))
+      expect(markup).toContain(`>${label}</span>`)
+    }
+    expect(count(markup, /class="secnav__item"/gu)).toBe(6)
+    // Main sections are level 1, the named sets inside them level 2.
+    expect([...markup.matchAll(/data-level="(\d)"/gu)].map((match) => match[1]).join('')).toBe('122112')
+  })
+
+  it('leaves a short project without navigation', async () => {
+    const { ProjectDetailView } = await import('@/views/ProjectDetailView')
+    const markup = await html(await ProjectDetailView({ locale: 'fa', slug: 'khaneye-noor' }))
+    expect(markup).not.toContain('secnav')
   })
 })

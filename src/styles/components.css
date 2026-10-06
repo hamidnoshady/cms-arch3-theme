@@ -424,6 +424,288 @@
     margin-block-start: var(--space-12);
   }
 
+  /* --- long-article structure -------------------------------------------------
+     A main section (an `h2` in the narrative) opens with a solid rule and a running
+     number, so the page reads as numbered parts; a named set inside it keeps the
+     quieter hairline label. Anchors clear the sticky navbar. */
+  .project-narrative .prose {
+    counter-reset: section;
+  }
+
+  .project-narrative .prose > h2 {
+    counter-increment: section;
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    max-inline-size: none;
+    margin-block-start: var(--space-20);
+    padding-block-start: var(--space-4);
+    border-block-start: var(--line-w) solid var(--line-emphasis-color);
+  }
+
+  .project-narrative .prose > h2::before {
+    content: counter(section, decimal-leading-zero);
+    flex: 0 0 auto;
+    font-family: var(--font-numeral);
+    font-size: var(--text-label);
+    font-weight: var(--weight-meta);
+    letter-spacing: var(--tracking-label);
+    color: var(--ink-secondary);
+  }
+
+  .project-narrative .prose[dir='rtl'] > h2::before {
+    content: counter(section, persian);
+  }
+
+  /* Images follow the text edge instead of floating in the middle of the column. */
+  .project-narrative .prose .media-figure,
+  .project-narrative .prose .frame--capped {
+    margin-inline: 0;
+  }
+
+  .project-narrative .prose > h2 + .media-grid {
+    margin-block-start: var(--space-8);
+  }
+
+  .project-narrative .prose > .media-grid + .media-grid {
+    margin-block-start: var(--space-16);
+  }
+
+  .project-narrative .prose > [id^='section-'] {
+    scroll-margin-block-start: calc(var(--navbar-block) + var(--space-4));
+  }
+
+  /* --- in-page navigation (SectionNav) ----------------------------------------
+     Default presentation: a button + panel at the bottom right, shown once the page
+     has been scrolled. On pointer devices at desktop width it becomes a slim rail on
+     the right edge that opens on hover/focus. Square, white, hairlines, no shadow. */
+  .secnav {
+    position: fixed;
+    z-index: 30;
+    right: var(--gutter);
+    bottom: var(--space-4);
+    max-inline-size: calc(100vw - 2 * var(--gutter));
+    opacity: 0;
+    pointer-events: none;
+    translate: 0 0.5rem;
+    transition:
+      opacity var(--motion-base) var(--ease-out),
+      translate var(--motion-base) var(--ease-out);
+  }
+
+  .secnav[data-scrolled='true'],
+  .secnav[data-open='true'] {
+    opacity: 1;
+    pointer-events: auto;
+    translate: 0 0;
+  }
+
+  .secnav__toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-block-size: 44px;
+    max-inline-size: 100%;
+    padding-inline: var(--space-4);
+    background-color: var(--surface);
+    border: var(--line-w) solid var(--line-emphasis-color);
+    font-size: var(--text-ui);
+    font-weight: var(--weight-ui);
+    line-height: var(--leading-ui);
+    cursor: pointer;
+  }
+
+  .secnav__toggle-icon {
+    flex: 0 0 auto;
+    inline-size: 0.875rem;
+    block-size: 0.625rem;
+    background-image:
+      linear-gradient(var(--ink), var(--ink)), linear-gradient(var(--ink), var(--ink)), linear-gradient(var(--ink), var(--ink));
+    background-repeat: no-repeat;
+    background-size: 100% 1px, 60% 1px, 100% 1px;
+    background-position: 0 0, 0 50%, 0 100%;
+  }
+
+  .secnav__toggle-label {
+    min-inline-size: 0;
+    max-inline-size: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .secnav__toggle-count {
+    flex: 0 0 auto;
+    font-family: var(--font-numeral);
+    font-size: var(--text-caption);
+    color: var(--ink-secondary);
+  }
+
+  .secnav__list {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + var(--space-2));
+    inline-size: min(22rem, calc(100vw - 2 * var(--gutter)));
+    max-block-size: 60svh;
+    margin: 0;
+    padding: var(--space-2) 0;
+    list-style: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background-color: var(--surface);
+    border: var(--line-w) solid var(--line-structural-color);
+    visibility: hidden;
+    opacity: 0;
+    translate: 0 0.5rem;
+    transition:
+      opacity var(--motion-fast) var(--ease-out),
+      translate var(--motion-fast) var(--ease-out),
+      visibility 0s linear var(--motion-fast);
+  }
+
+  .secnav[data-open='true'] .secnav__list {
+    visibility: visible;
+    opacity: 1;
+    translate: 0 0;
+    transition-delay: 0s;
+  }
+
+  .secnav__link {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-ui);
+    line-height: var(--leading-ui);
+    color: var(--ink-secondary);
+  }
+
+  .secnav__item[data-level='2'] .secnav__link {
+    padding-inline-start: var(--space-8);
+    font-size: var(--text-label);
+  }
+
+  .secnav__tick {
+    flex: 0 0 auto;
+    inline-size: 0.625rem;
+    block-size: var(--line-w);
+    background-color: var(--ink-faint);
+    translate: 0 -0.3em;
+  }
+
+  .secnav__link[aria-current='location'] {
+    color: var(--ink);
+    font-weight: var(--weight-strong);
+  }
+
+  .secnav__link[aria-current='location'] .secnav__tick {
+    inline-size: 1.25rem;
+    background-color: var(--ink);
+  }
+
+  .secnav__link:hover {
+    color: var(--ink);
+  }
+
+  @media (min-width: 64rem) and (hover: hover) {
+    .secnav {
+      right: 0;
+      bottom: auto;
+      top: 50%;
+      inline-size: 2rem;
+      max-inline-size: none;
+      max-block-size: 80svh;
+      overflow: hidden auto;
+      opacity: 1;
+      pointer-events: auto;
+      translate: 0 -50%;
+      background-color: transparent;
+      border-inline-start: var(--line-w) solid transparent;
+      transition:
+        inline-size var(--motion-base) var(--ease-out),
+        background-color var(--motion-base) var(--ease-out),
+        border-color var(--motion-base) var(--ease-out);
+    }
+
+    .secnav:hover,
+    .secnav:has(:focus-visible) {
+      inline-size: min(19rem, 80vw);
+      background-color: var(--surface);
+      border-inline-start-color: var(--line-structural-color);
+    }
+
+    .secnav__toggle {
+      display: none;
+    }
+
+    .secnav__list {
+      position: static;
+      inline-size: auto;
+      max-block-size: none;
+      padding: var(--space-2) 0;
+      overflow: visible;
+      border: 0;
+      background: transparent;
+      visibility: visible;
+      opacity: 1;
+      translate: none;
+      transition: none;
+    }
+
+    .secnav__link {
+      position: relative;
+      padding: var(--space-1) 2rem var(--space-1) var(--space-4);
+      min-block-size: 1.75rem;
+      align-items: center;
+      text-align: right;
+    }
+
+    .secnav__item[data-level='2'] .secnav__link {
+      padding-inline-start: var(--space-8);
+    }
+
+    /* The tick sits on the right edge; the label appears beside it on open. */
+    .secnav__tick {
+      position: absolute;
+      right: var(--space-3);
+      top: 50%;
+      translate: 0 -50%;
+      inline-size: 0.875rem;
+      block-size: 2px;
+    }
+
+    .secnav__item[data-level='2'] .secnav__tick {
+      inline-size: 0.5rem;
+    }
+
+    .secnav__link[aria-current='location'] .secnav__tick {
+      inline-size: 1.25rem;
+    }
+
+    .secnav__label {
+      flex: 1 1 auto;
+      min-inline-size: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity var(--motion-fast) var(--ease-out);
+    }
+
+    .secnav:hover .secnav__label,
+    .secnav:has(:focus-visible) .secnav__label {
+      opacity: 1;
+      transition-delay: 80ms;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .secnav,
+    .secnav__list {
+      transition-duration: 0.01ms;
+    }
+  }
+
   .project-related {
     border-block-start: var(--line-w) solid var(--line-structural-color);
     padding-block: var(--space-10) var(--space-16);
