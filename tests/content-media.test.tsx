@@ -242,7 +242,7 @@ describe('project detail page — named media grids', () => {
     expect(count(markup, /class="lightbox-trigger/gu)).toBe(12)
     // Related projects are image cards, not a text list.
     expect(markup).toContain('class="project-related"')
-    expect(count(markup, /class="card group"/gu)).toBe(2)
+    expect(count(markup, /class="pcard group"/gu)).toBe(2)
   })
 })
 

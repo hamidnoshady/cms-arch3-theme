@@ -5,19 +5,22 @@ import { CmsImage } from '@/components/media/CmsImage'
 import type { SiteContext } from '@/lib/cms/context'
 import type { PostDoc } from '@/lib/cms/types'
 import { cn } from '@/lib/utils/cn'
-import { dateOrText } from '@/lib/utils/dates'
-import { frameRatioFor, isMedia } from '@/lib/utils/media'
+import { monthYearOrText, yearOrText } from '@/lib/utils/dates'
+import { isMedia } from '@/lib/utils/media'
 
 /**
  * Project card.
  *
- * - The image fills its area edge-to-edge; the structural rectangle is inset **5px
- *   inside the photograph** (`.frame`), with a small drafting dash for identity.
- * - The frame keeps the media's own orientation (3:2 landscape, 3:4 portrait, 1:1
- *   square) so a portrait project is never squashed into a landscape crop.
- * - Two cards per row on mobile by design (`grid-projects`).
- * - Caption shows only real data: the project's location/year when the CMS has them,
- *   otherwise nothing — no invented metadata.
+ * - Every card has the **same frame** (4:5): photographs of different sizes and
+ *   orientations are cropped to it (around the editor's focal point when one is set),
+ *   so a row of cards reads as one calm line instead of a ragged skyline. The project
+ *   page shows each photograph whole.
+ * - The caption is a drawing's title block: a hairline, the title with the year at the
+ *   far end, the location beneath. On hover or focus a solid line draws across the
+ *   hairline from the start, and the photograph settles in.
+ * - Two cards per row on mobile by design (`grid-projects`); from desktop width the
+ *   columns step down in a quiet rhythm (see `.grid-projects` in structure.css).
+ * - Only real data is shown: the location and year when the CMS has them.
  */
 export const ProjectCard = ({
   context,
@@ -29,42 +32,31 @@ export const ProjectCard = ({
   post: PostDoc
 }) => {
   const media = isMedia(post.heroImage) ? post.heroImage : null
-  const meta = factLine(post, context)
+  const location = post.projectMetadata?.location?.trim() || null
+  const year = yearOrText(post.projectMetadata?.date, context.locale)
 
   return (
-    <article className="card group">
-      <Link className="card__link relative" href={href}>
-        <span className="frame block" style={{ aspectRatio: frameRatioFor(media) }}>
+    <article className="pcard group">
+      <Link className="pcard__link" href={href}>
+        <span className="frame pcard__frame">
           <CmsImage
-            className="frame__media transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+            className="frame__media transition-transform duration-500 ease-out group-hover:scale-[1.03]"
             media={media}
             origin={context.site.media.origin}
+            ratio="4 / 5"
             sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 45vw"
           />
           <DecorativeMark className="bottom-2 end-2 hidden md:block" variant="dash" />
         </span>
-        <span className="card__caption mt-3">
-          <span className="card__title">{post.title}</span>
-          {meta ? <span className="card__meta">{meta}</span> : null}
+        <span className="pcard__caption">
+          <span className="pcard__title">{post.title}</span>
+          {year ? <span className="pcard__year">{year}</span> : null}
+          {location ? <span className="pcard__place">{location}</span> : null}
         </span>
-        <span aria-hidden="true" className="caption-rule mt-2" />
       </Link>
     </article>
   )
 }
-
-/** Location · year, but only for values the CMS actually returned. */
-const factLine = (post: PostDoc, context: SiteContext): null | string => {
-  const facts = post.projectMetadata
-  if (!facts) return null
-  const parts = [
-    facts.location?.trim() || null,
-    dateOrText(facts.date, context.locale, { year: 'numeric' }),
-  ].filter((value): value is string => Boolean(value))
-  return parts.length ? parts.join(' · ') : null
-}
-
-export const projectMetaLine = factLine
 
 /** The pairs a project's facts block shows — exactly the non-empty CMS fields, in contract order. */
 export const projectFactPairs = (post: PostDoc, locale: SiteContext['locale']): { label: string; value: string }[] => {
@@ -73,7 +65,7 @@ export const projectFactPairs = (post: PostDoc, locale: SiteContext['locale']): 
   const fa = locale === 'fa'
   const pairs: { label: string; value: string }[] = []
   if (facts.location?.trim()) pairs.push({ label: fa ? 'مکان' : 'Location', value: facts.location.trim() })
-  const date = dateOrText(facts.date, locale)
+  const date = monthYearOrText(facts.date, locale)
   if (date) pairs.push({ label: fa ? 'تاریخ' : 'Date', value: date })
   if (facts.area?.trim()) pairs.push({ label: fa ? 'مساحت' : 'Area', value: facts.area.trim() })
   if (facts.status?.trim()) pairs.push({ label: fa ? 'وضعیت' : 'Status', value: facts.status.trim() })

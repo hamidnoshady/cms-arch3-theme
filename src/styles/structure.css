@@ -56,6 +56,21 @@
     }
   }
 
+  /* With every frame the same height, a quiet rhythm replaces the ragged edge the
+     mixed sizes used to make: the middle column of three, and every second column of
+     four, sits a step lower. Phones and tablets stay a plain two-column grid. */
+  @media (min-width: 64rem) and (max-width: 79.999rem) {
+    .grid-projects > :nth-child(3n + 2) {
+      margin-block-start: var(--space-10);
+    }
+  }
+
+  @media (min-width: 80rem) {
+    .grid-projects > :nth-child(even) {
+      margin-block-start: var(--space-10);
+    }
+  }
+
   /* Content image groups (gallery blocks, inline media grids): TWO columns on mobile
      AND tablet, three on desktop — the 2/2/3 contract. The third column arrives at
      64rem, not 48rem: at tablet width three frames leave each photograph too small to
