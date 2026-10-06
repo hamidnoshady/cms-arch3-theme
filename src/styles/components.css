@@ -344,6 +344,91 @@
     margin: 0;
   }
 
+  /* The block's name from the CMS, set as a drafting label: title, a hairline that
+     runs to the far edge, and the count as a two-digit index. Quiet by design — it
+     names the set, it does not decorate it. */
+  .media-grid__head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    margin-block-end: var(--space-4);
+  }
+
+  .media-grid__title {
+    flex: 0 1 auto;
+    font-size: var(--text-body-lg);
+    font-weight: var(--weight-heading);
+    line-height: var(--leading-heading);
+  }
+
+  .media-grid__rule {
+    flex: 1 1 2rem;
+    block-size: var(--line-w);
+    background-color: var(--line-structural-color);
+    translate: 0 -0.35em;
+  }
+
+  .media-grid__count {
+    flex: 0 0 auto;
+    font-family: var(--font-numeral);
+    font-size: var(--text-caption);
+    letter-spacing: var(--tracking-label);
+    color: var(--ink-secondary);
+  }
+
+  .media-grid > .media-figure__caption {
+    margin-block-start: var(--space-3);
+  }
+
+  /* --- project detail composition -------------------------------------------
+     Header: the title and the facts on one side, the hero on the other (stacked on
+     phones and tablets). Narrative: text in a readable column, each set of renders at
+     the full width of the container under its own label. */
+  .project-head {
+    display: grid;
+    gap: var(--space-8);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-head .facts {
+    margin-block-start: var(--space-8);
+  }
+
+  .project-head .facts__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-head .media-figure {
+    margin-inline: 0;
+  }
+
+  .project-head .frame--capped {
+    margin-inline: 0;
+  }
+
+  @media (min-width: 64rem) {
+    .project-head {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: var(--space-16);
+      align-items: start;
+    }
+  }
+
+  .project-narrative {
+    border-block-start: var(--line-w) solid var(--line-structural-color);
+    padding-block: var(--space-10) var(--space-16);
+  }
+
+  .project-narrative .prose > .media-grid,
+  .project-narrative .prose > .media-figure {
+    margin-block-start: var(--space-12);
+  }
+
+  .project-related {
+    border-block-start: var(--line-w) solid var(--line-structural-color);
+    padding-block: var(--space-10) var(--space-16);
+  }
+
   /* --- home ---------------------------------------------------------------
      The menu is drawn like a sheet of dimensions: every row sits on a hairline
      with end ticks (an architectural dimension line), numbered in drafting

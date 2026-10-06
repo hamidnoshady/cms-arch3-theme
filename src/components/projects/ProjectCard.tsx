@@ -104,7 +104,7 @@ export const ProjectFacts = ({ className, context, post }: { className?: string;
         {pairs.map((pair) => (
           <div className="facts__item" key={`${pair.label}-${pair.value}`}>
             <dt className="facts__label">{pair.label}</dt>
-            <dd className="facts__value" dir="auto">
+            <dd className="facts__value" dir={/\p{L}/u.test(pair.value) ? 'auto' : context.dir}>
               {pair.value}
             </dd>
           </div>

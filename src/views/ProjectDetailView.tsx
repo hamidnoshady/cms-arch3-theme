@@ -2,10 +2,9 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 
 import { ContentContainer } from '@/components/design/Container'
-import { Rule } from '@/components/design/Rule'
 import { RichText } from '@/components/blocks/RichText'
 import { FramedMedia } from '@/components/media/CmsImage'
-import { ProjectFacts } from '@/components/projects/ProjectCard'
+import { ProjectCard, ProjectFacts } from '@/components/projects/ProjectCard'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { getPostContext, postHref } from '@/lib/cms/content'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
@@ -14,7 +13,6 @@ import { projectPath } from '@/lib/routing/paths'
 import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
-import { lexicalText } from '@/lib/utils/lexical'
 import { isMedia } from '@/lib/utils/media'
 import { InteriorPage } from '@/views/InteriorPage'
 import { StateView } from '@/views/StateView'
@@ -81,36 +79,40 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
       switchDoc={{ id: post.id, kind: 'post', pathForLocale: () => projectPath(slug) }}
     >
       <ContentContainer>
-        <h1 className="type-title max-w-[30ch]">{post.title}</h1>
-        <ProjectFacts context={ctx} post={post} />
+        <header className="project-head">
+          <div>
+            <h1 className="type-title max-w-[24ch]">{post.title}</h1>
+            <ProjectFacts context={ctx} post={post} />
+          </div>
+          {hero ? <FramedMedia cap={78} media={hero} origin={ctx.site.media.origin} priority size="wide" /> : null}
+        </header>
       </ContentContainer>
 
-      {hero ? (
-        <ContentContainer className="mt-10">
-          <FramedMedia cap={78} media={hero} origin={ctx.site.media.origin} priority size="wide" />
-        </ContentContainer>
-      ) : null}
-
-      <ContentContainer className="section--tight py-12">
-        <div className="max-w-[46rem]">
+      <ContentContainer className="mt-12">
+        <div className="project-narrative">
           <RichText content={post.content as never} context={ctx} fallbackDir={ctx.dir} />
         </div>
       </ContentContainer>
 
       {related.length > 0 ? (
-        <ContentContainer className="pb-16">
-          <Rule className="mb-8" />
-          <h2 className="type-heading mb-6">{t.relatedProjects}</h2>
-          <ul className="grid gap-4 md:grid-cols-3">
-            {related.map((entry) => (
-              <li className="border-t border-line-structural pt-4" key={entry.id}>
-                <a className="link-inline type-ui target-standalone" href={href(projectPath(entry.slug), locale, ctx.site)}>
-                  {entry.title}
-                </a>
-                <p className="type-meta mt-2">{lexicalText(entry.content as never).slice(0, 90)}…</p>
-              </li>
-            ))}
-          </ul>
+        <ContentContainer>
+          <section aria-labelledby="related-projects" className="project-related">
+            <h2 className="type-heading mb-6" id="related-projects">
+              {t.relatedProjects}
+            </h2>
+            <div className="grid-projects">
+              {await Promise.all(
+                related.map(async (entry) => (
+                  <ProjectCard
+                    context={ctx}
+                    href={href(await postHref(entry, ctx), locale, ctx.site)}
+                    key={entry.id}
+                    post={entry}
+                  />
+                )),
+              )}
+            </div>
+          </section>
         </ContentContainer>
       ) : null}
     </InteriorPage>

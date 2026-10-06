@@ -135,3 +135,27 @@ describe('navbar and logo sizing', () => {
     expect(read('src/components/layout/Logo.tsx')).not.toMatch(/\bh-8\b|height=\{?["']?32/u)
   })
 })
+
+describe('prose media grids', () => {
+  const typography = read('src/styles/typography.css')
+
+  it('a grid inside prose is layout, not a list: no markers, no list indent, no staggered cells', () => {
+    const [reset] = blocks(typography, '.prose .grid-media')
+    expect(reset).toMatch(/list-style:\s*none/u)
+    expect(reset).toMatch(/padding:\s*0/u)
+    const spacing = typography.match(/\.prose \.grid-media > li \+ li\s*\{([^}]*)\}/u)?.[1]
+    expect(spacing).toMatch(/margin-block-start:\s*0/u)
+  })
+
+  it('only text is held to the reading measure; figures use the column width', () => {
+    expect(typography).toMatch(/\.prose > :where\([^)]*\bp\b[^)]*\)\s*\{[^}]*max-inline-size:\s*var\(--measure-prose\)/u)
+    const [prose] = blocks(typography, '.prose')
+    expect(prose ?? '').not.toContain('max-inline-size')
+  })
+
+  it('the named-grid label has a title, a rule and a count', () => {
+    for (const part of ['.media-grid__head', '.media-grid__title', '.media-grid__rule', '.media-grid__count']) {
+      expect(components).toContain(`${part} {`)
+    }
+  })
+})
