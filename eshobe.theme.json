@@ -119,6 +119,7 @@
   "settings": {
     "homeMenuLayout": {
       "type": "select",
+      "group": "design",
       "default": "vertical",
       "labelFa": "چیدمان فهرست صفحهٔ خانه",
       "labelEn": "Home menu layout",
@@ -138,6 +139,7 @@
     },
     "introAnimation": {
       "type": "boolean",
+      "group": "design",
       "default": true,
       "labelFa": "انیمیشن ورود صفحهٔ خانه",
       "labelEn": "Home entrance animation",
@@ -145,6 +147,7 @@
     },
     "introDuration": {
       "type": "number",
+      "group": "design",
       "default": 1200,
       "min": 0,
       "max": 4000,
@@ -153,6 +156,7 @@
     },
     "mapProvider": {
       "type": "select",
+      "group": "general",
       "default": "osm",
       "labelFa": "سرویس نقشه",
       "labelEn": "Map provider",
@@ -182,6 +186,7 @@
     },
     "mapApiKey": {
       "type": "text",
+      "group": "general",
       "default": "",
       "labelFa": "کلید نقشه",
       "labelEn": "Map key",
@@ -189,6 +194,7 @@
     },
     "mapCenter": {
       "type": "text",
+      "group": "general",
       "default": "",
       "labelFa": "مختصات دفتر",
       "labelEn": "Studio coordinates",
@@ -196,6 +202,7 @@
     },
     "mapZoom": {
       "type": "number",
+      "group": "general",
       "default": 16,
       "min": 3,
       "max": 19,
@@ -204,6 +211,7 @@
     },
     "sizeScaleFa": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -213,6 +221,7 @@
     },
     "sizeScaleEn": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -222,6 +231,7 @@
     },
     "sizeDisplay": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -231,6 +241,7 @@
     },
     "sizeTitle": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -240,6 +251,7 @@
     },
     "sizeHeading": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -249,6 +261,7 @@
     },
     "sizeSubheading": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -258,6 +271,7 @@
     },
     "sizeLead": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -267,6 +281,7 @@
     },
     "sizeBody": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -276,6 +291,7 @@
     },
     "sizeSummary": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -285,6 +301,7 @@
     },
     "sizeUi": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -294,6 +311,7 @@
     },
     "sizeNav": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -303,6 +321,7 @@
     },
     "sizeButton": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -312,6 +331,7 @@
     },
     "sizeCardTitle": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -321,6 +341,7 @@
     },
     "sizeHomeMenu": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -330,6 +351,7 @@
     },
     "sizeMobileMenu": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -339,6 +361,7 @@
     },
     "sizeLabel": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -348,6 +371,7 @@
     },
     "sizeMeta": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -357,6 +381,7 @@
     },
     "sizeCaption": {
       "type": "number",
+      "group": "design",
       "default": 100,
       "min": 50,
       "max": 200,
@@ -366,6 +391,7 @@
     },
     "weightDisplay": {
       "type": "select",
+      "group": "design",
       "default": "500",
       "labelFa": "وزن متن نمایشی",
       "labelEn": "Display weight",
@@ -420,6 +446,7 @@
     },
     "weightTitle": {
       "type": "select",
+      "group": "design",
       "default": "500",
       "labelFa": "وزن عنوان صفحه (H1)",
       "labelEn": "Page title weight (H1)",
@@ -474,6 +501,7 @@
     },
     "weightHeading": {
       "type": "select",
+      "group": "design",
       "default": "500",
       "labelFa": "وزن سرتیترها (H2، H3)",
       "labelEn": "Heading weight (H2, H3)",
@@ -528,6 +556,7 @@
     },
     "weightBody": {
       "type": "select",
+      "group": "design",
       "default": "400",
       "labelFa": "وزن متن اصلی",
       "labelEn": "Body weight",
@@ -582,6 +611,7 @@
     },
     "weightSummary": {
       "type": "select",
+      "group": "design",
       "default": "300",
       "labelFa": "وزن خلاصه",
       "labelEn": "Summary weight",
@@ -636,6 +666,7 @@
     },
     "weightUi": {
       "type": "select",
+      "group": "design",
       "default": "500",
       "labelFa": "وزن متن رابط",
       "labelEn": "Interface weight",
@@ -690,6 +721,7 @@
     },
     "weightNav": {
       "type": "select",
+      "group": "design",
       "default": "500",
       "labelFa": "وزن منوی بالا",
       "labelEn": "Navigation weight",
@@ -744,6 +776,7 @@
     },
     "weightButton": {
       "type": "select",
+      "group": "design",
       "default": "500",
       "labelFa": "وزن دکمه‌ها",
       "labelEn": "Button weight",
@@ -798,6 +831,7 @@
     },
     "weightCardTitle": {
       "type": "select",
+      "group": "design",
       "default": "500",
       "labelFa": "وزن عنوان کارت‌ها",
       "labelEn": "Card title weight",
@@ -852,6 +886,7 @@
     },
     "weightHomeMenu": {
       "type": "select",
+      "group": "design",
       "default": "300",
       "labelFa": "وزن منوی صفحهٔ خانه",
       "labelEn": "Home menu weight",
@@ -906,6 +941,7 @@
     },
     "weightMobileMenu": {
       "type": "select",
+      "group": "design",
       "default": "500",
       "labelFa": "وزن منوی موبایل",
       "labelEn": "Mobile menu weight",
@@ -960,6 +996,7 @@
     },
     "weightLabel": {
       "type": "select",
+      "group": "design",
       "default": "500",
       "labelFa": "وزن برچسب‌ها",
       "labelEn": "Label weight",
@@ -1014,6 +1051,7 @@
     },
     "weightMeta": {
       "type": "select",
+      "group": "design",
       "default": "400",
       "labelFa": "وزن اطلاعات جانبی",
       "labelEn": "Metadata weight",
@@ -1068,6 +1106,7 @@
     },
     "weightStrong": {
       "type": "select",
+      "group": "design",
       "default": "600",
       "labelFa": "وزن تأکید",
       "labelEn": "Emphasis weight",
