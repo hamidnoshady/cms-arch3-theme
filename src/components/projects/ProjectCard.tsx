@@ -21,6 +21,8 @@ import { isMedia } from '@/lib/utils/media'
  * - Two cards per row on mobile by design (`grid-projects`); every card in a row is
  *   top-aligned, so the frames line up at every width.
  * - Only real data is shown: the location and year when the CMS has them.
+ * - A project without a feature image keeps the same frame, drawn as a blank sheet,
+ *   so it still lines up with its neighbours.
  */
 export const ProjectCard = ({
   context,
@@ -38,14 +40,18 @@ export const ProjectCard = ({
   return (
     <article className="pcard group">
       <Link className="pcard__link" href={href}>
-        <span className="frame pcard__frame">
-          <CmsImage
-            className="frame__media transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-            media={media}
-            origin={context.site.media.origin}
-            ratio="4 / 5"
-            sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 45vw"
-          />
+        <span className={cn('frame pcard__frame', !media && 'frame--blank')}>
+          {media ? (
+            <CmsImage
+              className="frame__media transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+              media={media}
+              origin={context.site.media.origin}
+              ratio="4 / 5"
+              sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 45vw"
+            />
+          ) : (
+            <DecorativeMark className="frame__blank-mark" variant="crosshair" />
+          )}
           <DecorativeMark className="bottom-2 end-2 hidden md:block" variant="dash" />
         </span>
         <span className="pcard__caption">

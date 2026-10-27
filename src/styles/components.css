@@ -445,6 +445,12 @@
       gap: var(--space-16);
       align-items: start;
     }
+
+    /* No feature image: the title and facts take the width instead of leaving the
+       hero column empty. */
+    .project-head--text {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   .project-narrative {
