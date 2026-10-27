@@ -66,6 +66,7 @@ export const HomeView = async ({ locale }: { locale: Locale }) => {
           : null
       }
       menuLabel={t.menuTitle}
+      menuLayout={settings.homeMenuLayout === 'horizontal' ? 'horizontal' : 'vertical'}
       menuNoScript={t.menuNoScript}
       name={brandName(ctx.site)}
       scrollCue={t.scrollCue}

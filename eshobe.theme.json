@@ -117,6 +117,25 @@
     }
   ],
   "settings": {
+    "homeMenuLayout": {
+      "type": "select",
+      "default": "vertical",
+      "labelFa": "چیدمان فهرست صفحهٔ خانه",
+      "labelEn": "Home menu layout",
+      "help": "عمودی: فهرست فشرده در بخش جداگانه زیر نشان. افقی: فهرست در یک ردیف درست زیر نشان، در همان صفحهٔ نخست؛ با کمی اسکرول یا زدن دکمهٔ ورود باز می‌شود.",
+      "options": [
+        {
+          "value": "vertical",
+          "labelFa": "عمودی (فشرده)",
+          "labelEn": "Vertical (compact)"
+        },
+        {
+          "value": "horizontal",
+          "labelFa": "افقی (زیر نشان)",
+          "labelEn": "Horizontal (under the logo)"
+        }
+      ]
+    },
     "introAnimation": {
       "type": "boolean",
       "default": true,
