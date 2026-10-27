@@ -88,7 +88,7 @@
      and balanced line ends. It never competes with the title or the facts above it. */
   .type-summary {
     font-size: var(--text-summary);
-    font-weight: var(--weight-light);
+    font-weight: var(--weight-summary);
     line-height: var(--leading-summary);
     color: var(--ink-secondary);
     max-inline-size: var(--measure-lede);
@@ -103,15 +103,15 @@
   }
 
   .type-nav {
-    font-size: var(--text-ui);
-    font-weight: var(--weight-ui);
+    font-size: var(--text-nav);
+    font-weight: var(--weight-nav);
     line-height: var(--leading-ui);
     letter-spacing: var(--tracking-ui);
   }
 
   .type-button {
-    font-size: var(--text-ui);
-    font-weight: var(--weight-ui);
+    font-size: var(--text-button);
+    font-weight: var(--weight-button);
     line-height: 1;
     letter-spacing: var(--tracking-ui);
   }

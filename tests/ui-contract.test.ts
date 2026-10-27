@@ -188,12 +188,13 @@ describe('short description typography', () => {
   it('is a supporting voice: smaller than body copy, light, secondary ink, airy', () => {
     const [summary] = blocks(typography, '.type-summary')
     expect(summary).toMatch(/font-size:\s*var\(--text-summary\)/u)
-    expect(summary).toMatch(/font-weight:\s*var\(--weight-light\)/u)
+    expect(summary).toMatch(/font-weight:\s*var\(--weight-summary\)/u)
+    expect(tokens).toMatch(/--weight-summary:\s*var\(--weight-light\)/u)
     expect(summary).toMatch(/color:\s*var\(--ink-secondary\)/u)
     expect(summary).toMatch(/max-inline-size:\s*var\(--measure-lede\)/u)
     expect(summary).toMatch(/text-wrap:\s*pretty/u)
     // Smaller than body text, looser than body leading.
-    expect(Number.parseFloat(tokens.match(/--text-summary:\s*([\d.]+)rem/u)![1]!)).toBeLessThan(1)
+    expect(Number.parseFloat(tokens.match(/--text-summary:\s*calc\(([\d.]+)rem/u)![1]!)).toBeLessThan(1)
     expect(Number(tokens.match(/--leading-summary:\s*([\d.]+)/u)![1])).toBeGreaterThan(Number(tokens.match(/--leading-body:\s*([\d.]+)/u)![1]))
   })
 

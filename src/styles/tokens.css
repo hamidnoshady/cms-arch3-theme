@@ -65,17 +65,30 @@
   --font-brand: var(--font-ui);
   --font-numeral: var(--font-en);   /* Persian still uses fa digits via helpers */
 
-  --text-display: clamp(2.25rem, 5.5vw, 4.25rem);
-  --text-title: clamp(1.75rem, 3.2vw, 2.625rem);
-  --text-heading: clamp(1.3125rem, 2vw, 1.75rem);
-  --text-subheading: clamp(1.125rem, 1.4vw, 1.375rem);
-  --text-body-lg: clamp(1.0625rem, 1.1vw, 1.1875rem);
-  --text-body: 1rem;
-  --text-ui: 0.875rem;
-  --text-label: 0.8125rem;
-  --text-meta: 0.8125rem;
-  --text-caption: 0.75rem;
-  --text-summary: 0.9375rem;  /* the short description under a project's facts */
+  /* Every size is its designed value × an operator multiplier × a per-locale
+     multiplier. The multipliers (`--size-*`, `--size-locale`) are unset here, so they
+     fall back to 1 and the scale renders exactly as designed; the typography theme
+     settings set them (see `src/lib/theme/typography.ts`). */
+  --text-display: calc(clamp(2.25rem, 5.5vw, 4.25rem) * var(--size-display, 1) * var(--size-locale, 1));
+  --text-title: calc(clamp(1.75rem, 3.2vw, 2.625rem) * var(--size-title, 1) * var(--size-locale, 1));
+  --text-heading: calc(clamp(1.3125rem, 2vw, 1.75rem) * var(--size-heading, 1) * var(--size-locale, 1));
+  --text-subheading: calc(clamp(1.125rem, 1.4vw, 1.375rem) * var(--size-subheading, 1) * var(--size-locale, 1));
+  --text-body-lg: calc(clamp(1.0625rem, 1.1vw, 1.1875rem) * var(--size-body-lg, 1) * var(--size-locale, 1));
+  --text-body: calc(1rem * var(--size-body, 1) * var(--size-locale, 1));
+  --text-ui: calc(0.875rem * var(--size-ui, 1) * var(--size-locale, 1));
+  --text-label: calc(0.8125rem * var(--size-label, 1) * var(--size-locale, 1));
+  --text-meta: calc(0.8125rem * var(--size-meta, 1) * var(--size-locale, 1));
+  --text-caption: calc(0.75rem * var(--size-caption, 1) * var(--size-locale, 1));
+  /* the short description under a project's facts */
+  --text-summary: calc(0.9375rem * var(--size-summary, 1) * var(--size-locale, 1));
+  --text-home-menu: calc(clamp(1.5rem, 3.4vw, 2.75rem) * var(--size-home-menu, 1) * var(--size-locale, 1));
+
+  /* Component roles that start from a shared role and can be tuned on their own.
+     The locale multiplier is already inside the role they derive from. */
+  --text-nav: calc(var(--text-ui) * var(--size-nav, 1));
+  --text-button: calc(var(--text-ui) * var(--size-button, 1));
+  --text-card-title: calc(var(--text-ui) * var(--size-card-title, 1));
+  --text-mobile-menu: calc(var(--text-subheading) * var(--size-mobile-menu, 1));
 
   --weight-thin: 100;
   --weight-extralight: 200;
@@ -96,6 +109,12 @@
   --weight-label: var(--weight-medium);
   --weight-meta: var(--weight-regular);
   --weight-strong: var(--weight-semibold);
+  --weight-summary: var(--weight-light);
+  --weight-nav: var(--weight-ui);
+  --weight-button: var(--weight-ui);
+  --weight-card-title: var(--weight-ui);
+  --weight-home-menu: var(--weight-light);
+  --weight-mobile-menu: var(--weight-medium);
 
   --leading-display: 1.25;
   --leading-title: 1.3;

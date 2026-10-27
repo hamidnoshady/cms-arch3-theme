@@ -64,6 +64,28 @@ Hierarchy is size + space + colour first, weight second: the working scale only 
 - Dates and digits go through `@eshobe/site-runtime` formatters, and numeral strings are
   isolated per the locale helpers — no raw font family switching in components.
 
+## Operator settings (size and weight)
+
+Size and weight are adjustable per site from the theme settings in the CMS, without a
+code change. The settings are declared in `eshobe.theme.json` and applied by
+[`src/lib/theme/typography.ts`](../src/lib/theme/typography.ts):
+
+- **Sizes** are percentages of the designed value (default 100, range 50–200). Each
+  `--text-*` token in `tokens.css` is `designed value × var(--size-<role>, 1) ×
+  var(--size-locale, 1)`, so the responsive `clamp()` curve is kept and only scaled.
+  `sizeScaleFa` / `sizeScaleEn` scale every role for one language.
+- **Weights** are selects of 100–900 whose defaults are the applied weights above. Shazde
+  has no 100/200, so on Persian pages those render as 300.
+- Component roles derive from a shared role and can be tuned on their own: navigation,
+  buttons and card titles start from UI; the mobile menu from subheading; the home menu
+  has its own size. Changing UI therefore moves all three unless they are set separately.
+- Only non-default values are emitted, as one `<style>` in the root layout
+  (`html:root{…}` plus `html[lang='fa'|'en']:root{--size-locale:…}`). An untouched site
+  gets no extra CSS. Values are re-validated and written as bare numbers.
+
+New or changed settings appear in the CMS only after the theme package is re-synced from
+GitHub and the site is redeployed.
+
 ## Loading
 
 - `src/app/layout.tsx` emits the `@font-face` CSS by hand (a conditional
