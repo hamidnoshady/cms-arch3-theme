@@ -124,6 +124,21 @@
     }
   }
 
+  /* Contact page with no form: the details span the content width, so on desktop the
+     large email/phone rows sit side by side instead of stretching their copy controls
+     to the far edge, and the map turns wide rather than growing to full-page height. */
+  @media (min-width: 64rem) {
+    .contact-solo .reach {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--space-12);
+    }
+
+    .contact-solo .map__frame {
+      aspect-ratio: 21 / 9;
+    }
+  }
+
   /* Media/caption composition on the About page: one image at ~42% of content width. */
   .about-composition {
     display: grid;
