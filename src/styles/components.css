@@ -950,10 +950,16 @@
     }
   }
 
+  /* Compact sheet: the section still fills a screen (it is the scroll target), but
+     the list itself is a narrow, centred box with short rows and small type. */
   .home-menu {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     min-block-size: calc(100svh - var(--navbar-block));
-    padding-block: var(--space-16) var(--space-24);
+    max-inline-size: calc(30rem + var(--gutter) * 2);
+    padding-block: var(--space-8) var(--space-12);
     scroll-margin-block-start: var(--navbar-block);
   }
 
@@ -962,7 +968,7 @@
     align-items: baseline;
     justify-content: space-between;
     gap: var(--space-4);
-    margin-block-end: var(--space-6);
+    margin-block-end: var(--space-3);
   }
 
   .home-menu__count {
@@ -1022,11 +1028,11 @@
   .home-row__link {
     position: relative;
     display: grid;
-    grid-template-columns: 3rem minmax(0, auto) minmax(2rem, 1fr) 1.5rem;
+    grid-template-columns: 1.75rem minmax(0, auto) minmax(1.5rem, 1fr) 1.125rem;
     align-items: center;
-    gap: var(--space-4);
+    gap: var(--space-3);
     min-block-size: 44px;
-    padding-block: clamp(1rem, 2.4vw, 1.75rem);
+    padding-block: var(--space-2);
     color: var(--ink);
     text-decoration: none;
   }
@@ -1075,8 +1081,8 @@
   }
 
   .home-row__arrow {
-    inline-size: 1.5rem;
-    block-size: 0.75rem;
+    inline-size: 1.125rem;
+    block-size: 0.5625rem;
     stroke: var(--ink);
     stroke-width: var(--line-w);
     opacity: 0.25;
@@ -1124,9 +1130,20 @@
     translate: 0 0;
   }
 
+  /* About half the original label size. It multiplies the typography setting's
+     home-menu size when that exists, and the designed size when it does not. */
+  .home-menu .home-row__label {
+    font-size: max(1rem, calc(var(--text-home-menu, clamp(1.5rem, 3.4vw, 2.75rem)) * 0.55));
+  }
+
+  .home-menu .home-row__link:hover .home-row__label,
+  .home-menu .home-row__link:focus-visible .home-row__label {
+    translate: calc(var(--dir-sign) * 0.375rem) 0;
+  }
+
   @media (max-width: 47.99rem) {
     .home-row__link {
-      grid-template-columns: 2rem minmax(0, 1fr) 1.25rem;
+      grid-template-columns: 1.5rem minmax(0, 1fr) 1.125rem;
     }
 
     .home-row__leader {
@@ -1141,6 +1158,221 @@
     }
   }
 
+  /* --- home: horizontal menu ----------------------------------------------
+     Layout wrappers are transparent in the vertical layout, so its grid is unchanged.
+     Horizontal: the stage is a little taller than the screen and its content is
+     sticky, so a short scroll has somewhere to go while the logo stays put. The Enter
+     cue and the menu row share one grid cell under the logo and cross-fade. */
+
+  .home-intro__hold,
+  .home-reveal {
+    display: contents;
+  }
+
+  .home-intro--horizontal {
+    display: block;
+    /* `align-content` also centres block containers now; the hold must sit at the top. */
+    align-content: normal;
+    min-block-size: calc(100svh - var(--navbar-block) + 6rem);
+    padding-block: 0;
+  }
+
+  .home-intro--horizontal .home-intro__hold {
+    position: sticky;
+    inset-block-start: var(--navbar-block);
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: var(--space-8);
+    min-block-size: calc(100svh - var(--navbar-block));
+    padding-block: var(--space-6) var(--space-10);
+  }
+
+  .home-intro--horizontal .home-logo__img {
+    max-block-size: 34svh;
+  }
+
+  .home-intro--horizontal .home-reveal {
+    display: grid;
+    justify-items: center;
+    align-items: start;
+    inline-size: min(100%, calc(56rem + var(--gutter) * 2));
+    padding-inline: var(--gutter);
+  }
+
+  .home-intro--horizontal .home-reveal > * {
+    grid-area: 1 / 1;
+  }
+
+  .home-intro--horizontal .home-cue {
+    transition:
+      opacity var(--motion-slow) var(--ease-out),
+      translate var(--motion-slow) var(--ease-out);
+  }
+
+  .home-intro--horizontal[data-open='true'] .home-cue {
+    opacity: 0;
+    translate: 0 -0.5rem;
+    pointer-events: none;
+  }
+
+  .home-hmenu {
+    position: relative;
+    inline-size: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--motion-base) var(--ease-out);
+  }
+
+  .home-intro--horizontal[data-open='true'] .home-hmenu {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Dimension line above the row, drawn out from the centre when the row opens. */
+  .home-hmenu__rule {
+    position: relative;
+    display: block;
+    inline-size: 100%;
+    block-size: var(--line-w);
+    margin-block-end: var(--space-4);
+    background: var(--line-structural-color);
+    transform: scaleX(0);
+    transition: transform var(--motion-reveal) var(--ease-out);
+  }
+
+  .home-hmenu__rule::before,
+  .home-hmenu__rule::after {
+    content: '';
+    position: absolute;
+    inset-block-start: -4px;
+    inline-size: var(--line-w);
+    block-size: 9px;
+    background: var(--line-structural-color);
+  }
+
+  .home-hmenu__rule::before {
+    inset-inline-start: 0;
+  }
+
+  .home-hmenu__rule::after {
+    inset-inline-end: 0;
+  }
+
+  .home-intro--horizontal[data-open='true'] .home-hmenu__rule {
+    transform: scaleX(1);
+  }
+
+  .home-hmenu__list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2) clamp(var(--space-4), 3vw, var(--space-10));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .home-hmenu__item {
+    opacity: 0;
+    translate: 0 0.5rem;
+    transition:
+      opacity var(--motion-slow) var(--ease-out),
+      translate var(--motion-slow) var(--ease-out);
+    transition-delay: calc(var(--i, 0) * 60ms + 120ms);
+  }
+
+  .home-intro--horizontal[data-open='true'] .home-hmenu__item {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .home-hmenu__link {
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-block-size: 44px;
+    padding-block: var(--space-3);
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  /* A hairline drawn under the pointed-at item, from the reading start. */
+  .home-hmenu__link::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: var(--space-2);
+    block-size: var(--line-w);
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: var(--rule-origin, left center);
+    transition: transform var(--motion-slow) var(--ease-out);
+  }
+
+  [dir='rtl'] .home-hmenu__link::after {
+    --rule-origin: right center;
+  }
+
+  .home-hmenu__index {
+    color: var(--ink-faint);
+    font-family: var(--font-numeral);
+    font-size: var(--text-meta);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-ui);
+    transition: color var(--motion-base) var(--ease-out);
+  }
+
+  [lang='fa'] .home-hmenu__index {
+    font-family: var(--font-ui);
+    letter-spacing: 0;
+  }
+
+  .home-hmenu__label {
+    font-family: var(--font-brand);
+    font-size: var(--text-subheading);
+    font-weight: var(--weight-light);
+    line-height: 1.4;
+    white-space: nowrap;
+    transition: opacity var(--motion-slow) var(--ease-out);
+  }
+
+  /* `:has(link…)`, not `list:hover`: the gaps between items must not dim the row. */
+  .home-hmenu__list:has(.home-hmenu__link:hover) .home-hmenu__item:not(:hover) .home-hmenu__label,
+  .home-hmenu__list:focus-within .home-hmenu__item:not(:focus-within) .home-hmenu__label {
+    opacity: 0.32;
+  }
+
+  .home-hmenu__link:hover::after,
+  .home-hmenu__link:focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  .home-hmenu__link:hover .home-hmenu__index,
+  .home-hmenu__link:focus-visible .home-hmenu__index,
+  .home-hmenu__link[aria-current='page'] .home-hmenu__index {
+    color: var(--ink);
+  }
+
+  .home-hmenu__link[aria-current='page'] .home-hmenu__label {
+    font-weight: var(--weight-regular);
+  }
+
+  @media (max-width: 47.99rem) {
+    .home-intro--horizontal .home-intro__hold {
+      gap: var(--space-6);
+    }
+
+    .home-intro--horizontal .home-logo__img {
+      max-block-size: 28svh;
+    }
+
+    .home-hmenu__list {
+      column-gap: var(--space-5);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .home-cue__line::after {
       animation: none;
@@ -1149,6 +1381,20 @@
 
     .home-logo {
       will-change: auto;
+    }
+
+    /* The horizontal row appears in place: no rise, no stagger, no drawn line. */
+    .home-intro--horizontal .home-cue,
+    .home-hmenu,
+    .home-hmenu__rule,
+    .home-hmenu__item,
+    .home-hmenu__link::after {
+      transition: none;
+    }
+
+    .home-hmenu__item,
+    .home-intro--horizontal[data-open='true'] .home-cue {
+      translate: none;
     }
   }
 

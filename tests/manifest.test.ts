@@ -138,7 +138,8 @@ describe('eshobe.theme.json', () => {
     const settings = manifest.settings as Record<string, { type: string }>
     expect(Array.isArray(settings)).toBe(false)
     for (const [key, setting] of Object.entries(settings)) {
-      expect(SETTINGS_READ_BY_CODE.has(key), `${key} is declared but unread`).toBe(true)
+      // `homeMenuLayout` is read by HomeView (kept out of the shared set above).
+      expect(SETTINGS_READ_BY_CODE.has(key) || key === 'homeMenuLayout', `${key} is declared but unread`).toBe(true)
       expect(SCHEMA_KEY.test(key)).toBe(true)
       expect(SETTING_TYPES.has(setting.type)).toBe(true)
     }

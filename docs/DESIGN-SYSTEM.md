@@ -65,6 +65,15 @@ boundary, and a structural rule is never random ornament.
 The home page is the one exception: a full-viewport entrance stage with no interior header
 before the menu reveals.
 
+The runtime setting `homeMenuLayout` chooses where that menu lives:
+
+- `vertical` (default): a compact, centred numbered list (about 30rem wide, short rows, labels at
+  roughly half the old size) in its own screen below the stage.
+- `horizontal`: one row of links directly under the logo, inside the same first screen. The stage
+  is 6rem taller than the viewport and its content is sticky, so a short scroll opens the row
+  while the logo stays put; the Enter control (`aria-expanded`) and tabbing onto a link open it
+  too. Reduced motion shows it without the fade, rise or drawn line.
+
 ## Breakpoints, grids and profiles
 
 Tailwind-style rem breakpoints: `30rem` (480), `48rem` (768), `64rem` (1024), `80rem`
