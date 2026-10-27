@@ -166,6 +166,22 @@ describe('eshobe.theme.json', () => {
     expect([...SLOTS_READ_BY_CODE].sort()).toEqual([...keys].sort())
   })
 
+  it('places every setting: look-and-feel in «طراحی سایت», the rest on «تنظیمات پوسته»', () => {
+    // The CMS rule for every theme: a setting is one click from the sidebar. `design`
+    // renders inside Site design, `general` on the top-level theme-settings page.
+    const settings = manifest.settings as Record<string, { group?: string }>
+    for (const [key, setting] of Object.entries(settings)) {
+      expect(['design', 'general'], `${key} needs a group`).toContain(setting.group)
+    }
+    const general = Object.entries(settings)
+      .filter(([, setting]) => setting.group === 'general')
+      .map(([key]) => key)
+      .sort()
+    expect(general).toEqual(['mapApiKey', 'mapCenter', 'mapProvider', 'mapZoom'])
+    expect(settings.homeMenuLayout?.group).toBe('design')
+    expect(settings.introAnimation?.group).toBe('design')
+  })
+
   it('keeps the design tokens inside the white/black, square system', () => {
     const design = manifest.design as Record<string, string | number>
     for (const value of Object.values(design)) {
