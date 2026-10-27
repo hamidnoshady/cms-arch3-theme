@@ -201,6 +201,924 @@
       "max": 19,
       "labelFa": "بزرگنمایی نقشه",
       "labelEn": "Map zoom"
+    },
+    "sizeScaleFa": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "مقیاس کلی متن — فارسی",
+      "labelEn": "Overall text scale — Persian",
+      "help": "همهٔ اندازه‌های متن در صفحه‌های فارسی را با هم بزرگ یا کوچک می‌کند. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeScaleEn": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "مقیاس کلی متن — انگلیسی",
+      "labelEn": "Overall text scale — English",
+      "help": "همهٔ اندازه‌های متن در صفحه‌های انگلیسی را با هم بزرگ یا کوچک می‌کند. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeDisplay": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ متن نمایشی",
+      "labelEn": "Display text size",
+      "help": "بزرگ‌ترین متن‌ها، مانند نام‌نشان صفحهٔ خانه. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeTitle": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ عنوان صفحه (H1)",
+      "labelEn": "Page title size (H1)",
+      "help": "عنوان اصلی هر صفحه، پروژه و یادداشت. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeHeading": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ سرتیتر (H2)",
+      "labelEn": "Heading size (H2)",
+      "help": "سرتیتر بخش‌ها و H2 در متن‌ها. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeSubheading": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ زیرتیتر (H3)",
+      "labelEn": "Subheading size (H3)",
+      "help": "زیرتیترها، H3 در متن‌ها و عنوان آکاردئون‌ها. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeLead": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ متن مقدمه",
+      "labelEn": "Lead text size",
+      "help": "پاراگراف مقدمه، متن بزرگ و H4 در متن‌ها. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeBody": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ متن اصلی",
+      "labelEn": "Body text size",
+      "help": "متن پاراگراف‌ها و فیلدهای فرم. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeSummary": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ خلاصه",
+      "labelEn": "Summary size",
+      "help": "توضیح کوتاه زیر مشخصات پروژه یا یادداشت. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeUi": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ متن رابط",
+      "labelEn": "Interface text size",
+      "help": "متن کنترل‌ها و فهرست‌ها؛ منو، دکمه و عنوان کارت از این شروع می‌شوند. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeNav": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ منوی بالا",
+      "labelEn": "Navigation size",
+      "help": "پیوندهای منوی سربرگ، نسبت به متن رابط. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeButton": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ دکمه‌ها",
+      "labelEn": "Button size",
+      "help": "متن دکمه‌ها، نسبت به متن رابط. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeCardTitle": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ عنوان کارت‌ها",
+      "labelEn": "Card title size",
+      "help": "عنوان کارت پروژه‌ها و فهرست‌ها، نسبت به متن رابط. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeHomeMenu": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ منوی صفحهٔ خانه",
+      "labelEn": "Home menu size",
+      "help": "ردیف‌های بزرگ منوی صفحهٔ خانه. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeMobileMenu": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ منوی موبایل",
+      "labelEn": "Mobile menu size",
+      "help": "ردیف‌های منوی کشویی موبایل، نسبت به زیرتیتر. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeLabel": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ برچسب‌ها",
+      "labelEn": "Label size",
+      "help": "برچسب فیلدها و مشخصات. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeMeta": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ اطلاعات جانبی",
+      "labelEn": "Metadata size",
+      "help": "تاریخ، مکان، مسیر صفحه و دیگر اطلاعات جانبی. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "sizeCaption": {
+      "type": "number",
+      "default": 100,
+      "min": 50,
+      "max": 200,
+      "labelFa": "اندازهٔ زیرنویس",
+      "labelEn": "Caption size",
+      "help": "زیرنویس تصویرها و کوچک‌ترین متن‌ها. درصدی از اندازهٔ طراحی‌شده؛ ۱۰۰ یعنی بدون تغییر (۵۰ تا ۲۰۰)."
+    },
+    "weightDisplay": {
+      "type": "select",
+      "default": "500",
+      "labelFa": "وزن متن نمایشی",
+      "labelEn": "Display weight",
+      "help": "بزرگ‌ترین متن‌ها. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightTitle": {
+      "type": "select",
+      "default": "500",
+      "labelFa": "وزن عنوان صفحه (H1)",
+      "labelEn": "Page title weight (H1)",
+      "help": "عنوان اصلی صفحه‌ها. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightHeading": {
+      "type": "select",
+      "default": "500",
+      "labelFa": "وزن سرتیترها (H2، H3)",
+      "labelEn": "Heading weight (H2, H3)",
+      "help": "سرتیترها، زیرتیترها و عنوان آکاردئون‌ها. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightBody": {
+      "type": "select",
+      "default": "400",
+      "labelFa": "وزن متن اصلی",
+      "labelEn": "Body weight",
+      "help": "متن پاراگراف‌ها و مقدمه. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightSummary": {
+      "type": "select",
+      "default": "300",
+      "labelFa": "وزن خلاصه",
+      "labelEn": "Summary weight",
+      "help": "توضیح کوتاه زیر مشخصات. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightUi": {
+      "type": "select",
+      "default": "500",
+      "labelFa": "وزن متن رابط",
+      "labelEn": "Interface weight",
+      "help": "کنترل‌ها و فهرست‌ها؛ منو، دکمه و عنوان کارت از این شروع می‌شوند. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightNav": {
+      "type": "select",
+      "default": "500",
+      "labelFa": "وزن منوی بالا",
+      "labelEn": "Navigation weight",
+      "help": "پیوندهای منوی سربرگ. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightButton": {
+      "type": "select",
+      "default": "500",
+      "labelFa": "وزن دکمه‌ها",
+      "labelEn": "Button weight",
+      "help": "متن دکمه‌ها. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightCardTitle": {
+      "type": "select",
+      "default": "500",
+      "labelFa": "وزن عنوان کارت‌ها",
+      "labelEn": "Card title weight",
+      "help": "عنوان کارت پروژه‌ها و فهرست‌ها. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightHomeMenu": {
+      "type": "select",
+      "default": "300",
+      "labelFa": "وزن منوی صفحهٔ خانه",
+      "labelEn": "Home menu weight",
+      "help": "ردیف‌های منوی صفحهٔ خانه؛ ردیف صفحهٔ جاری یک پله پررنگ‌تر است. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightMobileMenu": {
+      "type": "select",
+      "default": "500",
+      "labelFa": "وزن منوی موبایل",
+      "labelEn": "Mobile menu weight",
+      "help": "ردیف‌های منوی کشویی موبایل. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightLabel": {
+      "type": "select",
+      "default": "500",
+      "labelFa": "وزن برچسب‌ها",
+      "labelEn": "Label weight",
+      "help": "برچسب فیلدها و مشخصات. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightMeta": {
+      "type": "select",
+      "default": "400",
+      "labelFa": "وزن اطلاعات جانبی",
+      "labelEn": "Metadata weight",
+      "help": "تاریخ، مکان و زیرنویس‌ها. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
+    },
+    "weightStrong": {
+      "type": "select",
+      "default": "600",
+      "labelFa": "وزن تأکید",
+      "labelEn": "Emphasis weight",
+      "help": "متن پررنگ‌شده، پیوند فعال منو و پیام خطا. قلم شاهزاده وزن ۱۰۰ و ۲۰۰ ندارد؛ در فارسی این دو مانند ۳۰۰ دیده می‌شوند.",
+      "options": [
+        {
+          "value": "100",
+          "labelFa": "۱۰۰ — نازک",
+          "labelEn": "100 — Thin"
+        },
+        {
+          "value": "200",
+          "labelFa": "۲۰۰ — خیلی سبک",
+          "labelEn": "200 — Extra light"
+        },
+        {
+          "value": "300",
+          "labelFa": "۳۰۰ — سبک",
+          "labelEn": "300 — Light"
+        },
+        {
+          "value": "400",
+          "labelFa": "۴۰۰ — معمولی",
+          "labelEn": "400 — Regular"
+        },
+        {
+          "value": "500",
+          "labelFa": "۵۰۰ — متوسط",
+          "labelEn": "500 — Medium"
+        },
+        {
+          "value": "600",
+          "labelFa": "۶۰۰ — نیمه‌پررنگ",
+          "labelEn": "600 — Semibold"
+        },
+        {
+          "value": "700",
+          "labelFa": "۷۰۰ — پررنگ",
+          "labelEn": "700 — Bold"
+        },
+        {
+          "value": "800",
+          "labelFa": "۸۰۰ — خیلی پررنگ",
+          "labelEn": "800 — Extra bold"
+        },
+        {
+          "value": "900",
+          "labelFa": "۹۰۰ — سیاه",
+          "labelEn": "900 — Black"
+        }
+      ]
     }
   },
   "contentSlots": [

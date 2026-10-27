@@ -299,3 +299,40 @@ describe('project detail page — short description', () => {
     }
   })
 })
+
+describe('contact page', () => {
+  const withoutForm = async <T,>(run: () => Promise<T>): Promise<T> => {
+    const { FIXTURE_PAGES } = await import('@/lib/cms/fixtures.data')
+    const { clearCmsReadCache } = await import('@/lib/cms/cache')
+    const page = FIXTURE_PAGES.find((entry) => entry.slug === 'contact')!
+    const layout = page.layout
+    page.layout = layout.filter((row) => row.blockType !== 'formBlock')
+    clearCmsReadCache()
+    try {
+      return await run()
+    } finally {
+      page.layout = layout
+      clearCmsReadCache()
+    }
+  }
+
+  it.each(['fa', 'en'] as const)('keeps the two-column form layout when a form is bound (%s)', async (locale) => {
+    const { ContactView } = await import('@/views/ContactView')
+    const markup = await html(await ContactView({ locale }))
+    expect(markup).toContain('split split--even')
+    expect(markup).toContain('data-contact-state="form-ready"')
+    expect(markup).toContain('<form')
+  })
+
+  it.each(['fa', 'en'] as const)('shows the details alone, at full width, when no form is bound (%s)', async (locale) => {
+    const { ContactView } = await import('@/views/ContactView')
+    const { labels } = await import('@/lib/theme/labels')
+    const markup = await withoutForm(async () => html(await ContactView({ locale })))
+    expect(markup).toContain('class="contact-solo" data-contact-state="form-unconfigured"')
+    expect(markup).toContain('class="reach"')
+    expect(markup).not.toContain('split')
+    expect(markup).not.toContain('<form')
+    expect(markup).not.toMatch(/فرم تماس|contact form/iu)
+    expect(markup).not.toContain(labels(locale).contactDetailsMissing)
+  })
+})

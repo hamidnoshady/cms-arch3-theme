@@ -16,10 +16,11 @@ import { brandName } from '@/lib/theme/brand'
  * - **Canonical identity is the customer's real domain** (`https://<site.domain>` from
  *   the descriptor), never a preview host. Preview deployments therefore keep
  *   `noindex` and a canonical that points at production.
- * - **OG images come from the document's own `meta.image` or the site's
- *   `defaultOgImage`.** The CMS's `/og` renderer is *not* used: in the direct
- *   deployment mode the theme container only proxies `/api/*`, so `/og` is not
- *   reachable from a customer domain and an `og:image` pointing at it would 404.
+ * - **OG images come from the document's own `meta.image` or, failing that, the
+ *   site's `defaultOgImage` / `socialImage` / logo.** The CMS's `/og` renderer is *not*
+ *   used: in the direct deployment mode the theme container only proxies `/api/*`, so
+ *   `/og` is not reachable from a customer domain and an `og:image` pointing at it
+ *   would 404.
  */
 
 export type MetadataInput = {
@@ -37,13 +38,25 @@ export type MetadataInput = {
 export const absoluteUrl = (context: SiteContext, path: string, locale = context.locale): string =>
   `${context.canonicalOrigin}${href(path, locale, context.site)}`
 
+/**
+ * The share image for a document without its own: the site's OG image, then its social
+ * image, then its logo — so a post published without a feature image still shares with
+ * the brand rather than a bare link.
+ */
+const fallbackOgImage = (context: SiteContext): Media | null => {
+  const branding = context.site.branding
+  return (
+    branding?.defaultOgImage ?? branding?.socialImage ?? branding?.primaryLogo ?? branding?.logo ?? null
+  )
+}
+
 export const metadataFor = (input: MetadataInput): Metadata => {
   const { context, title, description, path, image, type = 'website', languages } = input
   const siteName = brandName(context.site)
   // Absolute for crawlers, but from where this deployment answers (ESHOBE_PUBLIC_ORIGIN),
   // so a preview's og:image never points at production.
   const ogImage = absoluteMediaUrl(
-    mediaUrl(image ?? context.site.branding?.defaultOgImage ?? null, context.site.media.origin),
+    mediaUrl(image ?? fallbackOgImage(context), context.site.media.origin),
     context.deploymentOrigin,
   )
   const canonical = absoluteUrl(context, path)

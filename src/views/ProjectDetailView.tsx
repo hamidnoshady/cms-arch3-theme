@@ -89,7 +89,7 @@ export const ProjectDetailView = async ({ locale, slug }: { locale: Locale; slug
       switchDoc={{ id: post.id, kind: 'post', pathFor: projectPath }}
     >
       <ContentContainer>
-        <header className="project-head">
+        <header className={hero ? 'project-head' : 'project-head project-head--text'}>
           <div>
             <h1 className="type-title max-w-[24ch]">{post.title}</h1>
             <ProjectFacts context={ctx} post={post} />
