@@ -34,7 +34,7 @@ export const EducationFeatured = ({
   const media = isMedia(post.heroImage) ? post.heroImage : null
   return (
     <article className="relative">
-      <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] md:items-start">
+      <div className={cn('grid gap-8 md:items-start', media && 'md:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]')}>
         <div>
           <p className="type-label flex items-center gap-3">
             <DecorativeMark className="relative hidden md:inline-block" variant="dash" />
@@ -54,14 +54,16 @@ export const EducationFeatured = ({
             {minutes > 0 ? <span>{readingTimeLabel(minutes, context.locale)}</span> : null}
           </p>
         </div>
-        <span className="frame block" style={{ aspectRatio: media ? undefined : '4 / 3' }}>
-          <CmsImage
-            className="frame__media"
-            media={media}
-            origin={context.site.media.origin}
-            sizes="(min-width: 768px) 40vw, 100vw"
-          />
-        </span>
+        {media ? (
+          <span className="frame block">
+            <CmsImage
+              className="frame__media"
+              media={media}
+              origin={context.site.media.origin}
+              sizes="(min-width: 768px) 40vw, 100vw"
+            />
+          </span>
+        ) : null}
       </div>
     </article>
   )
@@ -90,13 +92,17 @@ export const EducationRow = ({
       <span aria-hidden="true" className="edu-row__index type-meta">
         {index}
       </span>
-      <span className="frame edu-row__thumb block" style={{ aspectRatio: '4 / 3' }}>
-        <CmsImage
-          className="frame__media"
-          media={media}
-          origin={context.site.media.origin}
-          sizes="160px"
-        />
+      <span className={cn('frame edu-row__thumb block', !media && 'frame--blank')} style={{ aspectRatio: '4 / 3' }}>
+        {media ? (
+          <CmsImage
+            className="frame__media"
+            media={media}
+            origin={context.site.media.origin}
+            sizes="160px"
+          />
+        ) : (
+          <DecorativeMark className="frame__blank-mark" variant="crosshair" />
+        )}
       </span>
       <div className="min-w-0">
         <h3 className="type-subheading">

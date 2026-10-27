@@ -92,6 +92,19 @@
     z-index: 2;
   }
 
+  /* A post without a feature image: the frame keeps its ratio, so a grid or a list of
+     rows stays aligned, but reads as a blank drawing sheet (paper, the inset rule and a
+     centred crosshair) rather than a grey box waiting for a photograph to load. */
+  .frame--blank {
+    background-color: transparent;
+  }
+
+  .frame__blank-mark {
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+
   /* Deliberately fragmented frame: corners + one edge, for variety where a page has
      several framed images in a row. Structural coverage stays high elsewhere. */
   .frame--fragmented::after {

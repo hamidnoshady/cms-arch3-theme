@@ -4,6 +4,7 @@ import { DecorativeMark } from '@/components/design/DecorativeMark'
 import { CmsImage } from '@/components/media/CmsImage'
 import type { SiteContext } from '@/lib/cms/context'
 import type { PostDoc } from '@/lib/cms/types'
+import { cn } from '@/lib/utils/cn'
 import { dateText } from '@/lib/utils/dates'
 import { isMedia } from '@/lib/utils/media'
 import { truncate } from '@/lib/utils/text'
@@ -100,8 +101,12 @@ export const ArticleRow = ({
   const media = isMedia(post.heroImage) ? post.heroImage : null
   return (
     <li className="entry-row">
-      <span className="frame block" style={{ aspectRatio: '1 / 1' }}>
-        <CmsImage className="frame__media" media={media} origin={context.site.media.origin} sizes="160px" />
+      <span className={cn('frame block', !media && 'frame--blank')} style={{ aspectRatio: '1 / 1' }}>
+        {media ? (
+          <CmsImage className="frame__media" media={media} origin={context.site.media.origin} sizes="160px" />
+        ) : (
+          <DecorativeMark className="frame__blank-mark" variant="crosshair" />
+        )}
       </span>
       <div className="min-w-0">
         <h3 className="type-subheading">
