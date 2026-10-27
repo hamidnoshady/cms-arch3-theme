@@ -269,8 +269,15 @@ describe('ProjectCard', () => {
       expect(container.querySelector('img')?.getAttribute('style')).toContain('aspect-ratio: 4 / 5')
       unmount()
     }
+  })
+
+  it('draws a project without a feature image as a blank sheet in the same frame', () => {
     const { container } = card(null)
-    expect(container.querySelector('.skeleton')?.getAttribute('style')).toContain('aspect-ratio: 4 / 5')
+    const frame = container.querySelector('.pcard__frame')
+    expect(frame?.classList.contains('frame--blank')).toBe(true)
+    expect(container.querySelector('img')).toBeNull()
+    expect(container.querySelector('.skeleton')).toBeNull()
+    expect(frame?.querySelector('[data-mark="crosshair"]')).not.toBeNull()
   })
 
   it('is a title block: title and year on one line, the location beneath, one link', () => {

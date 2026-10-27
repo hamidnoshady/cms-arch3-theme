@@ -65,20 +65,12 @@ type Dictionary = {
   copied: string
   showMap: string
   openMap: string
-  selectedWork: string
   startConversation: string
   allEducation: string
   /** Contact page: no published `contact` block yet. */
   contactDetailsMissing: string
-  /** Contact page: no CMS form is bound or the bound form is not available in this language. */
-  contactFormMissingTitle: string
-  contactFormMissingBody: string
-  /** Same, when published contact details exist beside it. */
-  contactFormMissingUseDetails: string
   /** Distinct accessible name for an image with no editor-written description. */
   photoAt: (position: number, total: number) => string
-  /** Selected-work count when phones show fewer cards than the count announces. */
-  selectedWorkShown: (shown: number, total: number) => string
 }
 
 const fa: Dictionary = {
@@ -141,12 +133,7 @@ const fa: Dictionary = {
   showMap: 'نمایش نقشه',
   openMap: 'باز کردن در نقشه',
   contactDetailsMissing: 'اطلاعات تماس هنوز منتشر نشده است.',
-  contactFormMissingTitle: 'فرم تماس در دسترس نیست',
-  contactFormMissingBody: 'فرم تماس هنوز برای این زبان منتشر نشده است.',
-  contactFormMissingUseDetails: 'فرم تماس هنوز منتشر نشده است؛ از راه‌های تماسِ همین صفحه استفاده کنید.',
   photoAt: (position, total) => `تصویر ${formatNumber(position, 'fa')} از ${formatNumber(total, 'fa')}`,
-  selectedWorkShown: (shown, total) => `${formatNumber(shown, 'fa')} از ${formatNumber(total, 'fa')}`,
-  selectedWork: 'نمونه کارها',
   startConversation: 'گفتگو را شروع کنیم',
   allEducation: 'همهٔ آموزش‌ها',
 }
@@ -210,15 +197,10 @@ const en: Dictionary = {
   copied: 'Copied',
   showMap: 'Show map',
   openMap: 'Open in maps',
-  selectedWork: 'Selected work',
   startConversation: 'Start a conversation',
   allEducation: 'All education',
   contactDetailsMissing: 'Contact details have not been published yet.',
-  contactFormMissingTitle: 'The contact form is not available',
-  contactFormMissingBody: 'The contact form has not been published in English yet.',
-  contactFormMissingUseDetails: 'The contact form has not been published yet; please use the contact details on this page.',
   photoAt: (position, total) => `Photograph ${formatNumber(position, 'en')} of ${formatNumber(total, 'en')}`,
-  selectedWorkShown: (shown, total) => `${formatNumber(shown, 'en')} of ${formatNumber(total, 'en')}`,
 }
 
 const dictionaries: Record<Locale, Dictionary> = { en, fa }
