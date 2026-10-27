@@ -65,15 +65,12 @@ type Dictionary = {
   copied: string
   showMap: string
   openMap: string
-  selectedWork: string
   startConversation: string
   allEducation: string
   /** Contact page: no published `contact` block yet. */
   contactDetailsMissing: string
   /** Distinct accessible name for an image with no editor-written description. */
   photoAt: (position: number, total: number) => string
-  /** Selected-work count when phones show fewer cards than the count announces. */
-  selectedWorkShown: (shown: number, total: number) => string
 }
 
 const fa: Dictionary = {
@@ -137,8 +134,6 @@ const fa: Dictionary = {
   openMap: 'باز کردن در نقشه',
   contactDetailsMissing: 'اطلاعات تماس هنوز منتشر نشده است.',
   photoAt: (position, total) => `تصویر ${formatNumber(position, 'fa')} از ${formatNumber(total, 'fa')}`,
-  selectedWorkShown: (shown, total) => `${formatNumber(shown, 'fa')} از ${formatNumber(total, 'fa')}`,
-  selectedWork: 'نمونه کارها',
   startConversation: 'گفتگو را شروع کنیم',
   allEducation: 'همهٔ آموزش‌ها',
 }
@@ -202,12 +197,10 @@ const en: Dictionary = {
   copied: 'Copied',
   showMap: 'Show map',
   openMap: 'Open in maps',
-  selectedWork: 'Selected work',
   startConversation: 'Start a conversation',
   allEducation: 'All education',
   contactDetailsMissing: 'Contact details have not been published yet.',
   photoAt: (position, total) => `Photograph ${formatNumber(position, 'en')} of ${formatNumber(total, 'en')}`,
-  selectedWorkShown: (shown, total) => `${formatNumber(shown, 'en')} of ${formatNumber(total, 'en')}`,
 }
 
 const dictionaries: Record<Locale, Dictionary> = { en, fa }
