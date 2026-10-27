@@ -6,9 +6,8 @@ import { ContentContainer } from '@/components/design/Container'
 import { DecorativeMark } from '@/components/design/DecorativeMark'
 import { Rule } from '@/components/design/Rule'
 import { FramedMedia } from '@/components/media/CmsImage'
-import { ProjectCard } from '@/components/projects/ProjectCard'
 import { EmptyState } from '@/components/states/States'
-import { getArchive, getSectionPage, localizedPostHref } from '@/lib/cms/content'
+import { getSectionPage } from '@/lib/cms/content'
 import { loadPageContext } from '@/lib/cms/pageContext'
 import { breadcrumbsFor } from '@/lib/routing/breadcrumbs'
 import { href } from '@/lib/routing/locale'
@@ -16,7 +15,6 @@ import { THEME_ROUTES } from '@/lib/routing/paths'
 import { resolveLocaleRoute } from '@/lib/routing/resolve'
 import { metadataFor } from '@/lib/seo/metadata'
 import { labels as dictionary } from '@/lib/theme/labels'
-import { formatNumber } from '@/lib/runtime'
 import { collectMedia } from '@/lib/utils/lexical'
 import { isMedia } from '@/lib/utils/media'
 import { InteriorPage } from '@/views/InteriorPage'
@@ -68,10 +66,6 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
     )
   }
 
-  // Selected work: the three newest projects, from the same archive the Projects page
-  // reads. Nothing is invented — no projects, no section.
-  const work = await getArchive(ctx, { limit: 3, section: 'projects' })
-  const projectsHref = href(THEME_ROUTES.projects, locale, ctx.site)
   const contactHref = href(THEME_ROUTES.contact, locale, ctx.site)
 
   const heroMedia = isMedia(page.hero?.media) ? page.hero.media : null
@@ -119,39 +113,6 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
             )}
           </div>
         </div>
-
-        {work.docs.length > 0 ? (
-          <section aria-labelledby="about-work" className="mt-20">
-            <Rule className="mb-8" />
-            <div className="mb-8 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-              <h2 className="type-heading" id="about-work">
-                {t.selectedWork}
-                {/* The count describes the cards below: “3 of 12” when the grid is a
-                    selection from a larger archive, the plain number when it is all of it. */}
-                <span className="type-meta ms-3">
-                  {work.totalDocs > work.docs.length
-                    ? t.selectedWorkShown(work.docs.length, work.totalDocs)
-                    : formatNumber(work.docs.length, locale)}
-                </span>
-              </h2>
-              <a className="link-inline type-ui target-standalone" href={projectsHref}>
-                {t.allProjects}
-              </a>
-            </div>
-            <div className="about-work">
-              {await Promise.all(
-                work.docs.map(async (post) => (
-                  <ProjectCard
-                    context={ctx}
-                    href={await localizedPostHref(post, ctx)}
-                    key={post.id}
-                    post={post}
-                  />
-                )),
-              )}
-            </div>
-          </section>
-        ) : null}
 
         {/* The page ends on one large line rather than a small link: the next step is
             the point of the page. The arrow follows the reading direction. */}
