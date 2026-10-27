@@ -6,6 +6,7 @@ import { SmoothScroll } from '@/components/motion/SmoothScroll'
 import { getSiteOrNull } from '@/lib/cms/endpoints'
 import { labels } from '@/lib/theme/labels'
 import { fontFaceCss, fontReport } from '@/lib/theme/fonts'
+import { typographyCss } from '@/lib/theme/typography'
 import { themeCss } from '@/lib/runtime'
 import { dirFor } from '@/lib/runtime'
 import { documentLocaleConfig } from '@/lib/routing/documentLocale'
@@ -21,7 +22,9 @@ import { brandName } from '@/lib/theme/brand'
  * byte. Client navigations do not re-render this layout, so `<DocumentLocale>` keeps
  * the attributes in step with the URL afterwards (FA ⇄ EN without a reload). Per-site design tokens (`themeCss(site.theme)`) and the font faces are emitted
  * here, after the design system, so a tenant's brand colour can only override the raw
- * variables — never the line system, spacing or type scale.
+ * variables — never the line system, spacing or type scale. The type scale moves only
+ * through the typography theme settings (`typographyCss`), which set its multipliers
+ * and applied weights.
  */
 
 export const viewport: Viewport = {
@@ -51,6 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = headerList.get('x-arch-locale') === 'en' ? 'en' : 'fa'
   const site = await getSiteOrNull()
   const fonts = fontReport()
+  const typography = typographyCss(site?.themeRuntime?.settings)
   if (process.env.NODE_ENV !== 'production' && fonts.shazdeMissing.length > 0) {
     console.warn(
       `[theme] Shazde not installed (${fonts.shazdeMissing.length}/9 weights) — Persian renders on ${fonts.persianFamily}.`,
@@ -65,6 +69,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ))}
         <style dangerouslySetInnerHTML={{ __html: fontFaceCss() }} />
         {site?.theme ? <style dangerouslySetInnerHTML={{ __html: themeCss(site.theme) }} /> : null}
+        {typography ? <style dangerouslySetInnerHTML={{ __html: typography }} /> : null}
       </head>
       <body>
         <DocumentLocale config={documentLocaleConfig()} />

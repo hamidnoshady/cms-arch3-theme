@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 import { SECTIONS } from '@/lib/theme/sections'
+import { TYPOGRAPHY_SETTING_KEYS } from '@/lib/theme/typography'
 
 /**
  * The manifest is a *contract file*: the CMS validates it with `parseThemeManifest`
@@ -52,7 +53,15 @@ const COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
 /* --- the slots and settings the code actually reads ----------------------- */
 
 const SLOTS_READ_BY_CODE = new Set([...Object.values(SECTIONS).map((section) => section.slot), 'contactForm'])
-const SETTINGS_READ_BY_CODE = new Set(['introAnimation', 'introDuration', 'mapApiKey', 'mapCenter', 'mapProvider', 'mapZoom'])
+const SETTINGS_READ_BY_CODE = new Set([
+  'introAnimation',
+  'introDuration',
+  'mapApiKey',
+  'mapCenter',
+  'mapProvider',
+  'mapZoom',
+  ...TYPOGRAPHY_SETTING_KEYS,
+])
 const CAPABILITIES_IMPLEMENTED = new Set(['blog', 'contactForm', 'education', 'projects', 'search'])
 /** `source: "platform"` is the only honest source for anything the platform injects. */
 const PLATFORM_OWNED = new Set([

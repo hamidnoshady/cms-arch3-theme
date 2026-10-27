@@ -20,8 +20,8 @@
     border: 1px solid var(--line-emphasis-color);
     background-color: var(--ink);
     color: var(--surface);
-    font-size: var(--text-ui);
-    font-weight: var(--weight-ui);
+    font-size: var(--text-button);
+    font-weight: var(--weight-button);
     line-height: 1;
     cursor: pointer;
     transition: background-color var(--motion-fast) var(--ease-out),
@@ -266,8 +266,8 @@
     /* Only breaks a word that cannot fit its line — never clips, never overflows. */
     overflow-wrap: break-word;
     color: var(--ink);
-    font-size: var(--text-ui);
-    font-weight: var(--weight-ui);
+    font-size: var(--text-nav);
+    font-weight: var(--weight-nav);
     white-space: nowrap;
   }
 
@@ -1056,8 +1056,8 @@
      leader extends and the arrow arrives instead. */
   .home-row__label {
     font-family: var(--font-brand);
-    font-size: clamp(1.5rem, 3.4vw, 2.75rem);
-    font-weight: var(--weight-light);
+    font-size: var(--text-home-menu);
+    font-weight: var(--weight-home-menu);
     line-height: var(--leading-title);
     overflow-wrap: anywhere;
     text-decoration: none;
@@ -1116,7 +1116,8 @@
   /* Current page: a heavier cut of the label and a solid index — never an underline
      alone, and `aria-current` carries the meaning for assistive technology. */
   .home-row__link[aria-current='page'] .home-row__label {
-    font-weight: var(--weight-regular);
+    /* One step heavier than the resting label (300 → 400 by default). */
+    font-weight: min(calc(var(--weight-home-menu) + 100), 900);
   }
 
   .home-row__link:hover .home-row__leader,
@@ -1306,8 +1307,8 @@
     gap: var(--space-4);
     padding-block: var(--space-4);
     border-block-end: var(--line-w) solid var(--line-structural-color);
-    font-size: var(--text-subheading);
-    font-weight: var(--weight-medium);
+    font-size: var(--text-mobile-menu);
+    font-weight: var(--weight-mobile-menu);
   }
 
   .drawer__row:hover {
@@ -1376,8 +1377,8 @@
   .card__title {
     flex: 1 1 auto;
     min-inline-size: 0;
-    font-size: var(--text-ui);
-    font-weight: var(--weight-ui);
+    font-size: var(--text-card-title);
+    font-weight: var(--weight-card-title);
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
@@ -1456,8 +1457,8 @@
 
   .pcard__title {
     min-inline-size: 0;
-    font-size: var(--text-ui);
-    font-weight: var(--weight-ui);
+    font-size: var(--text-card-title);
+    font-weight: var(--weight-card-title);
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
@@ -1862,7 +1863,7 @@
     padding-block: var(--space-5);
     text-align: start;
     font-size: var(--text-subheading);
-    font-weight: var(--weight-medium);
+    font-weight: var(--weight-heading);
     background: transparent;
     cursor: pointer;
   }
