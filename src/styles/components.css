@@ -1141,6 +1141,47 @@
     translate: calc(var(--dir-sign) * 0.375rem) 0;
   }
 
+  /* Compact rows invert when pointed at (black row, white type), so the small list
+     still reads as a set of controls. */
+  .home-menu .home-row__link {
+    padding-inline: var(--space-3);
+    transition:
+      background-color var(--motion-base) var(--ease-out),
+      color var(--motion-base) var(--ease-out);
+  }
+
+  .home-menu .home-row__link:hover,
+  .home-menu .home-row__link:focus-visible {
+    background: var(--ink);
+    color: var(--surface);
+    outline-offset: -4px;
+    outline-color: var(--surface);
+  }
+
+  .home-menu .home-row__link:hover .home-row__index,
+  .home-menu .home-row__link:focus-visible .home-row__index {
+    color: var(--surface);
+  }
+
+  /* The inverted row is always fully legible, even while keyboard focus sits on
+     another row and would otherwise dim it (hence the specificity over the
+     recede rule). */
+  .home-menu .home-menu__list .home-row .home-row__link:hover .home-row__label,
+  .home-menu .home-menu__list .home-row .home-row__link:focus-visible .home-row__label {
+    opacity: 1;
+  }
+
+  /* In the compact box the inverted row already says "this one"; the leader line
+     only crowded it. */
+  .home-menu .home-row__leader {
+    visibility: hidden;
+  }
+
+  .home-menu .home-row__link:hover .home-row__arrow,
+  .home-menu .home-row__link:focus-visible .home-row__arrow {
+    stroke: var(--surface);
+  }
+
   @media (max-width: 47.99rem) {
     .home-row__link {
       grid-template-columns: 1.5rem minmax(0, 1fr) 1.125rem;
@@ -1162,7 +1203,12 @@
      Layout wrappers are transparent in the vertical layout, so its grid is unchanged.
      Horizontal: the stage is a little taller than the screen and its content is
      sticky, so a short scroll has somewhere to go while the logo stays put. The Enter
-     cue and the menu row share one grid cell under the logo and cross-fade. */
+     cue and the menu share one grid cell under the logo and cross-fade.
+
+     The menu itself is drawn like a drawing's title block: one hairline-framed strip
+     split into equal cells, each with its drafting number and an arrow on top and
+     the label below. Pointing at a cell inverts it (black cell, white type). Phones
+     and tablets fold the strip into two columns; an odd last cell spans both. */
 
   .home-intro__hold,
   .home-reveal {
@@ -1171,7 +1217,9 @@
 
   .home-intro--horizontal {
     display: block;
-    /* `align-content` also centres block containers now; the hold must sit at the top. */
+    /* The base rule's centring would shrink-wrap and offset the hold; it must sit at
+       the top and span the full width. */
+    place-items: normal;
     align-content: normal;
     min-block-size: calc(100svh - var(--navbar-block) + 6rem);
     padding-block: 0;
@@ -1181,7 +1229,9 @@
     position: sticky;
     inset-block-start: var(--navbar-block);
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     place-items: center;
+    inline-size: 100%;
     align-content: center;
     gap: var(--space-8);
     min-block-size: calc(100svh - var(--navbar-block));
@@ -1189,14 +1239,14 @@
   }
 
   .home-intro--horizontal .home-logo__img {
-    max-block-size: 34svh;
+    max-block-size: 32svh;
   }
 
   .home-intro--horizontal .home-reveal {
     display: grid;
     justify-items: center;
     align-items: start;
-    inline-size: min(100%, calc(56rem + var(--gutter) * 2));
+    inline-size: min(100%, calc(60rem + var(--gutter) * 2));
     padding-inline: var(--gutter);
   }
 
@@ -1217,7 +1267,6 @@
   }
 
   .home-hmenu {
-    position: relative;
     inline-size: 100%;
     opacity: 0;
     pointer-events: none;
@@ -1229,90 +1278,75 @@
     pointer-events: auto;
   }
 
-  /* Dimension line above the row, drawn out from the centre when the row opens. */
-  .home-hmenu__rule {
-    position: relative;
-    display: block;
-    inline-size: 100%;
-    block-size: var(--line-w);
-    margin-block-end: var(--space-4);
-    background: var(--line-structural-color);
-    transform: scaleX(0);
-    transition: transform var(--motion-reveal) var(--ease-out);
-  }
-
-  .home-hmenu__rule::before,
-  .home-hmenu__rule::after {
-    content: '';
-    position: absolute;
-    inset-block-start: -4px;
-    inline-size: var(--line-w);
-    block-size: 9px;
-    background: var(--line-structural-color);
-  }
-
-  .home-hmenu__rule::before {
-    inset-inline-start: 0;
-  }
-
-  .home-hmenu__rule::after {
-    inset-inline-end: 0;
-  }
-
-  .home-intro--horizontal[data-open='true'] .home-hmenu__rule {
-    transform: scaleX(1);
-  }
-
-  .home-hmenu__list {
+  .home-hmenu__head {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--space-2) clamp(var(--space-4), 3vw, var(--space-10));
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-block-end: var(--space-2);
+  }
+
+  /* The frame: top and start edges on the list, end and bottom edges on each cell,
+     so every wrap of the grid still closes into clean hairline boxes. */
+  .home-hmenu__list {
+    position: relative;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
     margin: 0;
     padding: 0;
     list-style: none;
+    border-block-start: var(--line-w) solid var(--line-emphasis-color);
+    border-inline-start: var(--line-w) solid var(--line-structural-color);
+  }
+
+  /* Drafting ticks at the two top corners, just outside the frame. */
+  .home-hmenu__list::before,
+  .home-hmenu__list::after {
+    content: '';
+    position: absolute;
+    inset-block-start: -9px;
+    inline-size: var(--line-w);
+    block-size: 9px;
+    background: var(--line-emphasis-color);
+  }
+
+  .home-hmenu__list::before {
+    inset-inline-start: calc(var(--line-w) * -1);
+  }
+
+  .home-hmenu__list::after {
+    inset-inline-end: 0;
   }
 
   .home-hmenu__item {
-    opacity: 0;
-    translate: 0 0.5rem;
-    transition:
-      opacity var(--motion-slow) var(--ease-out),
-      translate var(--motion-slow) var(--ease-out);
-    transition-delay: calc(var(--i, 0) * 60ms + 120ms);
+    display: flex;
+    border-inline-end: var(--line-w) solid var(--line-structural-color);
+    border-block-end: var(--line-w) solid var(--line-structural-color);
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path var(--motion-reveal) var(--ease-out);
+    transition-delay: calc(var(--i, 0) * 70ms + 80ms);
   }
 
   .home-intro--horizontal[data-open='true'] .home-hmenu__item {
-    opacity: 1;
-    translate: 0 0;
+    clip-path: inset(0 0 0 0);
   }
 
   .home-hmenu__link {
-    position: relative;
-    display: inline-flex;
-    align-items: baseline;
-    gap: var(--space-2);
-    min-block-size: 44px;
-    padding-block: var(--space-3);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr;
+    align-items: start;
+    gap: var(--space-4) var(--space-2);
+    inline-size: 100%;
+    min-block-size: 6.5rem;
+    padding: var(--space-3) var(--space-4) var(--space-4);
     color: var(--ink);
     text-decoration: none;
-  }
-
-  /* A hairline drawn under the pointed-at item, from the reading start. */
-  .home-hmenu__link::after {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    inset-block-end: var(--space-2);
-    block-size: var(--line-w);
-    background: var(--ink);
-    transform: scaleX(0);
-    transform-origin: var(--rule-origin, left center);
-    transition: transform var(--motion-slow) var(--ease-out);
-  }
-
-  [dir='rtl'] .home-hmenu__link::after {
-    --rule-origin: right center;
+    background: var(--surface);
+    transition:
+      background-color var(--motion-base) var(--ease-out),
+      color var(--motion-base) var(--ease-out);
   }
 
   .home-hmenu__index {
@@ -1321,6 +1355,7 @@
     font-size: var(--text-meta);
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--tracking-ui);
+    line-height: 1;
     transition: color var(--motion-base) var(--ease-out);
   }
 
@@ -1329,47 +1364,112 @@
     letter-spacing: 0;
   }
 
+  .home-hmenu__arrow {
+    inline-size: 1.125rem;
+    block-size: 0.5625rem;
+    stroke: currentcolor;
+    stroke-width: var(--line-w);
+    opacity: 0.3;
+    translate: calc(var(--dir-sign) * -0.375rem) 0;
+    transition:
+      opacity var(--motion-base) var(--ease-out),
+      translate var(--motion-slow) var(--ease-out);
+  }
+
+  [dir='rtl'] .home-hmenu__arrow {
+    scale: -1 1;
+  }
+
   .home-hmenu__label {
+    grid-column: 1 / -1;
+    align-self: end;
     font-family: var(--font-brand);
-    font-size: var(--text-subheading);
+    font-size: clamp(1rem, 1.35vw, 1.25rem);
     font-weight: var(--weight-light);
-    line-height: 1.4;
-    white-space: nowrap;
-    transition: opacity var(--motion-slow) var(--ease-out);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
   }
 
-  /* `:has(link…)`, not `list:hover`: the gaps between items must not dim the row. */
-  .home-hmenu__list:has(.home-hmenu__link:hover) .home-hmenu__item:not(:hover) .home-hmenu__label,
-  .home-hmenu__list:focus-within .home-hmenu__item:not(:focus-within) .home-hmenu__label {
-    opacity: 0.32;
+  /* Pointer or keyboard: the cell inverts and the arrow arrives. */
+  .home-hmenu__link:hover,
+  .home-hmenu__link:focus-visible {
+    background: var(--ink);
+    color: var(--surface);
   }
 
-  .home-hmenu__link:hover::after,
-  .home-hmenu__link:focus-visible::after {
-    transform: scaleX(1);
+  .home-hmenu__link:focus-visible {
+    outline-offset: -4px;
+    outline-color: var(--surface);
   }
 
   .home-hmenu__link:hover .home-hmenu__index,
-  .home-hmenu__link:focus-visible .home-hmenu__index,
+  .home-hmenu__link:focus-visible .home-hmenu__index {
+    color: var(--surface);
+  }
+
+  .home-hmenu__link:hover .home-hmenu__arrow,
+  .home-hmenu__link:focus-visible .home-hmenu__arrow {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  /* Current page: a solid index, a heavier label and a bar along the cell's top. */
+  .home-hmenu__link[aria-current='page'] {
+    box-shadow: inset 0 2px 0 var(--ink);
+  }
+
   .home-hmenu__link[aria-current='page'] .home-hmenu__index {
-    color: var(--ink);
+    color: inherit;
   }
 
   .home-hmenu__link[aria-current='page'] .home-hmenu__label {
     font-weight: var(--weight-regular);
   }
 
+  @media (max-width: 63.99rem) {
+    .home-hmenu__list {
+      grid-auto-flow: row;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .home-hmenu__item:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+
+    .home-hmenu__link {
+      min-block-size: 4.75rem;
+      gap: var(--space-2);
+    }
+  }
+
   @media (max-width: 47.99rem) {
     .home-intro--horizontal .home-intro__hold {
-      gap: var(--space-6);
+      gap: var(--space-5);
+      padding-block: var(--space-4) var(--space-6);
     }
 
     .home-intro--horizontal .home-logo__img {
-      max-block-size: 28svh;
+      max-block-size: 22svh;
     }
 
-    .home-hmenu__list {
-      column-gap: var(--space-5);
+    .home-intro--horizontal .home-logo__datum {
+      display: none;
+    }
+
+    .home-hmenu__link {
+      min-block-size: 3.75rem;
+      padding: var(--space-2) var(--space-3) var(--space-3);
+    }
+
+    .home-hmenu__label {
+      font-size: 1rem;
+    }
+  }
+
+  @media (hover: none) {
+    .home-hmenu__arrow {
+      opacity: 0.6;
+      translate: 0 0;
     }
   }
 
@@ -1383,16 +1483,15 @@
       will-change: auto;
     }
 
-    /* The horizontal row appears in place: no rise, no stagger, no drawn line. */
+    /* The horizontal menu appears in place: no wipe, no stagger, no slide. */
     .home-intro--horizontal .home-cue,
     .home-hmenu,
-    .home-hmenu__rule,
     .home-hmenu__item,
-    .home-hmenu__link::after {
+    .home-hmenu__link,
+    .home-hmenu__arrow {
       transition: none;
     }
 
-    .home-hmenu__item,
     .home-intro--horizontal[data-open='true'] .home-cue {
       translate: none;
     }

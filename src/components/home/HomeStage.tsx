@@ -312,7 +312,12 @@ export const HomeStage = ({
               // Focusing a link (Tab past Enter) opens the row too, so keyboard
               // users never land on invisible links.
               <nav aria-label={menuLabel} className="home-hmenu" id="home-menu" ref={menuRef}>
-                <span aria-hidden="true" className="home-hmenu__rule" />
+                <div aria-hidden="true" className="home-hmenu__head">
+                  <span className="type-label">{menuLabel}</span>
+                  <span className="home-menu__count type-meta">
+                    {links.length > 0 ? `${links[0]!.index} — ${links[links.length - 1]!.index}` : ''}
+                  </span>
+                </div>
                 <ol className="home-hmenu__list">
                   {links.map((link, index) => (
                     <li className="home-hmenu__item" key={link.href} style={{ '--i': index } as CSSProperties}>
@@ -327,6 +332,9 @@ export const HomeStage = ({
                         <span aria-hidden="true" className="home-hmenu__index">
                           {link.index}
                         </span>
+                        <svg aria-hidden="true" className="home-hmenu__arrow" fill="none" viewBox="0 0 24 12">
+                          <path d="M0 6H23M18 1L23 6L18 11" vectorEffect="non-scaling-stroke" />
+                        </svg>
                         <span className="menu-row__label home-hmenu__label">{link.label}</span>
                       </Link>
                     </li>
@@ -404,7 +412,7 @@ export const HomeStage = ({
           stay hidden forever. Browsers with scripting on never apply this block. */}
       <noscript>
         <style>
-          {'.stage-intro-fx,.home-row,.home-logo,.home-cue{opacity:1 !important;transform:none !important;clip-path:none !important;filter:none !important}.home-row__rule{transform:none !important}.home-hmenu,.home-hmenu__item{opacity:1 !important;transform:none !important;pointer-events:auto !important}.home-intro--horizontal .home-cue{display:none !important}'}
+          {'.stage-intro-fx,.home-row,.home-logo,.home-cue{opacity:1 !important;transform:none !important;clip-path:none !important;filter:none !important}.home-row__rule{transform:none !important}.home-hmenu,.home-hmenu__item{opacity:1 !important;clip-path:none !important;pointer-events:auto !important}.home-intro--horizontal .home-cue{display:none !important}'}
         </style>
       </noscript>
     </main>
