@@ -6,7 +6,6 @@ import { ContentContainer } from '@/components/design/Container'
 import { DecorativeMark } from '@/components/design/DecorativeMark'
 import { Rule } from '@/components/design/Rule'
 import { CmsForm } from '@/components/forms/CmsForm'
-import { EmptyState } from '@/components/states/States'
 import { getFormById } from '@/lib/cms/endpoints'
 import { getSectionPage } from '@/lib/cms/content'
 import { loadPageContext } from '@/lib/cms/pageContext'
@@ -22,9 +21,10 @@ import type { BlockRow, Locale } from '@/lib/cms/types'
 import { documentLanguages } from '@/lib/seo/translations'
 
 /**
- * Contact — concise invitation, real details, compact CMS form. Two columns on
- * desktop with a single fine divider between them; the divider is dropped (not
- * rotated) when the layout stacks on mobile.
+ * Contact — concise invitation, real details, and an optional compact CMS form. With a
+ * form: two columns on desktop with a single fine divider between them; the divider is
+ * dropped (not rotated) when the layout stacks on mobile. Without one: the details alone,
+ * at full width — a form is not required and its absence is never announced.
  *
  * The form is whatever the CMS defines: the page's own `formBlock`, or the form bound
  * to the `contactForm` slot. The theme never substitutes its own field list.
@@ -80,6 +80,14 @@ export const ContactView = async ({ locale }: { locale: Locale }) => {
   // Details come from `contact` blocks; the theme invents nothing.
   const detailBlocks = blockRows.filter((row) => row.blockType === 'contact')
   const otherBlocks = blockRows.filter((row) => row.blockType !== 'contact' && row.blockType !== 'formBlock')
+  const details =
+    detailBlocks.length > 0 ? (
+      <Blocks blocks={detailBlocks} context={ctx} />
+    ) : (
+      <p className="type-body text-ink-secondary" data-contact-state="details-missing">
+        {t.contactDetailsMissing}
+      </p>
+    )
 
   return (
     <InteriorPage
@@ -107,35 +115,21 @@ export const ContactView = async ({ locale }: { locale: Locale }) => {
 
         <Rule className="my-10" />
 
-        <div className="split split--even">
-          <div>
-            {detailBlocks.length > 0 ? (
-              <Blocks blocks={detailBlocks} context={ctx} />
-            ) : (
-              <p className="type-body text-ink-secondary" data-contact-state="details-missing">
-                {t.contactDetailsMissing}
-              </p>
-            )}
-          </div>
-          <span aria-hidden="true" className="split__divider rule-v" />
-          <div>
-            {form ? (
+        {form ? (
+          <div className="split split--even" data-contact-state={contactReadiness.form}>
+            <div>{details}</div>
+            <span aria-hidden="true" className="split__divider rule-v" />
+            <div>
               <CmsForm form={form} locale={locale} />
-            ) : (
-              // Contact-specific, never the archive's "new work soon": the visitor came
-              // to get in touch, so the fallback says what is missing and points at the
-              // published details when there are any. No address, phone or email is
-              // ever supplied by the theme.
-              <div data-contact-state={contactReadiness.form}>
-                <EmptyState
-                  body={detailBlocks.length > 0 ? t.contactFormMissingUseDetails : t.contactFormMissingBody}
-                  locale={locale}
-                  title={t.contactFormMissingTitle}
-                />
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        ) : (
+          // No form is needed: without one the details take the full content width,
+          // with no empty column, divider or "form unavailable" notice beside them.
+          <div className="contact-solo" data-contact-state={contactReadiness.form}>
+            {details}
+          </div>
+        )}
       </ContentContainer>
 
       {otherBlocks.length > 0 ? <Blocks blocks={otherBlocks} context={ctx} /> : null}
