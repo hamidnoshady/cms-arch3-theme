@@ -63,4 +63,12 @@ describe('typography settings', () => {
     })
     expect(css).toBe('html:root{--size-title:2;--size-caption:0.5}')
   })
+
+  it('wires the horizontal home menu to the typography tokens', () => {
+    const components = readFileSync(new URL('../src/styles/components.css', import.meta.url), 'utf8')
+    const label = components.match(/\n {2}\.home-hmenu__label \{([^}]*)\}/)![1]!
+    expect(label).toContain('var(--size-home-menu, 1)')
+    expect(label).toContain('var(--size-locale, 1)')
+    expect(label).toContain('var(--weight-home-menu)')
+  })
 })
