@@ -88,7 +88,9 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
         </div>
         <Rule className="my-10" />
 
-        <div className="about-composition">
+        {/* No image set → no image column: the text takes the full width instead of
+            sitting beside an empty placeholder. */}
+        <div className={image ? 'about-composition' : 'about-composition about-composition--text'}>
           <div className="min-w-0">
             {page.hero?.richText ? (
               <RichText anchorScope="hero" content={page.hero.richText} context={ctx} fallbackDir={ctx.dir} />
@@ -99,8 +101,8 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
             )}
           </div>
 
-          <div className="relative">
-            {image ? (
+          {image ? (
+            <div className="relative">
               <FramedMedia
                 cap={70}
                 media={image}
@@ -108,10 +110,8 @@ export const AboutView = async ({ locale }: { locale: Locale }) => {
                 size="wide"
                 sizes="(min-width: 1024px) 42vw, 100vw"
               />
-            ) : (
-              <span aria-hidden="true" className="skeleton block" style={{ aspectRatio: '4 / 5' }} />
-            )}
-          </div>
+            </div>
+          ) : null}
         </div>
 
         {/* The page ends on one large line rather than a small link: the next step is

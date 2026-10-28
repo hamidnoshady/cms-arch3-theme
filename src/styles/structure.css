@@ -153,6 +153,10 @@
     }
   }
 
+  .about-composition--text {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   /* Home: a full-viewport entrance followed by the menu, in normal document flow.
      `overflow-x: clip` (not hidden) so the sticky bar keeps working. */
   .stage {
