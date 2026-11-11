@@ -1,5 +1,7 @@
 # Full implementation prompt — new minimal architecture theme
 
+> **Reusable Eshobe theme-development rule:** All themes must adopt the canonical [CMS Theme Settings & Typography Standard](https://github.com/hamidnoshady/eshobe-cms/blob/main/docs/THEME_SETTINGS_STANDARD.md). The CMS owns standard Payload-native field rendering, categorization, validation and persisted overrides. Themes only declare supported manifest settings and consume responsive semantic CSS tokens. Independent desktop/tablet/mobile sizes use **px** once the CMS contract supports them; existing percentage settings are legacy and must not be reinterpreted as pixel values. Never implement theme-specific admin forms or publish unsupported manifest fields. This note is a cross-theme requirement; the architecture-specific prompt below remains historical.
+
 Build a completely NEW, independently structured Next.js theme for an architecture studio, connected to the existing Payload-based Eshobe CMS using the supplied `THEME_API (1).md` contract.
 
 The theme has no assigned product name. Do not reference, clone, rename or assume any previous theme or repository. Do not hardcode a studio name, logo, contact details, people or project content. Customer identity comes from the CMS. Use neutral theme/package identifiers during development and document where the final name can be supplied.
