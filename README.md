@@ -5,6 +5,7 @@ studio, built against the Eshobe CMS theme contract. White surfaces, black type 
 linework, photography in colour, square corners, restrained motion, and a structural line
 system that carries the layout instead of boxes.
 
+- **Theme authoring standard for all Eshobe themes:** [`eshobe-cms/docs/THEME_SETTINGS_STANDARD.md`](https://github.com/hamidnoshady/eshobe-cms/blob/main/docs/THEME_SETTINGS_STANDARD.md). This is the target design specification for shared Payload-native settings and desktop/tablet/mobile px typography; **do not use proposed manifest field types until supported by the CMS**. This theme's current percent-based settings remain active for backwards compatibility.
 - The design brief this theme implements is transcribed in [`docs/SPEC.md`](./docs/SPEC.md).
 - Tokens, both line systems, layout primitives, breakpoints and the component inventory are
   in [`docs/DESIGN-SYSTEM.md`](./docs/DESIGN-SYSTEM.md); font loading and weights are in
