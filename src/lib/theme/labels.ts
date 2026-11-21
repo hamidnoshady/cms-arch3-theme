@@ -60,6 +60,7 @@ type Dictionary = {
   map: string
   email: string
   phone: string
+  address: string
   hours: string
   copy: string
   copied: string
@@ -127,6 +128,7 @@ const fa: Dictionary = {
   map: 'نقشه',
   email: 'ایمیل',
   phone: 'تلفن',
+  address: 'نشانی',
   hours: 'ساعات کاری',
   copy: 'کپی',
   copied: 'کپی شد',
@@ -192,6 +194,7 @@ const en: Dictionary = {
   map: 'Map',
   email: 'Email',
   phone: 'Phone',
+  address: 'Address',
   hours: 'Hours',
   copy: 'Copy',
   copied: 'Copied',

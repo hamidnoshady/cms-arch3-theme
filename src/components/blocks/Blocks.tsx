@@ -360,7 +360,7 @@ const ContactBlock = ({ context, row }: { context: SiteContext; row: BlockRow })
 
   const copyLabels = { copied: t.copied, label: t.copy }
   const plain: { label: string; value: ReactNode }[] = []
-  if (address) plain.push({ label: t.contact, value: address })
+  if (address) plain.push({ label: t.address, value: address })
   if (hours) plain.push({ label: t.hours, value: hours })
   if (mapUrl && !map) {
     plain.push({
